@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
+from django.urls import reverse_lazy
 from . import models as m
 
 
@@ -8,6 +9,7 @@ class AcademicAdminSite(admin.AdminSite):
     site_header = 'Kiddo Spark · Superadministración'
     site_title = 'Kiddo Spark'
     index_title = 'Usuarios, permisos y configuración académica'
+    site_url = reverse_lazy('dashboard')
 
     def has_permission(self, request):
         return request.user.is_active and request.user.is_superuser

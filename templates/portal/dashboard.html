@@ -1,10 +1,10 @@
 {% extends 'portal/base.html' %}
-{% block title %}{% if perms.core.operate_platform %}Panel de operación{% elif user.is_staff %}Seller Center{% else %}Mi panel familiar{% endif %} · Kiddo Spark{% endblock %}
+{% block title %}{% if perms.core.operate_platform %}Panel de operación{% elif user.is_staff %}Seller Center{% else %}Mi panel de cliente{% endif %} · Kiddo Spark{% endblock %}
 {% block content %}
 <section class="portal-shell section-space">
   <div class="section-heading ks-dashboard-title">
     <div>
-      <p class="ks-kicker">{% if perms.core.operate_platform %}Operación Kiddo Spark{% elif user.is_staff %}Seller Center{% else %}Mi cuenta familiar{% endif %}</p>
+      <p class="ks-kicker">{% if perms.core.operate_platform %}Operación Kiddo Spark{% elif user.is_staff %}Seller Center{% else %}Mi panel de cliente{% endif %}</p>
       <h1>Hola, {{ user.first_name|default:user.username }}</h1>
       <p class="muted">{% if user.is_superuser %}Revisa el catálogo, las solicitudes de proveedores y la operación de la demo.{% elif perms.core.operate_platform %}Gestiona el catálogo, las reservas y las solicitudes de la plataforma.{% elif user.is_staff %}Gestiona publicaciones, horarios y reservas de tus centros asignados.{% else %}Consulta tus actividades, reservas y movimientos de Sparks.{% endif %}</p>
     </div>

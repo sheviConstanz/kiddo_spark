@@ -3,6 +3,16 @@ from django.db.models import Q
 from .models import Organization, Activity, Booking, ServiceRequest
 
 
+def account_start(user):
+    return {
+        'superadmin': 'superadmin:index',
+        'admin': 'platform_statistics',
+        'provider': 'dashboard',
+        'applicant': 'provider_submissions',
+        'client': 'home',
+    }[user.role]
+
+
 def operates_platform(user):
     return user.is_superuser or (user.is_staff and user.has_perm('core.operate_platform'))
 

@@ -6,12 +6,14 @@ from core.admin import site
 
 urlpatterns = [
     path('', v.home, name='home'),
+    path('presentacion/', v.public_landing, name='public_landing'),
     path('referencia/', v.reference, name='reference'),
     path('actividades/', v.explore, name='explore'),
     path('actividades/<int:pk>/', v.activity_detail, name='activity'),
     path('actividades/<int:pk>/favorito/', v.favorite, name='favorite'),
     path('registro/', v.register, name='register'),
-    path('ingresar/', auth.LoginView.as_view(template_name='portal/form.html', extra_context={'title': 'Iniciar sesión'}), name='login'),
+    path('registro/proveedor/', v.register, {'for_provider': True}, name='register_provider'),
+    path('ingresar/', v.PortalLoginView.as_view(), name='login'),
     path('salir/', auth.LogoutView.as_view(), name='logout'),
     path('cuenta/', v.profile, name='profile'),
     path('cuenta/clave/', auth.PasswordChangeView.as_view(template_name='portal/form.html', success_url='/panel/', extra_context={'title': 'Cambiar contraseña'}), name='password_change'),

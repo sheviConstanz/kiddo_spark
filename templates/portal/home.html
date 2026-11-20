@@ -9,7 +9,7 @@
       <p class="ks-hero-lead">Encuentra, compara y reserva actividades cerca de ti. Kiddo Spark reúne a familias, academias, talleres y clubes en un solo lugar.</p>
       <div class="cta-row">
         <a class="btn ks-coral" href="{% url 'explore' %}">Explorar actividades {% include 'portal/icon.html' with name='arrow' %}</a>
-        <a class="btn ks-hero-secondary" href="{% url 'providers' %}">Soy proveedor</a>
+        <a class="btn ks-hero-secondary" href="{% url 'providers' %}">Incorporar mi centro</a>
       </div>
       <p class="ks-territory">{% include 'portal/icon.html' with name='pin' %} <span>Viña del Mar, Valparaíso, Quilpué y Villa Alemana</span></p>
     </div>
@@ -69,7 +69,7 @@
       <article class="portal-card ks-audience">
         <span class="ks-icon-tile ks-cream">{% include 'portal/icon.html' with name='school' %}</span>
         <h3>Colegios y comunidades</h3><p>Pueden complementar su oferta extracurricular con actividades de centros externos y dar seguimiento al uso agregado del beneficio.</p>
-        <a class="inline-link" href="{% url 'request_create' %}?kind=agreement">Solicitar una demo {% include 'portal/icon.html' with name='arrow' %}</a>
+        <a class="inline-link" href="{% url 'request_create' %}?kind=agreement">Solicitar un convenio {% include 'portal/icon.html' with name='arrow' %}</a>
       </article>
     </div>
   </div>
@@ -94,7 +94,7 @@
       <h2 id="convenios-title">Un beneficio extracurricular para empresas y colegios</h2>
       <p>La propuesta permite aportar Sparks a familias elegibles y consultar categorías, uso y participación sin administrar un convenio por cada centro.</p>
       <p>Los indicadores del convenio se plantean de forma agregada y la unidad de análisis es el adulto responsable.</p>
-      <a class="btn ks-coral" href="{% url 'request_create' %}?kind=agreement">Solicitar demo de convenio {% include 'portal/icon.html' with name='arrow' %}</a>
+      <a class="btn ks-coral" href="{% url 'request_create' %}?kind=agreement">Solicitar un convenio {% include 'portal/icon.html' with name='arrow' %}</a>
     </div>
     <div class="ks-preview">
       <div class="ks-preview-head">

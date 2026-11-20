@@ -21,15 +21,20 @@
       {% with route=request.resolver_match.url_name %}
       <nav id="main-nav" aria-label="Navegación principal">
         <a href="{% url 'explore' %}"{% if route == 'explore' or route == 'activity' %} aria-current="page"{% endif %}>Explorar actividades</a>
-        <a href="{% url 'providers' %}"{% if route == 'providers' %} aria-current="page"{% endif %}>Proveedores</a>
-        <a href="{% url 'home' %}#convenios">Empresas y colegios</a>
+        {% if user.role != 'client' %}
+          <a href="{% url 'providers' %}"{% if route == 'providers' %} aria-current="page"{% endif %}>Proveedores</a>
+          <a href="{% if user.is_authenticated %}{% url 'public_landing' %}{% else %}{% url 'home' %}{% endif %}#convenios">Empresas y colegios</a>
+        {% endif %}
         <a href="{% url 'plans' %}"{% if route == 'plans' %} aria-current="page"{% endif %}>Planes y Sparks</a>
-        <a href="{% url 'relief_home' %}"{% if route == 'relief_home' %} aria-current="page"{% endif %}>Alivios B2B</a>
-        <a href="{% url 'reference' %}">Propuesta original</a>
+        {% if user.role != 'client' %}
+          <a href="{% url 'relief_home' %}"{% if route == 'relief_home' %} aria-current="page"{% endif %}>Alivios B2B</a>
+          <a href="{% url 'reference' %}">Propuesta original</a>
+        {% endif %}
       </nav>
       <div class="account-links">
         {% if user.is_authenticated %}
-          <a href="{% url 'dashboard' %}" class="btn btn-primary"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Mi panel</a>
+          {% if user.role == 'client' %}{% url 'dashboard' as panel_url %}{% else %}{% url account_start as panel_url %}{% endif %}
+          <a href="{{ panel_url }}" class="btn btn-primary"{% if request.path == panel_url %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Mi panel</a>
         {% else %}
           <a href="{% url 'login' %}">Ingresar</a>
           <a href="{% url 'register' %}" class="btn btn-primary">Crear cuenta</a>
@@ -41,18 +46,24 @@
   {% if show_account_navigation %}
     <nav class="account-nav" aria-label="Navegación de mi cuenta">
       {% with route=request.resolver_match.url_name %}
-      <a href="{% url 'dashboard' %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Resumen</a>
+      {% if user.role == 'applicant' %}
+        <a href="{% url 'provider_submissions' %}"{% if route == 'provider_submissions' or route == 'provider_submission' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Mis fichas</a>
+      {% else %}
+        <a href="{% url 'dashboard' %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} {% if user.role == 'admin' %}Gestión operativa{% else %}Resumen{% endif %}</a>
+      {% endif %}
       {% if user.is_superuser or user.is_staff and perms.core.operate_platform %}
         <a href="{% url 'platform_statistics' %}"{% if route == 'platform_statistics' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='chart' %} Estadísticas</a>
       {% endif %}
-      <a href="{% url 'bookings' %}"{% if route == 'bookings' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Reservas</a>
-      <a href="{% url 'requests' %}"{% if route == 'requests' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
+      {% if user.role != 'applicant' %}
+        <a href="{% url 'bookings' %}"{% if route == 'bookings' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Reservas</a>
+        <a href="{% url 'requests' %}"{% if route == 'requests' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
+      {% endif %}
       {% if user.is_staff %}
         {% if perms.core.view_activity %}<a href="{% url 'management' 'activities' %}">Publicaciones</a>{% endif %}
         {% if perms.core.view_schedule %}<a href="{% url 'management' 'schedules' %}">Horarios y cupos</a>{% endif %}
         {% if user.is_superuser or not perms.core.operate_platform and perms.core.view_settlement %}<a href="{% url 'finance' %}">Finanzas demo</a>{% endif %}
         {% if perms.core.view_review %}<a href="{% url 'reputation' %}">Reputación</a>{% endif %}
-      {% else %}
+      {% elif user.role == 'client' %}
         <a href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Favoritos</a>
         <a href="{% url 'wallet' %}">{% include 'portal/icon.html' with name='spark' %} {{ user.credits }} Sparks</a>
       {% endif %}
@@ -76,8 +87,15 @@
   <footer class="portal-footer">
     <div class="portal-shell footer-grid">
       <div><strong>Kiddo Spark</strong><p>Actividades extracurriculares para familias de la Región de Valparaíso.</p></div>
-      <div><strong>Familias y proveedores</strong><a href="{% url 'explore' %}">Explorar el catálogo</a><a href="{% url 'providers' %}">Incorporar un centro</a><a href="{% url 'home' %}#convenios">Empresas y colegios</a></div>
-      <div><strong>Sobre el proyecto</strong><a href="{% url 'reference' %}">Ver propuesta original</a><p>Prototipo académico. Usa datos ficticios y evita ingresar información personal de menores.</p></div>
+      <div>
+        <strong>Actividades y planes</strong><a href="{% url 'explore' %}">Explorar el catálogo</a>
+        {% if user.role == 'client' %}<a href="{% url 'plans' %}">Planes y Sparks</a>
+        {% else %}
+          <a href="{% url 'providers' %}">Incorporar un centro</a>
+          <a href="{% if user.is_authenticated %}{% url 'public_landing' %}{% else %}{% url 'home' %}{% endif %}#convenios">Empresas y colegios</a>
+        {% endif %}
+      </div>
+      <div><strong>Sobre el proyecto</strong>{% if user.role != 'client' %}<a href="{% url 'reference' %}">Ver propuesta original</a>{% endif %}<p>Prototipo académico. Usa datos ficticios y evita ingresar información personal de menores.</p></div>
     </div>
   </footer>
 </body>

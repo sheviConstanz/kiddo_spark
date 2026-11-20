@@ -52,7 +52,9 @@ class DemoAccountTests(TestCase):
 
     def login_profile(self, username):
         response = self.client.post(reverse('login'), {'username': username, 'password': username})
-        self.assertRedirects(response, reverse('dashboard'))
+        target = {'superadmin': 'superadmin:index', 'admin': 'platform_statistics',
+                  'usuario': 'home', 'proveedor': 'dashboard'}[username]
+        self.assertRedirects(response, reverse(target))
 
     def test_data_migration_creates_four_login_profiles(self):
         expected = {
@@ -93,6 +95,9 @@ class DemoAccountTests(TestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 302)
             self.assertIn('/superadmin/login/', response.url)
+            denied = self.client.post(url, {'action': 'delete_selected'})
+            self.assertEqual(denied.status_code, 302)
+            self.assertIn('/superadmin/login/', denied.url)
         # An extra grant from an operator group must not extend a global role to finance.
         admin = m.User.objects.get(username='admin')
         finance_permissions = Permission.objects.filter(
@@ -157,23 +162,87 @@ class DemoAccountTests(TestCase):
     def test_main_navigation_stays_visible_and_account_navigation_stays_in_panel(self):
         public_routes = ('home', 'explore', 'providers', 'plans', 'relief_home')
         main_links = (*map(reverse, public_routes[1:]), '/#convenios', reverse('reference'))
-        for signed_in in (False, True):
-            if signed_in:
-                self.client.force_login(self.family)
-            for route in public_routes:
-                with self.subTest(route=route, signed_in=signed_in):
-                    response = self.client.get(reverse(route))
-                    page = response.content.decode()
-                    main_nav = page.split('<nav id="main-nav"', 1)[1].split('</nav>', 1)[0]
-                    for link in main_links:
-                        self.assertIn(f'href="{link}"', main_nav)
-                    self.assertNotContains(response, 'class="account-nav"')
-                    self.assertNotContains(response, 'nav-toggle')
-                    self.assertNotContains(response, 'nav-more')
+        for route in public_routes:
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                main_nav = response.content.decode().split('<nav id="main-nav"', 1)[1].split('</nav>', 1)[0]
+                for link in main_links:
+                    self.assertIn(f'href="{link}"', main_nav)
+                self.assertNotContains(response, 'class="account-nav"')
+                self.assertNotContains(response, 'nav-toggle')
+                self.assertNotContains(response, 'nav-more')
+        self.client.force_login(self.family)
+        for route in ('home', 'explore', 'plans', 'organizations'):
+            with self.subTest(client_route=route):
+                response = self.client.get(reverse(route))
+                for business_link in ('providers', 'relief_home', 'register_provider', 'management'):
+                    path = reverse(business_link, args=['activities'] if business_link == 'management' else [])
+                    self.assertNotContains(response, f'href="{path}"')
+                self.assertNotContains(response, 'class="account-nav"')
+        for route in ('public_landing', 'providers', 'relief_home'):
+            self.assertRedirects(self.client.get(reverse(route)), reverse('home'))
         for route in ('dashboard', 'bookings', 'requests', 'profile', 'wallet'):
             self.assertContains(self.client.get(reverse(route)), 'class="account-nav"')
         self.assertContains(self.client.get(reverse('explore'), {'favorites': '1'}), 'class="account-nav"')
         self.assertNotContains(self.client.get(reverse('activity', args=[self.activity.pk])), 'class="account-nav"')
+
+    def test_client_home_lists_only_own_future_confirmed_bookings(self):
+        landing = self.client.get(reverse('home'))
+        self.assertTemplateUsed(landing, 'portal/home.html')
+        self.assertContains(landing, 'Incorporar mi centro')
+        slot = self.activity.schedules.get()
+        booking = m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0)
+        m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0, status='cancelled')
+        admin = m.User.objects.get(username='admin')
+        m.Booking.objects.create(user=admin, schedule=slot, sparks=4, amount=0)
+        self.login_profile('usuario')
+        home = self.client.get(reverse('home'))
+        self.assertTemplateUsed(home, 'portal/client_home.html')
+        self.assertEqual(list(home.context['upcoming']), [booking])
+        self.assertContains(home, 'Mis favoritos')
+        self.assertNotContains(home, 'Incorporar mi centro')
+        self.client.force_login(admin)
+        self.assertRedirects(self.client.get(reverse('home')), reverse('platform_statistics'))
+        self.client.force_login(m.User.objects.get(username='proveedor'))
+        self.assertRedirects(self.client.get(reverse('home')), reverse('dashboard'))
+        self.client.force_login(m.User.objects.get(username='superadmin'))
+        self.assertRedirects(self.client.get(reverse('home')), reverse('superadmin:index'))
+
+    def test_client_cannot_submit_business_requests_or_register_an_organization(self):
+        ally = m.Organization.objects.create(
+            name='Aliado de prueba', city=self.center.city, kind='ally',
+            created_by=self.family, approved=True,
+        )
+        old = m.ServiceRequest.objects.create(
+            user=self.family, kind='advice', subject='Solicitud anterior', organization=ally,
+        )
+        self.login_profile('usuario')
+        listing = self.client.get(reverse('requests'))
+        self.assertContains(listing, old.subject)
+        self.assertNotContains(listing, 'Nueva solicitud')
+        self.assertNotContains(listing, 'Mis fichas')
+        self.assertContains(self.client.get(reverse('request_detail', args=[old.pk])), old.subject)
+        for route, args in [('organization_register', []), ('provider_submissions', []),
+                            ('relief_advice', [ally.pk]), ('relief_quote', [ally.pk]), ('relief_diagnosis', [])]:
+            url = reverse(route, args=args)
+            self.assertEqual(self.client.get(url).status_code, 403)
+            self.assertEqual(self.client.post(url, {'kind': 'agreement'}).status_code, 403)
+        url = reverse('request_create')
+        for kind in ('demo', 'advice', 'quote', 'diagnosis'):
+            self.assertEqual(self.client.get(url, {'kind': kind}).status_code, 403)
+            self.assertEqual(self.client.post(url, {'kind': kind}).status_code, 403)
+        self.assertNotContains(self.client.get(url), 'Asesoría')
+        self.assertEqual(m.ServiceRequest.objects.filter(user=self.family).count(), 1)
+        business = self.client.post(url, {
+            'kind': 'agreement', 'organization': ally.pk, 'entity_name': 'Colegio ficticio',
+            'subject': 'Convenio', 'message': 'Consulta sobre el programa.',
+        })
+        agreement = m.ServiceRequest.objects.get(user=self.family, kind='agreement')
+        self.assertIsNone(agreement.organization_id)
+        self.assertRedirects(business, reverse('request_detail', args=[agreement.pk]))
+        self.assertRedirects(self.client.get(reverse('register_provider')), reverse('home'))
+        self.family.refresh_from_db()
+        self.assertEqual(self.family.role, 'client')
 
     def test_platform_statistics_link_and_direct_access_match_role(self):
         endpoint = reverse('platform_statistics')
@@ -316,7 +385,7 @@ class ReliefTests(TestCase):
 
         self.client.force_login(self.family)
         self.assertEqual(self.client.get(detail).status_code, 404)
-        self.assertNotContains(self.client.get(reverse('relief_home')), f'SOL-{order.pk}')
+        self.assertRedirects(self.client.get(reverse('relief_home')), reverse('home'))
         self.client.force_login(self.admin)
         self.assertRedirects(self.client.post(detail, {'status': 'reviewing', 'note': 'Recibida para revisión'}), detail)
         self.assertNotContains(self.client.get(reverse('relief_home')), f'SOL-{order.pk}')
@@ -444,7 +513,7 @@ class PortalTests(TestCase):
         review = reverse('provider_review_queue')
         self.auth()
         family = self.client.get(dashboard)
-        self.assertContains(family, 'Mi cuenta familiar')
+        self.assertContains(family, 'Mi panel de cliente')
         self.assertContains(family, f'href="{reverse("bookings")}"')
         self.assertNotContains(family, f'href="{offer}"')
         self.assertNotContains(family, f'href="{review}"')
@@ -463,11 +532,12 @@ class PortalTests(TestCase):
                 self.assertEqual(self.client.get(url).status_code, 302)
 
     def test_registration_ignores_privileged_fields(self):
-        response = self.client.post('/registro/', {'username': 'nueva', 'email': 'NUEVA@example.invalid', 'password1': 'Safe-Demo-New!45', 'password2': 'Safe-Demo-New!45', 'is_staff': 'on', 'is_superuser': 'on', 'credits': 99999})
+        response = self.client.post('/registro/', {'username': 'nueva', 'email': 'NUEVA@example.invalid', 'password1': 'Safe-Demo-New!45', 'password2': 'Safe-Demo-New!45', 'is_staff': 'on', 'is_superuser': 'on', 'credits': 99999, 'provider_applicant': 'on'})
         self.assertEqual(response.status_code, 302)
         obj = m.User.objects.get(username='nueva')
         self.assertFalse(obj.is_staff)
         self.assertFalse(obj.is_superuser)
+        self.assertEqual(obj.role, 'client')
         self.assertEqual(obj.credits, 0)
         self.assertTrue(obj.check_password('Safe-Demo-New!45'))
         self.assertNotEqual(obj.password, 'Safe-Demo-New!45')
@@ -477,6 +547,23 @@ class PortalTests(TestCase):
         form = forms.RegisterForm({'username': 'dup', 'email': 'FAMILIA@example.invalid', 'password1': 'Safe-Demo-New!45', 'password2': 'Safe-Demo-New!45'})
         self.assertFalse(form.is_valid())
         self.assertIn('email', form.errors)
+
+    def test_registration_keeps_convenio_entry_and_rejects_external_return(self):
+        registration = reverse('register')
+        next_url = f"{reverse('request_create')}?kind=agreement"
+        auth_page = self.client.get(reverse('login'), {'next': next_url})
+        self.assertContains(auth_page, f'{registration}?next=%2Fsolicitudes%2Fnueva%2F%3Fkind%3Dagreement')
+        self.assertContains(self.client.get(registration, {'next': next_url}), 'name="next"')
+        details = {'password1': 'Unique-Safe-Demo!173', 'password2': 'Unique-Safe-Demo!173'}
+        response = self.client.post(registration, {
+            **details, 'username': 'cliente_nuevo', 'email': 'nuevo@example.invalid', 'next': next_url,
+        })
+        self.assertRedirects(response, next_url)
+        self.client.logout()
+        response = self.client.post(registration, {
+            **details, 'username': 'cliente_dos', 'email': 'dos@example.invalid', 'next': 'https://example.invalid/',
+        })
+        self.assertRedirects(response, reverse('home'))
 
     def test_login_logout_and_bad_password(self):
         self.assertFalse(self.client.login(username='familia', password='incorrect'))
@@ -488,7 +575,7 @@ class PortalTests(TestCase):
 
     def test_all_user_and_admin_templates(self):
         self.auth()
-        for url in ['/panel/', '/reservas/', '/solicitudes/', '/solicitudes/nueva/', '/organizaciones/registrar/', '/mis-sparks/', '/cuenta/', '/cuenta/clave/']:
+        for url in ['/panel/', '/reservas/', '/solicitudes/', '/solicitudes/nueva/', '/mis-sparks/', '/cuenta/', '/cuenta/clave/']:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
         self.auth(self.manager)
@@ -615,13 +702,15 @@ class PortalTests(TestCase):
         self.assertIn('organization', form.errors)
 
     def test_request_and_history_and_privacy(self):
-        self.auth()
+        self.other.provider_applicant = True
+        self.other.save(update_fields=['provider_applicant'])
+        self.auth(self.other)
         response = self.client.post('/solicitudes/nueva/', {'kind': 'advice', 'organization': self.ally.pk, 'entity_name': 'Centro ficticio', 'subject': 'Contabilidad', 'message': 'Necesito orientación.'})
         self.assertEqual(response.status_code, 302)
         obj = m.ServiceRequest.objects.get()
         self.assertEqual(obj.events.count(), 1)
         self.assertContains(self.client.get(f'/solicitudes/{obj.pk}/'), 'Necesito orientación.')
-        self.auth(self.other)
+        self.auth()
         self.assertEqual(self.client.get(f'/solicitudes/{obj.pk}/').status_code, 404)
         self.auth(self.manager)
         self.assertEqual(self.client.post(f'/solicitudes/{obj.pk}/', {'status': 'reviewing', 'note': 'Revisión iniciada'}).status_code, 302)
@@ -660,6 +749,10 @@ class PortalTests(TestCase):
 
     def test_metrics_derive_from_actual_scoped_records(self):
         b = services.reserve(self.user, self.slot.pk)
+        foreign = m.Schedule.objects.create(
+            activity=self.foreign_activity, starts_at=self.slot.starts_at, capacity=5, available=4,
+        )
+        m.Booking.objects.create(user=self.manager, schedule=foreign, sparks=4, amount=10000)
         self.auth(self.manager)
         response = self.client.get('/panel/')
         self.assertEqual(response.context['booking_count'], 1)
@@ -755,7 +848,7 @@ class PortalTests(TestCase):
         self.assertEqual(m.User.objects.get(username='nuevo_admin').email, 'nuevo_admin@example.invalid')
 
     def test_organization_registration_no_automatic_privileges(self):
-        self.auth()
+        self.auth_applicant()
         response = self.client.post(reverse('organization_register'), {
             'name': 'Academia nueva', 'kind': 'ally', 'city': self.city.pk, 'specialty': self.cat.pk,
             'email': 'academia@example.invalid', 'description': 'Demo', 'phone': '+56 000 000 000',
@@ -779,11 +872,16 @@ class PortalTests(TestCase):
         }
 
     def submit_provider(self):
-        self.auth()
+        self.auth_applicant()
         response = self.client.post(reverse('organization_register'), self.provider_payload())
         org = m.Organization.objects.get(name='Taller ficticio')
         self.assertRedirects(response, reverse('provider_submission', args=[org.pk]))
         return org
+
+    def auth_applicant(self):
+        self.user.provider_applicant = True
+        self.user.save(update_fields=['provider_applicant'])
+        self.auth()
 
     def review_provider(self, org, status, note):
         self.auth(self.root)
@@ -795,20 +893,28 @@ class PortalTests(TestCase):
 
     def test_public_provider_entry_continues_account_creation_to_intake(self):
         entry = reverse('providers')
-        registration = reverse('register')
+        registration = reverse('register_provider')
         intake = reverse('organization_register')
-        self.assertContains(self.client.get(entry), f'{registration}?next={intake}')
+        self.assertContains(self.client.get(entry), f'href="{registration}"')
         self.assertRedirects(self.client.get(reverse('provider_submissions')), f"{reverse('login')}?next={reverse('provider_submissions')}")
-        self.assertContains(self.client.get(registration, {'next': intake}), f'name="provider_next" value="{intake}"')
+        self.assertRedirects(self.client.get(reverse('register'), {'next': intake}), registration)
+        self.assertContains(self.client.get(registration), 'Crea tu cuenta de proveedor')
         response = self.client.post(registration, {
             'username': 'contacto-demo', 'email': 'contacto@example.invalid',
             'password1': 'Demo-Unique!9182', 'password2': 'Demo-Unique!9182',
-            'provider_next': intake,
+            'is_staff': 'on', 'is_superuser': 'on',
         })
         self.assertRedirects(response, intake)
+        applicant = m.User.objects.get(username='contacto-demo')
+        self.assertEqual(applicant.role, 'applicant')
+        self.assertEqual(self.client.get(reverse('management', args=['activities'])).status_code, 403)
+        self.client.logout()
+        self.assertRedirects(self.client.post(reverse('login'), {
+            'username': applicant.username, 'password': 'Demo-Unique!9182',
+        }), reverse('provider_submissions'))
 
     def test_provider_registration_requires_demo_acknowledgment_and_pilot_city(self):
-        self.auth()
+        self.auth_applicant()
         outside = m.City.objects.create(name='Santiago')
         response = self.client.post(
             reverse('organization_register'), self.provider_payload(city=outside.pk, demo_acknowledged=''),
@@ -894,7 +1000,11 @@ class PortalTests(TestCase):
         review = reverse('provider_review', args=[org.pk])
         for user in (self.other, self.manager):
             self.auth(user)
-            self.assertNotContains(self.client.get(reverse('provider_submissions')), org.name)
+            listing = self.client.get(reverse('provider_submissions'))
+            if user == self.other:
+                self.assertEqual(listing.status_code, 403)
+            else:
+                self.assertNotContains(listing, org.name)
             self.assertEqual(self.client.get(owner_detail).status_code, 404)
             self.assertEqual(self.client.post(owner_detail, self.provider_payload()).status_code, 404)
             self.assertEqual(self.client.get(reverse('provider_review_queue')).status_code, 403)

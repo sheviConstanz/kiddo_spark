@@ -204,10 +204,10 @@ cuentas que falten. El instalador no pide crearlas.
 
 | Perfil | Usuario | Contraseña | Correo | Qué puede hacer |
 | --- | --- | --- | --- | --- |
-| Superadministrador | `superadmin` | `superadmin` | `correo@superadmin.cl` | Acceso completo. Puede gestionar usuarios y permisos, revisar proveedores y asignar operadores. |
-| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Edita el catálogo, horarios, categorías, comunas y planes. Gestiona reservas y solicitudes y consulta las estadísticas generales. El acceso a usuarios, grupos, permisos, validación de proveedores, datos bancarios y retiros está reservado. |
-| Usuario familiar | `usuario` | `usuario` | `usuario@demo.example.invalid` | Guarda favoritos, activa planes demo, reserva, cancela y valora sus propias experiencias. |
-| Proveedor | `proveedor` | `proveedor` | `proveedor@demo.example.invalid` | En **Mi panel**, gestiona las publicaciones, horarios y reservas del **Centro Kiddo Spark Demo**. Solo accede a su centro. |
+| Superadministrador | `superadmin` | `superadmin` | `correo@superadmin.cl` | Entra a **Superadministración**. Puede gestionar usuarios y permisos, revisar proveedores y asignar operadores. Usa **Ver sitio** para volver al panel operativo. |
+| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Entra a **Estadísticas**. En **Gestión operativa** puede trabajar con catálogo, horarios, categorías, comunas, planes, reservas y solicitudes. Usuarios, grupos, permisos, validación de proveedores, datos bancarios y retiros siguen reservados a superadministración. |
+| Cliente | `usuario` | `usuario` | `usuario@demo.example.invalid` | Entra a su inicio con próximas reservas, favoritos, Sparks y catálogo. En **Solicitudes** puede consultar su historial. |
+| Proveedor | `proveedor` | `proveedor` | `proveedor@demo.example.invalid` | Entra al **Seller Center** del **Centro Kiddo Spark Demo**. Gestiona publicaciones, horarios y reservas del centro asignado. |
 
 Para probar una reserva y verla desde el proveedor, entra como `usuario`,
 activa un plan de prueba en **Planes y Sparks** y reserva
@@ -234,15 +234,16 @@ Un operador de proveedor sin centro asignado no podrá gestionar centros ajenos.
 El administrador de plataforma y el superadministrador pueden gestionar los
 convenios sin aliado destinatario.
 
-El registro público siempre crea usuarios comunes. Las contraseñas se guardan
-mediante hashes.
+**Crear cuenta** abre el registro de cliente. **Registrar un centro** abre el
+registro de proveedor en incorporación. La cuenta puede presentar una ficha y
+ver su revisión. Los permisos de gestión del centro se asignan por separado.
 
 ## Incorporar un centro
 
-1. Entra a **Proveedores → Registrar un centro**. Crea una cuenta si es
-   necesario y envía una ficha con datos ficticios de una de las cuatro comunas
-   piloto. Puedes seguir el trámite en **Proveedores → Ver mis fichas**.
-2. Ingresa como superadministrador y abre **Validación de proveedores**.
+1. Desde la portada pública, abre **Incorporar mi centro → Registrar un
+   centro**. Crea una cuenta de proveedor y envía una ficha con datos ficticios
+   de una de las cuatro comunas piloto. Al volver a ingresar, verás **Mis fichas**.
+2. Ingresa como superadministrador y abre **Ver sitio → Validación de proveedores**.
    Selecciona la ficha, registra el inicio de revisión y luego apruébala,
    obsérvala o recházala. Cada decisión guarda el motivo, la fecha y el responsable.
 3. Si la ficha requiere corrección, vuelve a ella con la cuenta que la creó.
@@ -254,7 +255,8 @@ mediante hashes.
 La lista de documentos y las condiciones de contratación están por definir.
 La membresía de $35.000 CLP netos al mes es un supuesto del modelo para
 proveedores pagadores. El flujo académico no activa membresías ni cobros.
-El script de inicio aplica las actualizaciones de la base local al arrancar.
+Al actualizar, apaga la demo y abre **Abrir Kiddo Spark** desde la carpeta
+actualizada. La migración 0008 conserva las fichas y contraseñas existentes.
 
 ## Probar Alivios B2B
 
@@ -296,8 +298,9 @@ horarios anteriores. Para demostrar otra franja, crea un horario en
    tienen canje ni valor monetario.
 5. Con un administrador del centro, valida asistencia. Con el usuario, deja
    una opinión. El centro puede responder desde **Reputación**.
-6. Solicita un convenio en **Empresas y colegios**, o asesoría en **Alivios B2B**.
-   Consulta su historial en **Solicitudes**.
+6. Solicita un convenio desde **Empresas y colegios** en la portada pública.
+   Para mostrar una asesoría, ingresa como proveedor y abre **Alivios B2B**.
+   Consulta el historial en **Solicitudes**.
 7. Con el administrador correspondiente, avanza el seguimiento: pendiente →
    en revisión → aprobada → completada. Puede rechazarse antes de aprobar.
 8. Crea y edita actividades, horarios y campañas en **Mantenedores**.
@@ -318,11 +321,12 @@ ni generan impresiones, clics o ROAS inventados.
 
 ## Navegación y estadísticas
 
-En el portal, el menú principal muestra siempre **Explorar actividades**, **Proveedores**,
-**Empresas y colegios**, **Planes y Sparks**, **Alivios B2B** y **Propuesta
-original**. En el teléfono los enlaces se ordenan en varias filas. Pulsa
-**Mi panel** para ver el menú de tu cuenta y abrir tus reservas, solicitudes
-o perfil. Al volver a una sección pública se oculta el menú de cuenta.
+El menú principal deja visibles todos los enlaces de tu perfil. La portada
+pública incluye **Proveedores**, **Empresas y colegios**, **Alivios B2B** y
+**Propuesta original**. El cliente ve **Explorar actividades** y **Planes y
+Sparks**. En el teléfono los enlaces se ordenan en filas según el espacio.
+Pulsa **Mi panel** para ver los accesos de tu cuenta. Al volver a una sección
+pública se oculta el menú de cuenta.
 
 En **Mi panel → Estadísticas**, usa **Últimos 7 días**, **Últimos 30 días**,
 **Todo el historial** o selecciona fechas específicas. El período se aplica

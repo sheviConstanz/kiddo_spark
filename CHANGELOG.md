@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 2026-11-20 — Inicio y acceso por perfil
+
+- La portada pública presenta recorridos separados para clientes y proveedores.
+  El cliente cuenta con un inicio propio con reservas, catálogo, favoritos y saldo.
+- El ingreso lleva a administración a **Estadísticas**, a proveedores al
+  **Seller Center** y a superadministración al panel de usuarios y permisos.
+- El alta de proveedores conserva fichas existentes. Las cuentas de cliente
+  tienen restringidos el registro de centros y las solicitudes de demostración
+  corporativa y de Alivios B2B.
+
 ## 2026-11-20 — Navegación y gráficos de operación
 
 - Los enlaces principales quedan a la vista en todos los tamaños. El menú de

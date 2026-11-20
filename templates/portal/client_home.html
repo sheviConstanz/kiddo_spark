@@ -1,0 +1,51 @@
+{% extends 'portal/base.html' %}
+{% block title %}Tu inicio · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="ks-home-hero ks-client-hero">
+  <div class="portal-shell ks-hero-layout">
+    <div class="ks-hero-text">
+      <p class="ks-kicker">Tu espacio de cliente</p>
+      <h1>Hola, {{ user.first_name|default:user.username }}</h1>
+      <p class="ks-hero-lead">Encuentra la próxima actividad para tu familia y ten a mano tus reservas.</p>
+      <a class="btn ks-coral" href="{% url 'explore' %}">Explorar actividades {% include 'portal/icon.html' with name='arrow' %}</a>
+    </div>
+    <section class="ks-hero-board" aria-labelledby="client-bookings">
+      <div class="ks-board-header">
+        <h2 id="client-bookings">Próximas reservas</h2>
+        <span class="ks-board-spark">{% include 'portal/icon.html' with name='calendar' %}</span>
+      </div>
+      <ul class="ks-client-bookings">
+        {% for booking in upcoming %}
+          <li>
+            <strong>{{ booking.schedule.activity.name }}</strong>
+            <span>{{ booking.schedule.activity.organization.name }} · {{ booking.schedule.starts_at|date:'j/m/Y H:i' }}</span>
+          </li>
+        {% empty %}
+          <li>Tus próximos horarios confirmados aparecerán aquí.</li>
+        {% endfor %}
+      </ul>
+      <a class="inline-link" href="{% url 'bookings' %}">Ver mis reservas {% include 'portal/icon.html' with name='arrow' %}</a>
+    </section>
+  </div>
+</section>
+<section class="portal-shell section-space" aria-labelledby="client-shortcuts">
+  <h2 id="client-shortcuts">Favoritos y saldo</h2>
+  <div class="cards two">
+    <a class="portal-card ks-action-card" href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Mis favoritos</a>
+    <a class="portal-card ks-action-card" href="{% url 'wallet' %}">{% include 'portal/icon.html' with name='spark' %} {{ user.credits }} Sparks disponibles</a>
+  </div>
+  <section class="ks-panel-section" aria-labelledby="client-discover">
+    <div class="section-heading">
+      <h2 id="client-discover">Actividades para descubrir</h2>
+      <a class="inline-link" href="{% url 'explore' %}">Ver catálogo {% include 'portal/icon.html' with name='arrow' %}</a>
+    </div>
+    <div class="cards three">
+      {% for activity in activities %}
+        {% include 'portal/activity_card.html' %}
+      {% empty %}
+        <p class="muted">Aún no hay actividades publicadas.</p>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+{% endblock %}

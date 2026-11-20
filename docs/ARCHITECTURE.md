@@ -9,7 +9,7 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
 1. Base: aplicación ejecutable, migraciones y portada móvil.
 2. Acceso: registro, login/logout y cambio de contraseña persistentes.
 3. Permisos: superadministrador, administrador de plataforma, operador de
-   proveedor y usuario común. Comprobar permisos en las rutas, además de la interfaz.
+   proveedor y cliente. Comprobar permisos en las rutas, además de la interfaz.
 4. Catálogo: CRUD y filtros sobre actividades, centros, categorías y horarios.
 5. Sparks: planes, membresías y libro de movimientos sin cobros reales.
 6. Reservas: cupos/saldo consistentes; cancelación idempotente y validación.
@@ -21,7 +21,7 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
 12. Entrega: pruebas integrales, responsive e instrucciones reproducibles.
 
 ## Reglas y límites de demostración
-- Un usuario común solo consulta sus reservas, solicitudes y movimientos.
+- Un cliente solo consulta sus propias reservas, solicitudes y movimientos.
 - El administrador de plataforma tiene acceso global al catálogo, las reservas
   y las solicitudes. Quedan reservados usuarios, permisos, asignación de
   operadores, validación de proveedores y finanzas sensibles.
@@ -30,7 +30,10 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
 - Una migración de datos prepara los cuatro perfiles ficticios locales. Respeta
   cuentas existentes por usuario o correo. La configuración del túnel excluye
   esta carga y utiliza otra base SQLite.
-- Registro público siempre crea usuarios comunes; nunca concede privilegios.
+- Los registros públicos de cliente y proveedor tienen rutas separadas. La
+  marca de incorporación permite seguir las fichas propias, sin otorgar
+  estado de personal ni permisos. La migración 0008 recupera ese acceso para
+  los titulares de fichas anteriores y conserva sus credenciales.
 - Saldo y cupos se actualizan dentro de una transacción y con escrituras
   condicionales para impedir saldo negativo y reservas por encima de la capacidad.
 - Cancelar devuelve Sparks y cupos solo una vez; conserva historial.

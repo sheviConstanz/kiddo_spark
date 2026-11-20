@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
@@ -12,6 +13,7 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.conf import settings
 from . import models as m, forms as f, access, relief, services
@@ -22,6 +24,22 @@ def public_activities():
 
 
 def home(request):
+    if not request.user.is_authenticated:
+        return public_landing(request)
+    if request.user.role != 'client':
+        return redirect(access.account_start(request.user))
+    upcoming = access.bookings(request.user).filter(
+        status='confirmed', schedule__starts_at__gte=timezone.now(),
+    ).select_related('schedule__activity__organization').order_by('schedule__starts_at', 'pk')
+    return render(request, 'portal/client_home.html', {
+        'upcoming': upcoming[:3],
+        'activities': public_activities().order_by('name', 'pk')[:3],
+    })
+
+
+def public_landing(request):
+    if request.user.is_authenticated and request.user.role == 'client':
+        return redirect('home')
     return render(request, 'portal/home.html', {'activities': public_activities()[:6], 'activity_count': public_activities().count(), 'center_count': m.Organization.objects.filter(approved=True, active=True, kind='provider').count()})
 
 
@@ -114,19 +132,40 @@ def activity_detail(request, pk):
     return render(request, 'portal/activity.html', {'activity': obj, 'slots': obj.schedules.filter(active=True, starts_at__gt=timezone.now()).order_by('starts_at'), 'reviews': m.Review.objects.filter(booking__schedule__activity=obj).select_related('booking__user').order_by('-created_at'), 'favorite': request.user.is_authenticated and m.Favorite.objects.filter(user=request.user, activity=obj).exists()})
 
 
-def register(request):
-    next_url = request.POST.get('provider_next') if request.method == 'POST' else request.GET.get('next')
-    provider_next = reverse('organization_register') if next_url == reverse('organization_register') else ''
+class PortalLoginView(LoginView):
+    template_name = 'portal/form.html'
+    extra_context = {'title': 'Iniciar sesión'}
+
+    def get_default_redirect_url(self):
+        return reverse(access.account_start(self.request.user))
+
+
+def register(request, for_provider=False):
     if request.user.is_authenticated:
-        return redirect(provider_next or 'dashboard')
+        if for_provider and request.user.role in {'provider', 'applicant'}:
+            return redirect('organization_register')
+        return redirect(access.account_start(request.user))
+    next_url = (request.POST if request.method == 'POST' else request.GET).get('next')
+    if not for_provider and request.method == 'GET' and next_url == reverse('organization_register'):
+        return redirect('register_provider')
+    return_to = next_url if not for_provider and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+    ) else None
     form = f.RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
-            user = form.save()
+            user = form.save(commit=False)
+            user.provider_applicant = for_provider
+            user.save()
             services.audit(user, 'register', user)
         login(request, user)
-        return redirect(provider_next or 'dashboard')
-    return render(request, 'portal/form.html', {'form': form, 'title': 'Crea tu cuenta', 'intro': 'Usa datos ficticios para esta demostración académica.', 'provider_next': provider_next})
+        return redirect('organization_register' if for_provider else return_to or 'home')
+    return render(request, 'portal/form.html', {
+        'form': form,
+        'title': 'Crea tu cuenta de proveedor' if for_provider else 'Crea tu cuenta de cliente',
+        'intro': 'Usa datos ficticios para esta demostración académica.',
+        'next': return_to,
+    })
 
 
 @login_required
@@ -163,7 +202,13 @@ def booking_trends(bookings):
 
 @login_required
 def dashboard(request):
-    bookings = period_filter(request, access.bookings(request.user))
+    if request.user.role == 'applicant':
+        return redirect('provider_submissions')
+    own_orgs = access.organizations(request.user)
+    bookings = access.bookings(request.user)
+    if request.user.role == 'provider':
+        bookings = bookings.filter(schedule__activity__organization__in=own_orgs)
+    bookings = period_filter(request, bookings)
     requests = period_filter(request, access.requests(request.user))
     return render(request, 'portal/dashboard.html', {
         'booking_count': bookings.count(),
@@ -171,7 +216,7 @@ def dashboard(request):
         'request_count': requests.count(),
         'pending_count': requests.filter(status='pending').count(),
         'totals': bookings.exclude(status='cancelled').aggregate(sparks=Sum('sparks'), amount=Sum('amount')),
-        'own_orgs': access.organizations(request.user),
+        'own_orgs': own_orgs,
         'user_count': m.User.objects.count() if request.user.is_superuser else None,
         **booking_trends(bookings),
     })
@@ -334,6 +379,8 @@ def published_allies():
 
 
 def relief_home(request):
+    if request.user.is_authenticated and request.user.role == 'client':
+        return redirect('home')
     area = request.GET.get('area', '')
     selected_area = area if area in relief.AREA_CONTENT else ''
     qs = published_allies()
@@ -362,6 +409,8 @@ def relief_home(request):
 
 @login_required
 def relief_request(request, request_kind, pk=None):
+    if request.user.role == 'client':
+        raise PermissionDenied
     ally = get_object_or_404(published_allies(), pk=pk) if pk is not None else None
     area = relief.AREA_CONTENT.get(ally.relief_area) if ally else None
     default_topic = 'orientation' if ally is None else area[3] if area else 'other'
@@ -382,6 +431,8 @@ def relief_request(request, request_kind, pk=None):
 
 
 def providers(request):
+    if request.user.is_authenticated and request.user.role == 'client':
+        return redirect('home')
     return render(request, 'portal/providers.html')
 
 
@@ -397,12 +448,16 @@ def provider_applications():
 
 @login_required
 def provider_submissions(request):
+    if request.user.role == 'client':
+        raise PermissionDenied
     submissions = provider_applications().filter(created_by=request.user)
     return render(request, 'portal/provider_submissions.html', {'submissions': submissions})
 
 
 @login_required
 def organization_register(request):
+    if request.user.role == 'client':
+        raise PermissionDenied
     form = f.ProviderForm(request.POST if request.method == 'POST' else None, initial={
         'contact_first_name': request.user.first_name, 'contact_last_name': request.user.last_name,
         'email': request.user.email,
@@ -427,6 +482,8 @@ def provider_events(organization):
 
 @login_required
 def provider_submission(request, pk):
+    if request.user.role == 'client':
+        raise Http404
     org = get_object_or_404(m.Organization.objects.select_related('city', 'specialty'), pk=pk, kind='provider', created_by=request.user)
     events = provider_events(org)
     status = services.provider_status(org, events[0] if events else None)
@@ -502,19 +559,30 @@ def provider_review(request, pk):
 
 @login_required
 def request_list(request):
-    return render(request, 'portal/requests.html', {'requests': access.requests(request.user).select_related('organization').order_by('-created_at'), 'registrations': m.Organization.objects.filter(created_by=request.user)})
+    return render(request, 'portal/requests.html', {
+        'requests': access.requests(request.user).select_related('organization').order_by('-created_at'),
+        'registrations': m.Organization.objects.filter(created_by=request.user),
+    })
 
 
 @login_required
 def request_create(request):
     initial = {k: request.GET[k] for k in ['kind', 'organization'] if k in request.GET}
-    form = f.ServiceRequestForm(request.POST or None, initial=initial)
+    client_account = request.user.role == 'client'
+    submitted_kind = (request.POST if request.method == 'POST' else request.GET).get('kind')
+    if client_account and submitted_kind in {'demo', *m.ServiceRequest.RELIEF_KINDS}:
+        raise PermissionDenied
+    if client_account:
+        initial['kind'] = 'agreement'
+    form = f.ServiceRequestForm(request.POST or None, initial=initial, agreements_only=client_account)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
         services.submit_request(request.user, obj)
         messages.success(request, 'Solicitud guardada. Puedes consultar su seguimiento.')
         return redirect('request_detail', pk=obj.pk)
-    return render(request, 'portal/form.html', {'form': form, 'title': 'Nueva solicitud'})
+    return render(request, 'portal/form.html', {
+        'form': form, 'title': 'Solicitar un convenio' if client_account else 'Nueva solicitud',
+    })
 
 
 @login_required

@@ -22,11 +22,11 @@ tiempo para comparar alternativas son objetivos para evaluar en un piloto.
 | Quién la usa | Qué puede hacer en la demo |
 | --- | --- |
 | **Visitante** | Explorar el mapa referencial de las cuatro comunas piloto o buscar en el listado. Puede combinar filtros de comuna, categoría, edad, franja horaria, Sparks y cupos, y consultar el próximo horario disponible. |
-| **Familia** | Crear una cuenta, guardar favoritos y activar un plan de prueba para cargar **Sparks**, los créditos de la demo. Puede reservar un horario con cupo, consultar sus movimientos, descargar un comprobante de ejemplo y cancelar una reserva confirmada para recuperar los Sparks. Después de que el centro marque la reserva como completada, puede dejar una opinión. |
-| **Proveedor que quiere incorporarse** | Registrar su centro, seguir el estado de su ficha y corregirla y reenviarla si recibe observaciones. Puede consultar si fue aprobada o rechazada y leer la decisión. |
+| **Cliente (familia)** | Tras ingresar ve sus próximas reservas, favoritos, saldo de **Sparks** y actividades. Puede activar un plan de prueba, reservar, descargar un comprobante demo, cancelar y dejar una opinión tras asistir. En Solicitudes puede revisar su historial. |
+| **Proveedor que quiere incorporarse** | Desde **Incorporar mi centro** abre su registro y envía una ficha. Al volver a ingresar, llega a **Mis fichas**, donde puede consultar la decisión y corregir datos si recibe observaciones. |
 | **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede crear, editar o desactivar publicaciones, administrar horarios y cupos, ver y exportar reservas, registrar asistencia y responder opiniones. El panel muestra reservas y actividades más solicitadas a partir de los registros de la demo. |
-| **Equipo de Kiddo Spark** | El administrador de plataforma gestiona catálogo, reservas y solicitudes. El superadministrador también revisa fichas de proveedores, asigna operadores y administra cuentas y permisos. |
-| **Empresa, colegio o centro que busca apoyo** | Enviar una solicitud de convenio o demostración. En **Alivios B2B**, un centro puede hacer un diagnóstico breve, filtrar aliados por área y pedir orientación, asesoría o una cotización. Las solicitudes y las preferencias de contacto quedan guardadas. |
+| **Equipo de Kiddo Spark** | El administrador entra primero a los gráficos de **Estadísticas** y desde ahí abre **Gestión operativa**. El superadministrador entra directo al panel de cuentas y permisos. Puede pulsar **Ver sitio** para revisar fichas de proveedores desde el portal. |
+| **Empresa, colegio o centro que busca apoyo** | Desde la portada pública se puede iniciar una solicitud de convenio. Los perfiles habilitados pueden pedir una demostración corporativa. En **Alivios B2B**, un proveedor puede pedir orientación, asesoría o una cotización. |
 
 Para mostrar cómo se conectan los roles, hagan una reserva familiar en una
 actividad con cupos. Abran la reserva desde la cuenta del centro, registren
@@ -70,7 +70,7 @@ Si ya tenían una cuenta con ese nombre, sigan usando sus datos actuales.
 
 | Para mostrar | Usuario y contraseña |
 | --- | --- |
-| Familia que busca y reserva | `usuario` |
+| Cliente que busca y reserva para su familia | `usuario` |
 | Centro que gestiona horarios y asistencia | `proveedor` |
 | Equipo que administra catálogo y solicitudes | `admin` |
 | Revisión de proveedores y gestión de permisos | `superadmin` |
@@ -97,8 +97,8 @@ la pantalla de la demo local.
 | 1 min | **Empresas y colegios** en la portada. Muestren la propuesta de convenio y el panel ilustrativo. | «Los convenios exploran un beneficio extracurricular para comunidades. El panel ilustra cómo ver participación agregada». |
 | 1 min | Cierre y conversación con jefatura. | «Queremos comentarios sobre el proceso y el valor para familias y centros, para definir qué mediríamos en un piloto». |
 
-Para mostrar cómo se seguiría el piloto, entren como `admin` y abran
-**Mi panel → Estadísticas**. Seleccionen **Últimos 7 días** o el período en
+Para mostrar cómo se seguiría el piloto, entren como `admin`. El ingreso lleva
+directamente a **Estadísticas**. Seleccionen **Últimos 7 días** o el período en
 que hicieron las pruebas. Muestren qué comunas concentraron más reservas,
 cuántas reservas se completaron y cuántas solicitudes quedan pendientes o
 en revisión. Luego abran **Catálogo y próximos cupos** para mostrar cuántos

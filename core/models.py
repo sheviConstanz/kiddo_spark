@@ -10,18 +10,29 @@ class User(AbstractUser):
     email = models.EmailField('correo', unique=True)
     credits = models.PositiveIntegerField('Sparks', default=0)
     points = models.PositiveIntegerField('puntos', default=0)
+    provider_applicant = models.BooleanField('solicitante de alta de proveedor', default=False, editable=False)
 
     class Meta(AbstractUser.Meta):
         constraints = [models.UniqueConstraint(Lower('email'), name='unique_user_email_casefold')]
         permissions = [('operate_platform', 'Puede operar el catálogo y las solicitudes de la plataforma')]
 
     @property
-    def role_label(self):
+    def role(self):
         if self.is_superuser:
-            return 'Superadministrador'
+            return 'superadmin'
         if self.is_staff:
-            return 'Administrador de plataforma' if self.has_perm('core.operate_platform') else 'Operador de proveedor'
-        return 'Usuario'
+            return 'admin' if self.has_perm('core.operate_platform') else 'provider'
+        return 'applicant' if self.provider_applicant else 'client'
+
+    @property
+    def role_label(self):
+        return {
+            'superadmin': 'Superadministrador',
+            'admin': 'Administrador de plataforma',
+            'provider': 'Proveedor',
+            'applicant': 'Proveedor en incorporación',
+            'client': 'Cliente',
+        }[self.role]
 
 
 class Named(models.Model):

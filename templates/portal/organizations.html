@@ -5,7 +5,7 @@
   <div class="section-heading">
     <div><p class="ks-kicker">Ecosistema Kiddo Spark</p><h1>Centros y proveedores</h1>
       <p class="muted">Encuentra academias y talleres habilitados para esta demostración.</p></div>
-    <a class="btn btn-primary" href="{% url 'providers' %}">Portal de proveedores</a>
+    {% if user.role != 'client' %}<a class="btn btn-primary" href="{% url 'providers' %}">Portal de proveedores</a>{% endif %}
   </div>
   <div class="cards three">
     {% for org in organizations %}

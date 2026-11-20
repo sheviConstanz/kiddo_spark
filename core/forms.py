@@ -142,8 +142,13 @@ class ServiceRequestForm(forms.ModelForm):
         fields = ['kind', 'organization', 'entity_name', 'contact_name', 'contact_email', 'potential_families', 'subject', 'message', 'preferred_date', 'preferred_time']
         widgets = {'message': forms.Textarea(attrs={'rows': 5}), 'preferred_date': forms.DateInput(attrs={'type': 'date'}), 'preferred_time': forms.TimeInput(attrs={'type': 'time'})}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, agreements_only=False, **kwargs):
         super().__init__(*args, **kwargs)
+        if agreements_only:
+            self.fields['kind'].choices = [('agreement', dict(ServiceRequest.KINDS)['agreement'])]
+            self.fields['kind'].widget = forms.HiddenInput()
+            del self.fields['organization']
+            return
         self.fields['organization'].queryset = Organization.objects.filter(kind='ally', approved=True, active=True)
         self.fields['kind'].choices = [(key, label) for key, label in ServiceRequest.KINDS if key not in {'quote', 'diagnosis'}]
         self.fields['organization'].help_text = 'Selecciona un aliado solo para asesorías o cotizaciones.'

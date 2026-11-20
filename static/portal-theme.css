@@ -236,6 +236,11 @@
 .ks-action-card:hover { box-shadow: var(--shadow2); color: var(--ks-teal); }
 .ks-action-card .ks-icon { color: var(--ks-teal); font-size: 17px; }
 .ks-panel-section { margin-top: 32px; }
+.ks-client-hero { padding-block: clamp(26px, 5vw, 66px); }
+.ks-client-hero h1 { max-width: none; }
+.ks-client-bookings { margin: 0 0 14px; padding: 0; list-style: none; }
+.ks-client-bookings li { display: grid; gap: 3px; padding: 8px 0; border-bottom: 1px solid var(--ks-border); }
+.ks-client-bookings li span { color: var(--ks-muted); font-size: 14px; }
 .platform .chart-track span { background: #187e75; }
 .platform .chart-row { grid-template-columns: 85px minmax(0, 1fr) minmax(18px, max-content); }
 .platform .ks-statistics { padding-top: clamp(20px, 4vw, 44px); }
