@@ -35,12 +35,19 @@ class OrganizationAdmin(admin.ModelAdmin):
     list_display = ['name', 'kind', 'approved', 'active']
     list_filter = ['kind', 'approved', 'active']
     filter_horizontal = ['administrators']
-    readonly_fields = ['created_by']
+    readonly_fields = ['created_by', 'approved']
+
+    def get_readonly_fields(self, request, obj=None):
+        return [*self.readonly_fields, 'kind'] if obj else self.readonly_fields
 
     def save_model(self, request, obj, form, change):
         if not change:
             obj.created_by = request.user
-        super().save_model(request, obj, form, change)
+            super().save_model(request, obj, form, change)
+        else:
+            fields = set(form.changed_data) - {'administrators'}
+            if fields:
+                obj.save(update_fields=fields)
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -60,5 +67,5 @@ class ReadOnlyAdmin(admin.ModelAdmin):
 site.register(m.User, KiddoUserAdmin)
 site.register(Group)
 site.register(m.Organization, OrganizationAdmin)
-for model in [m.Booking, m.Movement, m.Membership, m.ServiceRequest, m.RequestEvent, m.Settlement, m.Withdrawal, m.AuditLog]:
+for model in [m.Booking, m.Movement, m.Membership, m.ServiceRequest, m.RequestEvent, m.Settlement, m.Withdrawal, m.AuditLog, m.ProviderReviewEvent]:
     site.register(model, ReadOnlyAdmin)

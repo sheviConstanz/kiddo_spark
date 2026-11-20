@@ -1,0 +1,43 @@
+{% extends 'portal/base.html' %}
+{% block title %}Validación de proveedores · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space">
+  <p class="provider-kicker">Operación Kiddo Spark</p>
+  <h1>Validación de proveedores</h1>
+  <form class="filter-panel compact" method="get">
+    <label for="provider-stage">Estado de la ficha
+      <select name="estado" id="provider-stage">
+        <option value="todos"{% if stage == 'todos' %} selected{% endif %}>Todos</option>
+        {% for value, label in statuses.items %}
+          <option value="{{ value }}"{% if value == stage %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-outline" type="submit">Filtrar fichas</button>
+  </form>
+  <div class="table-wrap" role="region" aria-label="Fichas de proveedores" tabindex="0">
+    <table>
+      <thead><tr><th scope="col">Centro</th><th scope="col">Comuna</th><th scope="col">Estado</th><th scope="col">Acción</th></tr></thead>
+      <tbody>
+        {% for center in page %}
+          <tr>
+            <td><strong>{{ center.name }}</strong>{% if center.specialty %}<small>{{ center.specialty }}</small>{% endif %}</td>
+            <td>{{ center.city }}</td>
+            <td><span class="status-pill provider-status provider-status--{{ center.review_stage }}">{{ center.review_stage_label }}</span>{% if not center.active %}<small>Centro inactivo</small>{% endif %}</td>
+            <td><a class="inline-link" href="{% url 'provider_review' center.pk %}">Abrir ficha <span class="provider-sr">de {{ center.name }}</span></a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">No hay fichas para este estado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page.has_other_pages %}
+    <nav class="pagination" aria-label="Páginas de revisión">
+      {% if page.has_previous %}<a href="?estado={{ stage|urlencode }}&amp;page={{ page.previous_page_number }}">Página anterior</a>{% endif %}
+      <span>{{ page.number }} de {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?estado={{ stage|urlencode }}&amp;page={{ page.next_page_number }}">Página siguiente</a>{% endif %}
+    </nav>
+  {% endif %}
+</section>
+{% endblock %}

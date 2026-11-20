@@ -6,10 +6,11 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
-from django.db.models import Count, Sum, Avg, Q, F
-from django.db.models.functions import TruncDate
+from django.db.models import Case, Count, OuterRef, Subquery, Sum, Avg, Q, F, Value, When
+from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.conf import settings
@@ -17,7 +18,7 @@ from . import models as m, forms as f, access, services
 
 
 def public_activities():
-    return m.Activity.objects.filter(active=True, organization__active=True, organization__approved=True).select_related('organization__city', 'category')
+    return m.Activity.objects.filter(active=True, organization__kind='provider', organization__active=True, organization__approved=True).select_related('organization__city', 'category')
 
 
 def home(request):
@@ -53,16 +54,18 @@ def activity_detail(request, pk):
 
 
 def register(request):
+    next_url = request.POST.get('provider_next') if request.method == 'POST' else request.GET.get('next')
+    provider_next = reverse('organization_register') if next_url == reverse('organization_register') else ''
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect(provider_next or 'dashboard')
     form = f.RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             user = form.save()
             services.audit(user, 'register', user)
         login(request, user)
-        return redirect('dashboard')
-    return render(request, 'portal/form.html', {'form': form, 'title': 'Crea tu cuenta', 'intro': 'Usa datos ficticios para esta demostración académica.'})
+        return redirect(provider_next or 'dashboard')
+    return render(request, 'portal/form.html', {'form': form, 'title': 'Crea tu cuenta', 'intro': 'Usa datos ficticios para esta demostración académica.', 'provider_next': provider_next})
 
 
 @login_required
@@ -205,18 +208,123 @@ def organizations_list(request):
     return render(request, 'portal/organizations.html', {'organizations': qs.order_by('name'), 'kind': kind})
 
 
+def providers(request):
+    return render(request, 'portal/providers.html')
+
+
+def provider_applications():
+    event = m.ProviderReviewEvent.objects.filter(organization=OuterRef('pk')).values('status')[:1]
+    return m.Organization.objects.filter(kind='provider').select_related('city', 'specialty').annotate(
+        review_stage=Case(
+            When(approved=True, then=Value(services.ProviderStatus.APPROVED)),
+            default=Coalesce(Subquery(event), Value(services.ProviderStatus.PENDING)),
+        ),
+    ).order_by('-pk')
+
+
+@login_required
+def provider_submissions(request):
+    submissions = provider_applications().filter(created_by=request.user)
+    return render(request, 'portal/provider_submissions.html', {'submissions': submissions})
+
+
 @login_required
 def organization_register(request):
-    form = f.OrganizationForm(request.POST or None)
+    form = f.ProviderForm(request.POST if request.method == 'POST' else None, initial={
+        'contact_first_name': request.user.first_name, 'contact_last_name': request.user.last_name,
+        'email': request.user.email,
+    })
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             obj = form.save(commit=False)
             obj.created_by = request.user
             obj.save()
-            services.audit(request.user, 'organization_request', obj)
-        messages.success(request, 'Registro guardado. Un superadministrador debe aprobar el centro y asignar su administrador.')
-        return redirect('requests')
-    return render(request, 'portal/form.html', {'form': form, 'title': 'Registrar centro u organización', 'intro': 'El registro no concede permisos de administración automáticamente.'})
+            m.ProviderReviewEvent.objects.create(
+                organization=obj, actor=request.user, status=services.ProviderStatus.PENDING,
+                note='Ficha enviada para revisión en la demostración académica.',
+            )
+        messages.success(request, 'Solicitud recibida. Puedes seguir la revisión desde esta página.')
+        return redirect('provider_submission', pk=obj.pk)
+    return render(request, 'portal/provider_form.html', {'form': form, 'title': 'Registra tu centro'})
+
+
+def provider_events(organization):
+    return list(organization.review_events.select_related('actor'))
+
+
+@login_required
+def provider_submission(request, pk):
+    org = get_object_or_404(m.Organization.objects.select_related('city', 'specialty'), pk=pk, kind='provider', created_by=request.user)
+    events = provider_events(org)
+    status = services.provider_status(org, events[0] if events else None)
+    correction = None
+    if org.active and status == services.ProviderStatus.OBSERVED:
+        correction = f.ProviderCorrectionForm(
+            request.POST if request.method == 'POST' else None,
+            instance=org, initial={'revision': events[0].pk},
+        )
+    if request.method == 'POST':
+        if correction is None:
+            raise PermissionDenied('Esta ficha no admite correcciones.')
+        if correction.is_valid():
+            updates = {field: correction.cleaned_data[field] for field in f.ProviderForm.Meta.fields}
+            try:
+                services.resubmit_provider(request.user, org, correction.cleaned_data['revision'], updates)
+            except ValidationError as exc:
+                correction.add_error(None, exc)
+            else:
+                messages.success(request, 'Ficha corregida y enviada nuevamente a revisión.')
+                return redirect('provider_submission', pk=org.pk)
+        org.refresh_from_db()
+    return render(request, 'portal/provider_detail.html', {
+        'organization': org, 'status': status, 'events': events, 'form': correction,
+    })
+
+
+@login_required
+def provider_review_queue(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    statuses = services.ProviderStatus
+    stage = request.GET.get('estado', statuses.PENDING)
+    submissions = provider_applications()
+    if stage in statuses.values:
+        submissions = submissions.filter(review_stage=stage)
+    return render(request, 'portal/provider_queue.html', {
+        'page': Paginator(submissions, 20).get_page(request.GET.get('page')),
+        'stage': stage, 'statuses': dict(statuses.choices),
+    })
+
+
+@login_required
+def provider_review(request, pk):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    org = get_object_or_404(m.Organization.objects.select_related('city', 'specialty'), pk=pk, kind='provider')
+    events = provider_events(org)
+    latest = events[0] if events else None
+    status = services.provider_status(org, latest)
+    next_states = services.PROVIDER_DECISIONS.get(status, ()) if org.active else ()
+    form = None
+    if request.method == 'POST' and not next_states:
+        messages.error(request, 'La ficha ya no admite esta decisión.')
+        return redirect('provider_review', pk=org.pk)
+    if next_states:
+        form = f.ProviderDecisionForm(
+            request.POST if request.method == 'POST' else None, next_states=next_states,
+            initial={'revision': latest.pk if latest else 0},
+        )
+        if request.method == 'POST' and form.is_valid():
+            try:
+                services.review_provider(request.user, org, **form.cleaned_data)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+            else:
+                messages.success(request, 'Decisión registrada en el historial de la ficha.')
+                return redirect('provider_review', pk=org.pk)
+    return render(request, 'portal/provider_detail.html', {
+        'organization': org, 'status': status, 'events': events, 'form': form, 'admin_review': True,
+    })
 
 
 @login_required
@@ -304,7 +412,10 @@ def edit_record(request, kind, pk=None):
             item = form.save(commit=False)
             if kind == 'organizations' and not pk:
                 item.created_by = request.user
-            item.save()
+            if kind == 'organizations' and pk:
+                item.save(update_fields=[field for field in form.Meta.fields if field != 'kind'])
+            else:
+                item.save()
             services.audit(request.user, 'edit' if pk else 'create', item)
         messages.success(request, 'Cambios guardados.')
         return redirect('management', kind=kind)
@@ -332,6 +443,8 @@ def approve_organization(request, pk):
     if not request.user.is_superuser:
         raise PermissionDenied
     obj = get_object_or_404(m.Organization, pk=pk)
+    if obj.kind == 'provider':
+        return redirect('provider_review', pk=obj.pk)
     obj.approved = True
     obj.save(update_fields=['approved'])
     services.audit(request.user, 'approve', obj)

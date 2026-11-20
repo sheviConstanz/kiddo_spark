@@ -9,60 +9,62 @@ de la propuesta original.
 simulados. Cuentas, reservas, solicitudes y cambios sí se guardan en una base
 local. Usa datos ficticios, nunca información real de menores ni cuentas bancarias.
 
-## Qué necesitas
+## Instalar en un computador Windows
 
-- Un computador Windows con Python 3.15 y el comando `python` disponible.
-- Visual Studio Code para abrir el proyecto y, opcionalmente, compartirlo.
-- Internet durante la instalación inicial de paquetes.
+1. Descomprime el proyecto completo. El equipo necesita Python 3.14 o 3.15.
+2. Haz clic derecho en **instalar_local.ps1** y elige **Ejecutar con PowerShell**.
+   En Windows 11, la opción puede aparecer bajo **Mostrar más opciones**.
+3. El script prepara la base y el catálogo. Si faltan dependencias, pide
+   permiso para descargarlas. También ofrece crear la cuenta de
+   superadministración si no existe. Usa datos ficticios.
 
-Verificado con Python 3.15.2 y Django 6.1.3. SQLite guarda los datos en un archivo;
-no necesitas instalar un servidor de base de datos. La aplicación usa recursos
-visuales locales; la referencia HTML antigua todavía descarga Tailwind de Internet.
-
-## Primera instalación — una sola vez
-
-1. Descarga el proyecto completo desde GitHub y descomprime el ZIP.
-2. En VS Code elige **Archivo → Abrir carpeta** y abre donde está `manage.py`.
-3. Selecciona **Terminal → Nueva terminal** y ejecuta los siguientes comandos,
-   uno por uno, esperando a que cada uno termine:
-
-```powershell
-python --version
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe manage.py migrate
-.\.venv\Scripts\python.exe manage.py seed_demo
-.\.venv\Scripts\python.exe manage.py createsuperuser
-```
-
-- **Entorno virtual** (`.venv`): separa las herramientas de este proyecto de
-  otros programas. Estos comandos no requieren activarlo.
-- **Migraciones**: preparan y actualizan las tablas de la base de datos.
-- `seed_demo`: carga actividades, planes y aliados del HTML y crea el grupo
-  de permisos de administradores. Se puede repetir sin sobrescribir ediciones.
-  Los horarios iniciales son fechas futuras ilustrativas; crea nuevos cuando expiren.
-- `createsuperuser`: pide usuario, correo ficticio y una contraseña que elijas.
-  La contraseña no muestra caracteres al escribir; es normal. No hay contraseñas
-  predefinidas ni publicadas en el repositorio.
-
-Si `python` no se encuentra, instala Python desde su sitio oficial o pide ayuda
-al responsable informático. Conserva los mensajes de error si algo falla.
-No es necesario cambiar la política de ejecución de PowerShell.
+Vuelve a instalar solo si instalas en otro equipo, falta el entorno o cambió
+`requirements.txt`. Conserva la carpeta del proyecto y tus registros locales.
 
 ## Encender y apagar
 
-En la terminal de VS Code, desde la carpeta del proyecto:
+1. Haz clic derecho en **iniciar_local.ps1** y elige **Ejecutar con PowerShell**.
+   Cuando indique que está listo, abre [Kiddo Spark local](http://127.0.0.1:8000/).
+   Puedes cerrar la ventana de PowerShell después del aviso.
+2. Para apagarlo, ejecuta **iniciar_local.ps1** otra vez y confirma con **S**.
 
-```powershell
-.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
-```
+Si cambian el código, apaga y enciende la demo. Al iniciar, el script aplica
+las actualizaciones de la base que vengan con el código. Si solo cambian
+estilos o imágenes, puede bastar con recargar el navegador con **Ctrl+F5**.
+Para presentar la demo, comparte la pantalla o usa un proyector.
 
-Abre **http://127.0.0.1:8000/**. Mantén la terminal abierta. Para apagar el servidor,
-presiona **Ctrl+C** en esa terminal. Cerrar el navegador no lo apaga. Los registros
-permanecen al reiniciar.
+Si usas PowerShell, abre la carpeta del proyecto y ejecuta
+`.\instalar_local.ps1` para instalar o `.\iniciar_local.ps1` para encender
+o apagar. Los nombres llevan guion bajo y se escriben sin comillas.
 
-Como alternativa, `scripts/run-local.ps1` prepara tablas, catálogo y servidor.
-Si tu equipo bloquea scripts, utiliza los comandos anteriores.
+Si Windows bloquea la ejecución del archivo, consulta al responsable de TI.
+Puedes guardar el mensaje de error para ayudar al diagnóstico.
+
+## Compartir una demo remota con acceso privado
+
+Este paso es opcional y queda separado de la instalación y el inicio local.
+La demo remota inicia una copia con catálogo ficticio y su propia base,
+`var/kiddo_tunnel.sqlite3`. No usa las cuentas ni los datos de la demo local.
+
+1. Ejecuta **instalar_local.ps1** si el proyecto aún no está preparado.
+2. Instala [Microsoft Dev Tunnels CLI](https://learn.microsoft.com/en-us/azure/developer/dev-tunnels/get-started)
+   en Windows. Abre PowerShell y ejecuta `devtunnel user login`. Completa el acceso
+   con la cuenta aprobada para la demostración.
+3. Desde la carpeta del proyecto ejecuta `.\compartir_local.ps1`. Confirma
+   con **S** y espera el enlace HTTPS privado. La copia usa el puerto local
+   **8001**. Puedes dejar la demo normal en **8000**.
+4. Abre el enlace con la misma cuenta usada en el paso anterior. Un enlace
+   privado por defecto funciona para quien abrió el túnel. Para mostrarlo a
+   jefatura, comparte pantalla. Si otras cuentas requieren acceso directo,
+   acuerda antes el acceso con TI y consulta la
+   [configuración de acceso de Microsoft](https://learn.microsoft.com/en-us/azure/developer/dev-tunnels/cli-commands#advanced-manage-dev-tunnel-access).
+5. Para terminar, pulsa **Enter** en la ventana del script. Mantén la
+   ventana y el equipo encendidos mientras dure la presentación.
+
+La copia remota permite explorar el catálogo y crear cuentas familiares con
+datos ficticios. Para mostrar un rol de administración con las cuentas
+preparadas, usa la demo local y comparte pantalla. Un enlace temporal no es
+un despliegue permanente.
 
 ## Roles y permisos
 
@@ -86,11 +88,33 @@ crea otro grupo con los permisos necesarios, sin asignar el grupo completo anter
 Un administrador sin organización asignada no podrá gestionar centros ajenos.
 Los convenios sin aliado destinatario los atiende el superadministrador.
 
-El registro público siempre crea usuarios comunes. Registrar una academia no
-concede privilegios: requiere aprobación y asignación del superadministrador.
-Las contraseñas se guardan mediante hashes, no como texto legible.
+El registro público siempre crea usuarios comunes. Las contraseñas se guardan
+mediante hashes.
+
+## Incorporar un centro
+
+1. Entra a **Proveedores → Registrar un centro**. Crea una cuenta si es
+   necesario y envía una ficha con datos ficticios de una de las cuatro comunas
+   piloto. Puedes seguir el trámite en **Proveedores → Ver mis fichas**.
+2. Ingresa como superadministrador y abre **Validación de proveedores**.
+   Selecciona la ficha, registra el inicio de revisión y luego apruébala,
+   obsérvala o recházala. Cada decisión guarda el motivo, la fecha y el responsable.
+3. Si la ficha requiere corrección, vuelve a ella con la cuenta que la creó.
+   Corrige los datos y reenvíala. El historial conserva la observación.
+4. Tras aprobar, usa **Usuarios y permisos** para asignar un administrador al
+   centro. Las actividades activas del centro pueden aparecer en el catálogo
+   y el administrador asignado puede gestionar su oferta.
+
+La lista de documentos y las condiciones de contratación están por definir.
+La membresía de $35.000 CLP netos al mes es un supuesto del modelo para
+proveedores pagadores. El flujo académico no activa membresías ni cobros.
+El script de inicio aplica las actualizaciones de la base local al arrancar.
 
 ## Recorrido sugerido de presentación
+
+Para una presentación no técnica, ve la [guía para presentar Kiddo Spark a
+jefatura](GUIA-PRESENTACION.md). Incluye funciones por rol, preparación y un
+recorrido de siete minutos para el equipo de Ingeniería Comercial.
 
 1. Crea una cuenta ficticia desde **Crear cuenta**.
 2. En **Planes y Sparks**, activa un plan demo. Cada activación añade Sparks;
@@ -115,56 +139,25 @@ Las contraseñas se guardan mediante hashes, no como texto legible.
 
 Los nombres de centros proceden del material original y no acreditan convenios
 reales. Cupos y fechas son demostrativos. Los precios identificables se tomaron
-del HTML; los restantes empiezan en cero y pueden editarse. No hay una comisión
-acordada: la liquidación demo refleja el monto referencial completo.
+del HTML; los restantes empiezan en cero y pueden editarse. La liquidación demo
+actual refleja el monto referencial completo. El modelo actualizado fija una
+comisión del 10%, pendiente de implementar.
 Las campañas guardan actividad, nombre, presupuesto y estado; no contratan anuncios
 ni generan impresiones, clics o ROAS inventados.
-
-## Compartir temporalmente mediante VS Code
-
-El **reenvío de puertos** crea una dirección de Internet que conduce al servidor
-local. Este flujo está documentado, pero no se ha probado en esta entrega.
-
-1. Con la aplicación encendida, abre la paleta de comandos y busca
-   **Ports: Focus on Ports View**.
-2. Selecciona **Forward a Port**, escribe `8000` e inicia sesión con GitHub si se pide.
-3. Copia la dirección HTTPS generada, por ejemplo `https://tu-direccion.devtunnels.ms`.
-4. Detén el servidor con **Ctrl+C** y configura la dirección exacta en PowerShell.
-   Reemplaza ambos ejemplos por el dominio que VS Code te entregó:
-
-```powershell
-$env:DJANGO_ALLOWED_HOSTS = 'tu-direccion.devtunnels.ms'
-$env:DJANGO_CSRF_TRUSTED_ORIGINS = 'https://tu-direccion.devtunnels.ms'
-.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
-```
-
-5. Elige visibilidad privada si los evaluadores pueden autenticarse. Si eliges
-   pública, quienes accedan al enlace podrán alcanzar la aplicación y su registro.
-   Usa exclusivamente datos y contraseñas ficticias.
-6. Prueba el enlace desde otro equipo, incluyendo login y envío de formularios.
-7. Mantén encendidos computador, VS Code, servidor e Internet durante la demo.
-8. Al terminar, detén el reenvío en **Ports** y apaga el servidor con **Ctrl+C**.
-
-No uses `*` como dominio permitido. Si cambia el enlace, actualiza ambas variables.
-Las variables afectan solo la terminal donde se configuraron. El servidor es de
-desarrollo, no un alojamiento permanente.
-[Guía oficial](https://code.visualstudio.com/docs/debugtest/port-forwarding).
 
 ## Problemas frecuentes
 
 | Situación | Qué revisar |
 | --- | --- |
-| Puerto ocupado | Detén el otro servidor o usa `127.0.0.1:8001` y reenvía ese puerto. |
-| Faltan tablas | Ejecuta `manage.py migrate` con el Python del entorno virtual. |
-| Catálogo vacío | Ejecuta `manage.py seed_demo` y comprueba que los centros estén aprobados. |
+| Puerto ocupado | Si ya hay un servidor abierto por otro medio, apágalo desde donde se inició. El script solo detiene el servidor que reconoce como propio. |
+| Faltan tablas | Cierra la demo y vuelve a ejecutar **iniciar_local.ps1**. |
+| Catálogo vacío | Comprueba que los centros estén aprobados. Si faltan los datos iniciales, apaga la demo, ejecuta **instalar_local.ps1** y vuelve a iniciarla. |
 | No hay horarios | Crea un horario futuro y habilitado. |
 | No puedo reservar | Comprueba saldo, cupos y que no tengas ya una reserva confirmada allí. |
 | Administrador sin registros | Comprueba grupo, estado de personal y organización asignada. |
-| Error 400 al compartir | Configura el dominio exacto en `DJANGO_ALLOWED_HOSTS` y reinicia. |
-| Error 403 en formularios | Configura el origen HTTPS en `DJANGO_CSRF_TRUSTED_ORIGINS` y recarga. |
 | Contraseña olvidada | El superadministrador puede cambiarla desde usuarios; para su propia cuenta usa `manage.py changepassword nombre_usuario`. |
 
-## Verificación técnica
+## Verificación técnica para quien mantiene el proyecto
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py test core
@@ -174,10 +167,11 @@ desarrollo, no un alojamiento permanente.
 node --check static/portal.js
 ```
 
-Las pruebas usan una base temporal, separada de la demo. La revisión visual de
-escritorio/móvil queda pendiente porque el navegador de desarrollo no estuvo
-disponible. Se incluyeron estilos adaptables, menú móvil y tablas desplazables.
-El reenvío de VS Code tampoco se da por verificado.
+Las pruebas usan una base temporal, separada de la demo. La actualización visual
+se revisó en Chrome a 1440 y 390 píxeles. Se comprobaron la portada, el menú
+móvil, el filtro del catálogo, proveedores y el acceso a validación desde
+superadministración. La revisión en otros navegadores y el reenvío de VS Code
+quedan pendientes.
 
 `check --deploy` advierte de cuatro ajustes de HTTPS no activados para HTTP local:
 HSTS, redirección HTTPS y cookies exclusivas de HTTPS para sesiones y CSRF.

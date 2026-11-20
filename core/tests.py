@@ -1,13 +1,34 @@
 from datetime import timedelta
 from io import StringIO
+from runpy import run_module
+from unittest.mock import patch
 from django.contrib.auth.models import Permission
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.management import call_command
 from django.db import IntegrityError, transaction
-from django.test import TestCase, Client
+from django.test import SimpleTestCase, TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 from . import models as m, services, forms
+
+
+class TunnelSettingsTests(SimpleTestCase):
+    def test_exact_https_origin_and_separate_demo_data(self):
+        origin = 'https://example-8001.usw2.devtunnels.ms'
+        with patch.dict('os.environ', {'KIDDO_TUNNEL_ORIGIN': origin}):
+            configuration = run_module('kiddo.tunnel_settings')
+        self.assertEqual(configuration['CSRF_TRUSTED_ORIGINS'], [origin])
+        self.assertEqual(configuration['ALLOWED_HOSTS'], ['example-8001.usw2.devtunnels.ms', '127.0.0.1'])
+        self.assertEqual(configuration['DATABASES']['default']['NAME'].name, 'kiddo_tunnel.sqlite3')
+        self.assertTrue(configuration['SESSION_COOKIE_SECURE'])
+
+    def test_rejects_unrelated_or_malformed_origins(self):
+        for origin in ('', 'http://example-8001.devtunnels.ms', 'https://example-8000.devtunnels.ms',
+                       'https://example-8001.devtunnels.ms.example.invalid',
+                       'https://example-8001.devtunnels.ms/'):
+            with self.subTest(origin=origin), patch.dict('os.environ', {'KIDDO_TUNNEL_ORIGIN': origin}):
+                with self.assertRaises(ImproperlyConfigured):
+                    run_module('kiddo.tunnel_settings')
 
 
 class PortalTests(TestCase):
@@ -40,10 +61,38 @@ class PortalTests(TestCase):
 
     def test_local_visual_resources_resolve(self):
         from django.contrib.staticfiles import finders
-        for path in ['logo.png', 'css/styles.css', 'portal.css', 'portal.js', 'admin/css/base.css']:
+        for path in ['logo.png', 'css/styles.css', 'portal.css', 'portal-theme.css', 'portal-icons.svg', 'portal.js', 'admin/css/base.css']:
             with self.subTest(path=path):
                 self.assertIsNotNone(finders.find(path))
                 self.assertEqual(self.client.get('/static/' + path).status_code, 200)
+
+    def test_home_presents_pilot_evidence_and_labels_convention_demo(self):
+        response = self.client.get(reverse('home'))
+        for phrase in ('58,72 %', '192 de 327', 'Meta operativa', 'Objetivo de experiencia',
+                       'Panel de convenio', 'Ejemplo ilustrativo', 'Simulación'):
+            self.assertContains(response, phrase)
+        self.assertContains(response, f'href="{reverse("request_create")}?kind=agreement"')
+        self.assertContains(response, f'href="{reverse("providers")}"')
+
+    def test_dashboard_prioritizes_actions_for_each_role(self):
+        dashboard = reverse('dashboard')
+        offer = reverse('management', args=['activities'])
+        capacity = reverse('management', args=['schedules'])
+        review = reverse('provider_review_queue')
+        self.auth()
+        family = self.client.get(dashboard)
+        self.assertContains(family, 'Mi cuenta familiar')
+        self.assertContains(family, f'href="{reverse("bookings")}"')
+        self.assertNotContains(family, f'href="{offer}"')
+        self.assertNotContains(family, f'href="{review}"')
+        self.auth(self.manager)
+        provider = self.client.get(dashboard)
+        self.assertContains(provider, 'Seller Center')
+        self.assertContains(provider, f'href="{offer}"')
+        self.assertContains(provider, f'href="{capacity}"')
+        self.assertNotContains(provider, f'href="{review}"')
+        self.auth(self.root)
+        self.assertContains(self.client.get(dashboard), f'href="{review}"')
 
     def test_private_pages_require_login(self):
         for url in ['/panel/', '/reservas/', '/solicitudes/', '/mis-sparks/', '/cuenta/', '/gestion/activities/', '/finanzas/']:
@@ -344,12 +393,151 @@ class PortalTests(TestCase):
 
     def test_organization_registration_no_automatic_privileges(self):
         self.auth()
-        response = self.client.post('/organizaciones/registrar/', {'name': 'Academia nueva', 'kind': 'provider', 'city': self.city.pk, 'email': 'academia@example.invalid', 'description': 'Demo', 'approved': 'on', 'administrators': self.user.pk})
+        response = self.client.post(reverse('organization_register'), {
+            'name': 'Academia nueva', 'kind': 'ally', 'city': self.city.pk, 'specialty': self.cat.pk,
+            'email': 'academia@example.invalid', 'description': 'Demo', 'phone': '+56 000 000 000',
+            'contact_first_name': 'Andrea', 'contact_last_name': 'Demo', 'demo_acknowledged': 'on',
+            'approved': 'on', 'administrators': self.user.pk,
+        })
         self.assertEqual(response.status_code, 302)
         org = m.Organization.objects.get(name='Academia nueva')
+        self.assertEqual(org.kind, 'provider')
         self.assertFalse(org.approved)
         self.assertFalse(org.administrators.exists())
         self.user.refresh_from_db(); self.assertFalse(self.user.is_staff)
+
+    def provider_payload(self, **overrides):
+        return {
+            'name': 'Taller ficticio', 'city': self.city.pk, 'specialty': self.cat.pk,
+            'contact_first_name': 'Andrea', 'contact_last_name': 'Prueba',
+            'email': 'taller@example.invalid', 'phone': '+56 000 000 000',
+            'website': 'https://taller.example.invalid', 'demo_acknowledged': 'on',
+            **overrides,
+        }
+
+    def submit_provider(self):
+        self.auth()
+        response = self.client.post(reverse('organization_register'), self.provider_payload())
+        org = m.Organization.objects.get(name='Taller ficticio')
+        self.assertRedirects(response, reverse('provider_submission', args=[org.pk]))
+        return org
+
+    def review_provider(self, org, status, note):
+        self.auth(self.root)
+        url = reverse('provider_review', args=[org.pk])
+        response = self.client.post(url, {
+            'revision': org.review_events.first().pk, 'status': status, 'note': note,
+        })
+        self.assertRedirects(response, url)
+
+    def test_public_provider_entry_continues_account_creation_to_intake(self):
+        entry = reverse('providers')
+        registration = reverse('register')
+        intake = reverse('organization_register')
+        self.assertContains(self.client.get(entry), f'{registration}?next={intake}')
+        self.assertRedirects(self.client.get(reverse('provider_submissions')), f"{reverse('login')}?next={reverse('provider_submissions')}")
+        self.assertContains(self.client.get(registration, {'next': intake}), f'name="provider_next" value="{intake}"')
+        response = self.client.post(registration, {
+            'username': 'contacto-demo', 'email': 'contacto@example.invalid',
+            'password1': 'Demo-Unique!9182', 'password2': 'Demo-Unique!9182',
+            'provider_next': intake,
+        })
+        self.assertRedirects(response, intake)
+
+    def test_provider_registration_requires_demo_acknowledgment_and_pilot_city(self):
+        self.auth()
+        outside = m.City.objects.create(name='Santiago')
+        response = self.client.post(
+            reverse('organization_register'), self.provider_payload(city=outside.pk, demo_acknowledged=''),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.context['form'].errors), {'city', 'demo_acknowledged'})
+        self.assertFalse(m.Organization.objects.filter(created_by=self.user).exists())
+
+    def test_pa01_pa02_provider_correction_then_approval_controls_catalog(self):
+        org = self.submit_provider()
+        status = m.ProviderReviewEvent.Status
+        detail = reverse('provider_submission', args=[org.pk])
+        queue = reverse('provider_review_queue')
+        self.assertContains(self.client.get(reverse('provider_submissions')), status.PENDING.label)
+        self.assertFalse(forms.ActivityForm(user=self.root).fields['organization'].queryset.filter(pk=org.pk).exists())
+        activity = m.Activity.objects.create(
+            organization=org, name='Básquet de demostración', category=self.cat, description='Demo',
+        )
+        slot = m.Schedule.objects.create(activity=activity, starts_at=self.slot.starts_at, capacity=2, available=2)
+        public_detail = reverse('activity', args=[activity.pk])
+        self.assertEqual(self.client.get(public_detail).status_code, 404)
+        with self.assertRaises(ValidationError):
+            services.reserve(self.user, slot.pk)
+
+        self.auth(self.root)
+        self.assertContains(self.client.get(queue), org.name)
+        self.review_provider(org, status.REVIEWING, 'Revisión iniciada.')
+        self.review_provider(org, status.OBSERVED, 'Aclara la disciplina ofrecida.')
+        self.assertNotContains(self.client.get(queue), org.name)
+        self.assertContains(self.client.get(queue, {'estado': status.OBSERVED}), org.name)
+
+        self.auth()
+        self.assertContains(self.client.get(detail), 'Aclara la disciplina ofrecida.')
+        revision = org.review_events.first().pk
+        response = self.client.post(detail, self.provider_payload(
+            revision=revision, description='Básquet para principiantes.',
+        ))
+        self.assertRedirects(response, detail)
+        org.refresh_from_db()
+        self.assertFalse(org.approved)
+        self.assertEqual(org.description, 'Básquet para principiantes.')
+        self.assertEqual(org.review_events.first().actor, self.user)
+        self.assertEqual(self.client.get(public_detail).status_code, 404)
+
+        self.review_provider(org, status.REVIEWING, 'Revisión de la ficha corregida.')
+        self.review_provider(org, status.APPROVED, 'Ficha de demostración validada.')
+        org.refresh_from_db()
+        self.assertTrue(org.approved)
+        self.assertFalse(org.administrators.exists())
+        decision = org.review_events.first()
+        self.assertEqual(decision.actor, self.root)
+        self.assertEqual(decision.note, 'Ficha de demostración validada.')
+        self.assertIsNotNone(decision.created_at)
+        self.assertContains(self.client.get(public_detail), activity.name)
+        self.assertTrue(forms.ActivityForm(user=self.root).fields['organization'].queryset.filter(pk=org.pk).exists())
+
+    def test_provider_review_rejects_skipped_states_stale_decision_and_missing_reason(self):
+        org = self.submit_provider()
+        self.auth(self.root)
+        status = m.ProviderReviewEvent.Status
+        url = reverse('provider_review', args=[org.pk])
+        initial = org.review_events.first().pk
+        response = self.client.post(url, {'status': status.APPROVED, 'revision': initial, 'note': 'Omitir revisión'})
+        self.assertIn('status', response.context['form'].errors)
+        self.assertRedirects(self.client.post(reverse('approve_organization', args=[org.pk])), url)
+        self.review_provider(org, status.REVIEWING, 'En revisión.')
+        response = self.client.post(url, {'status': status.APPROVED, 'revision': initial, 'note': 'Desde vista anterior'})
+        self.assertIn('__all__', response.context['form'].errors)
+        response = self.client.post(url, {'status': status.REJECTED, 'revision': org.review_events.first().pk, 'note': '  '})
+        self.assertIn('note', response.context['form'].errors)
+        self.review_provider(org, status.REJECTED, 'Fuera del alcance de la actividad piloto.')
+        self.auth()
+        detail = reverse('provider_submission', args=[org.pk])
+        self.assertContains(self.client.get(detail), 'Fuera del alcance de la actividad piloto.')
+        self.assertEqual(self.client.post(detail, self.provider_payload()).status_code, 403)
+        org.refresh_from_db()
+        self.assertFalse(org.approved)
+        self.assertEqual(org.review_events.count(), 3)
+
+    def test_provider_review_and_contact_are_private(self):
+        org = self.submit_provider()
+        owner_detail = reverse('provider_submission', args=[org.pk])
+        review = reverse('provider_review', args=[org.pk])
+        for user in (self.other, self.manager):
+            self.auth(user)
+            self.assertNotContains(self.client.get(reverse('provider_submissions')), org.name)
+            self.assertEqual(self.client.get(owner_detail).status_code, 404)
+            self.assertEqual(self.client.post(owner_detail, self.provider_payload()).status_code, 404)
+            self.assertEqual(self.client.get(reverse('provider_review_queue')).status_code, 403)
+            self.assertEqual(self.client.get(review).status_code, 403)
+            self.assertEqual(self.client.post(review, {'status': 'approved'}).status_code, 403)
+        self.assertEqual(org.review_events.count(), 1)
 
     def test_staff_cannot_complete_foreign_booking_even_as_owner(self):
         self.manager.credits = 20; self.manager.save()

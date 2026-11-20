@@ -1,0 +1,23 @@
+{% extends 'portal/base.html' %}
+{% block title %}Mis fichas de proveedor · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space">
+  <a class="inline-link" href="{% url 'providers' %}">Portal de proveedores</a>
+  <div class="section-heading">
+    <h1>Mis fichas de proveedor</h1>
+    <a class="btn provider-primary" href="{% url 'organization_register' %}">Registrar un centro</a>
+  </div>
+  <div class="cards two">
+    {% for center in submissions %}
+      <article class="portal-card provider-record">
+        <span class="status-pill provider-status provider-status--{{ center.review_stage }}">{{ center.review_stage_label }}</span>
+        <h2>{{ center.name }}</h2>
+        <p>{{ center.city }}{% if center.specialty %} · {{ center.specialty }}{% endif %}</p>
+        <a class="inline-link" href="{% url 'provider_submission' center.pk %}">Consultar ficha de {{ center.name }}</a>
+      </article>
+    {% empty %}
+      <div class="empty-state">Todavía no has enviado una ficha de proveedor.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

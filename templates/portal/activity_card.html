@@ -1,1 +1,16 @@
-<article class="activity-card"><a class="activity-art art-{{ forloop.counter0|divisibleby:2|yesno:'mint,lavender' }}" href="{% url 'activity' activity.pk %}" aria-label="Ver {{ activity.name }}"><span aria-hidden="true">{{ activity.icon }}</span><small>{{ activity.organization.city }}</small></a><div class="activity-content"><div class="eyebrow">{{ activity.category }} · {{ activity.age_min }}–{{ activity.age_max }} AÑOS</div><h3><a href="{% url 'activity' activity.pk %}">{{ activity.name }}</a></h3><p>{{ activity.organization.name }}</p><p class="muted">{{ activity.description|truncatechars:110 }}</p><div class="card-bottom"><span class="spark-badge">{{ activity.sparks }} Sparks</span><a class="inline-link" href="{% url 'activity' activity.pk %}">Ver horarios →</a></div></div></article>
+<article class="activity-card">
+  <div class="activity-art art-{{ forloop.counter0|divisibleby:2|yesno:'mint,lavender' }}">
+    <span aria-hidden="true">{{ activity.icon }}</span>
+    <small>{% include 'portal/icon.html' with name='pin' %} {{ activity.organization.city }}</small>
+  </div>
+  <div class="activity-content">
+    <p class="eyebrow">{{ activity.category }} · {{ activity.age_min }}–{{ activity.age_max }} años</p>
+    <h3><a href="{% url 'activity' activity.pk %}">{{ activity.name }}</a></h3>
+    <p>{{ activity.organization.name }}</p>
+    <p class="muted">{{ activity.description|truncatechars:110 }}</p>
+    <div class="card-bottom">
+      <span class="spark-badge">{{ activity.sparks }} Sparks</span>
+      <a class="inline-link" href="{% url 'activity' activity.pk %}" aria-label="Ver horarios de {{ activity.name }}">Ver horarios {% include 'portal/icon.html' with name='arrow' %}</a>
+    </div>
+  </div>
+</article>

@@ -1,1 +1,71 @@
-{% extends 'portal/base.html' %}{% block content %}<section class="portal-shell section-space"><div class="section-heading"><div><div class="eyebrow">{{ user.role_label }} · PANEL DE CONTROL</div><h1>Hola, {{ user.first_name|default:user.username }}</h1><p class="muted">{% if user.is_staff %}Revisa la operación de tus organizaciones asignadas.{% else %}Tus actividades, solicitudes y Sparks en un solo lugar.{% endif %}</p></div><a class="btn btn-primary" href="{% url 'explore' %}">Explorar actividades</a></div><form class="filter-panel compact"><label>Desde<input type="date" name="from" value="{{ request.GET.from }}"></label><label>Hasta<input type="date" name="to" value="{{ request.GET.to }}"></label><button class="btn btn-outline">Filtrar período</button><a href="{% url 'dashboard' %}">Todo el historial</a></form><div class="metric-grid"><article class="metric"><span>Reservas del período</span><b>{{ booking_count }}</b><small>{{ completed_count }} completadas</small></article><article class="metric"><span>Solicitudes del período</span><b>{{ request_count }}</b><small>{{ pending_count }} pendientes</small></article><article class="metric"><span>Sparks reservados, sin cancelaciones</span><b>{{ totals.sparks|default:0 }}</b><small>Valor registrado en reservas</small></article><article class="metric"><span>{% if user.is_staff %}Monto referencial demo{% else %}Mi saldo actual{% endif %}</span><b>{% if user.is_staff %}${{ totals.amount|default:0 }}{% else %}{{ user.credits }}{% endif %}</b><small>{% if user.is_staff %}No acredita cobros reales{% else %}Sparks disponibles, fuera del filtro temporal{% endif %}</small></article></div><div class="cards two"><article class="portal-card"><h2>Evolución de reservas</h2><p class="muted">Reservas no canceladas, por fecha de creación.</p>{% for row in series %}<div class="chart-row"><span>{{ row.day|date:'d/m/Y' }}</span><div class="chart-track"><span style="width:{{ row.width }}%"></span></div><b>{{ row.count }}</b></div>{% empty %}<div class="empty-state">El gráfico aparecerá al registrar reservas.</div>{% endfor %}</article><article class="portal-card"><h2>Actividades más reservadas</h2>{% for row in popular %}<div class="list-row"><span>{{ row.schedule__activity__name }}</span><b>{{ row.count }}</b></div>{% empty %}<p class="muted">No hay reservas en este período.</p>{% endfor %}{% if user.is_superuser %}<p>Usuarios registrados en la plataforma: <b>{{ user_count }}</b></p>{% endif %}</article></div><div class="section-heading"><h2>Accesos rápidos</h2></div><div class="quick-links"><a class="portal-card" href="{% url 'bookings' %}">Reservas y comprobantes →</a><a class="portal-card" href="{% url 'requests' %}">Seguimiento de solicitudes →</a><a class="portal-card" href="{% url 'wallet' %}">Mis Sparks y movimientos →</a><a class="portal-card" href="{% url 'password_change' %}">Cambiar contraseña →</a></div>{% if user.is_staff %}<h2>Organizaciones asignadas</h2>{% for org in own_orgs %}<span class="status-pill">{{ org.name }}</span>{% empty %}<div class="notice">No tienes organizaciones asignadas. Un superadministrador debe asignarlas para habilitar tu operación.</div>{% endfor %}{% endif %}</section>{% endblock %}
+{% extends 'portal/base.html' %}
+{% block title %}{% if user.is_superuser %}Panel de operación{% elif user.is_staff %}Seller Center{% else %}Mi panel familiar{% endif %} · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space">
+  <div class="section-heading ks-dashboard-title">
+    <div>
+      <p class="ks-kicker">{% if user.is_superuser %}Operación Kiddo Spark{% elif user.is_staff %}Seller Center{% else %}Mi cuenta familiar{% endif %}</p>
+      <h1>Hola, {{ user.first_name|default:user.username }}</h1>
+      <p class="muted">{% if user.is_superuser %}Revisa el catálogo, las solicitudes de proveedores y la operación de la demo.{% elif user.is_staff %}Gestiona publicaciones, horarios y reservas de tus centros asignados.{% else %}Consulta tus actividades, reservas y movimientos de Sparks.{% endif %}</p>
+    </div>
+    {% if user.is_superuser %}<a class="btn btn-primary" href="{% url 'provider_review_queue' %}">Validar proveedores</a>
+    {% elif user.is_staff and perms.core.view_activity %}<a class="btn btn-primary" href="{% url 'management' 'activities' %}">Ver publicaciones</a>
+    {% else %}<a class="btn btn-primary" href="{% url 'explore' %}">Explorar actividades</a>{% endif %}
+  </div>
+
+  <section aria-labelledby="actions-title">
+    <h2 id="actions-title">Accesos rápidos</h2>
+    <div class="quick-links">
+      {% if user.is_staff and perms.core.view_schedule %}<a class="portal-card ks-action-card" href="{% url 'management' 'schedules' %}">{% include 'portal/icon.html' with name='calendar' %} Horarios y cupos</a>{% endif %}
+      <a class="portal-card ks-action-card" href="{% url 'bookings' %}">{% include 'portal/icon.html' with name='calendar' %} Reservas y comprobantes</a>
+      <a class="portal-card ks-action-card" href="{% url 'requests' %}">{% include 'portal/icon.html' with name='list' %} Seguimiento de solicitudes</a>
+      {% if user.is_staff %}
+        {% if perms.core.view_settlement %}<a class="portal-card ks-action-card" href="{% url 'finance' %}">{% include 'portal/icon.html' with name='chart' %} Finanzas demo</a>{% endif %}
+      {% else %}
+        <a class="portal-card ks-action-card" href="{% url 'wallet' %}">{% include 'portal/icon.html' with name='spark' %} Sparks y movimientos</a>
+        <a class="portal-card ks-action-card" href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Mis favoritos</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="ks-panel-section" aria-labelledby="summary-title">
+    <h2 id="summary-title">Actividad de la cuenta</h2>
+    <form class="filter-panel compact" method="get" aria-label="Filtrar actividad por fecha">
+      <label>Desde<input type="date" name="from" value="{{ request.GET.from }}"></label>
+      <label>Hasta<input type="date" name="to" value="{{ request.GET.to }}"></label>
+      <button class="btn btn-outline" type="submit">Filtrar período</button>
+      <a class="inline-link" href="{% url 'dashboard' %}">Todo el historial</a>
+    </form>
+    <div class="metric-grid">
+      <article class="metric"><span>Reservas del período</span><b>{{ booking_count }}</b><small>{{ completed_count }} completadas</small></article>
+      <article class="metric"><span>Solicitudes del período</span><b>{{ request_count }}</b><small>{{ pending_count }} pendientes</small></article>
+      <article class="metric"><span>Sparks reservados</span><b>{{ totals.sparks|default:0 }}</b><small>Excluye reservas canceladas</small></article>
+      <article class="metric">
+        {% if user.is_staff %}<span>Monto referencial demo</span><b>${{ totals.amount|default:0 }}</b><small>No acredita cobros reales</small>
+        {% else %}<span>Sparks disponibles</span><b>{{ user.credits }}</b><small>Saldo actual, fuera del filtro temporal</small>{% endif %}
+      </article>
+    </div>
+    <div class="cards two">
+      <article class="portal-card">
+        <h3>Evolución de reservas</h3><p>Reservas no canceladas por fecha de creación.</p>
+        {% for row in series %}<div class="chart-row"><span>{{ row.day|date:'d/m/Y' }}</span><div class="chart-track" aria-hidden="true"><span style="width:{{ row.width }}%"></span></div><b>{{ row.count }}</b></div>
+        {% empty %}<p class="muted">El gráfico aparecerá al registrar reservas.</p>{% endfor %}
+      </article>
+      <article class="portal-card">
+        <h3>Actividades más reservadas</h3>
+        {% for row in popular %}<div class="list-row"><span>{{ row.schedule__activity__name }}</span><b>{{ row.count }}</b></div>
+        {% empty %}<p class="muted">No hay reservas en este período.</p>{% endfor %}
+        {% if user.is_superuser %}<p>Usuarios registrados: <b>{{ user_count }}</b></p>{% endif %}
+      </article>
+    </div>
+  </section>
+  {% if user.is_staff and not user.is_superuser %}
+    <section class="ks-panel-section" aria-labelledby="org-title">
+      <h2 id="org-title">Organizaciones asignadas</h2>
+      {% for org in own_orgs %}<span class="status-pill">{{ org.name }}</span>
+      {% empty %}<p class="notice">Contacta a superadministración para asignar tu cuenta a un centro.</p>{% endfor %}
+    </section>
+  {% endif %}
+  <p class="ks-panel-section"><a class="inline-link" href="{% url 'password_change' %}">Cambiar contraseña</a></p>
+</section>
+{% endblock %}

@@ -15,11 +15,11 @@ o ideas del material original. No se presupone un negocio operativo.
 | Puntos | 50 por reserva y reversión al cancelar | Sin recompensas ni canjes acordados |
 | Reservas | Control de cupos/saldo, cancelación una sola vez, comprobantes y CSV | No se envían avisos externos |
 | Convenios | Solicitudes con organización, contacto y estimación de familias | Aprobación académica, sin firma contractual ni elegibilidad automática |
-| Centros | Registro pendiente, aprobación y administrador asignado | Registrar centro no eleva permisos de usuario |
+| Centros | Alta en comunas piloto, revisión, corrección, aprobación o rechazo e historial | Aprobación académica. Permisos asignados por separado. Documentos de validación por definir |
 | Aliados | Directorio, asesorías/cotizaciones y seguimiento | No agenda llamadas en un calendario externo |
 | Seller Center | CRUD, órdenes, validación, finanzas y reputación del centro asignado | No se conserva la duplicidad de listas e IDs de la maqueta |
 | Opiniones | Una por reserva completada y respuesta del centro | No se importan reseñas o estrellas ficticias como reales |
-| Liquidaciones | Monto referencial de reservas completadas | Sin comisión acordada ni documento tributario |
+| Liquidaciones | Monto referencial de reservas completadas | Comisión del 10% del modelo pendiente de implementar. Sin documento tributario |
 | Retiros | Solicitud, reserva de saldo, rechazo o finalización simulada | No se mueve dinero |
 | Campañas | Nombre, actividad, presupuesto y estado persistentes | Sin difusión, gasto, impresiones ni ROAS externos |
 | Dashboard | Reservas por fecha, agregaciones, popularidad y estado de solicitudes | No inventa visitas, conversiones ni ingresos |

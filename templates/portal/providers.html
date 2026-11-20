@@ -1,0 +1,57 @@
+{% extends 'portal/base.html' %}
+{% block title %}Portal de proveedores · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="provider-hero">
+  <div class="portal-shell provider-layout">
+    <div>
+      <p class="provider-kicker">{% include 'portal/icon.html' with name='store' %} Portal de proveedores</p>
+      <h1>Conecta tu centro con más familias</h1>
+      <p class="provider-lead">Publica actividades extracurriculares para niñas y niños de 5 a 14 años y organiza horarios, cupos y reservas desde el Seller Center.</p>
+      <div class="cta-row">
+        <a class="btn ks-coral" href="{% if user.is_authenticated %}{% url 'organization_register' %}{% else %}{% url 'register' %}?next={% url 'organization_register' %}{% endif %}">Registrar un centro {% include 'portal/icon.html' with name='arrow' %}</a>
+        <a class="btn btn-outline" href="{% if user.is_staff %}{% url 'dashboard' %}{% else %}{% url 'provider_submissions' %}{% endif %}">{% if user.is_staff %}Ir a mi panel{% elif user.is_authenticated %}Ver mis fichas{% else %}Ya tengo una cuenta{% endif %}</a>
+      </div>
+      <p class="provider-territory">{% include 'portal/icon.html' with name='pin' %} Viña del Mar, Valparaíso, Quilpué y Villa Alemana.</p>
+    </div>
+    <div class="provider-steps">
+      <h2>Cómo incorporar tu centro</h2>
+      <ol>
+        <li><strong>Envía tu ficha</strong><span>Cuéntanos qué actividades ofrece tu centro y en qué comuna opera.</span></li>
+        <li><strong>Sigue la revisión</strong><span>Consulta el estado de la solicitud y corrige tu ficha si recibes observaciones.</span></li>
+        <li><strong>Publica tu oferta</strong><span>Con la ficha aprobada y el acceso de operador asignado, configura horarios y cupos en el Seller Center.</span></li>
+        <li><strong>Gestiona tus reservas</strong><span>Consulta las órdenes, registra asistencia y revisa la actividad del centro.</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+<section class="portal-shell section-space" aria-labelledby="provider-tools">
+  <div class="section-heading"><div><p class="ks-kicker">Seller Center</p><h2 id="provider-tools">Herramientas para operar tu centro</h2></div></div>
+  <div class="cards three ks-operator-tools">
+    <article class="portal-card">
+      <span class="ks-icon-tile ks-mint">{% include 'portal/icon.html' with name='calendar' %}</span>
+      <h3>Oferta y cupos</h3><p>Organiza publicaciones, horarios y capacidad. Los cambios en la oferta habilitada se reflejan en el catálogo.</p>
+    </article>
+    <article class="portal-card">
+      <span class="ks-icon-tile ks-peach">{% include 'portal/icon.html' with name='list' %}</span>
+      <h3>Reservas y asistencia</h3><p>Consulta reservas, sigue solicitudes y registra la asistencia. Encuentra comprobantes de demostración y opiniones.</p>
+    </article>
+    <article class="portal-card">
+      <span class="ks-icon-tile ks-lilac">{% include 'portal/icon.html' with name='chart' %}</span>
+      <h3>Indicadores y finanzas demo</h3><p>Revisa los movimientos de la demo y qué actividades se reservan más. Las campañas y liquidaciones forman parte de la simulación.</p>
+    </article>
+  </div>
+</section>
+<section class="ks-section-soft section-space"><div class="portal-shell">
+  <div class="cards two">
+    <article class="portal-card">
+      <h2>Alcance del piloto</h2>
+      <p>El centro realiza la actividad. Kiddo Spark facilita que las familias encuentren la oferta y gestionen sus reservas.</p>
+      <a class="inline-link" href="{% url 'organizations' %}">Ver centros del catálogo</a>
+    </article>
+    <article class="portal-card">
+      <h2>Membresía de proveedores</h2>
+      <p>El modelo considera $35.000 CLP netos al mes por proveedor pagador. Las condiciones de contratación y cobro están por definir.</p>
+    </article>
+  </div>
+</div></section>
+{% endblock %}

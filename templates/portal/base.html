@@ -1,10 +1,89 @@
-{% load static %}<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Kiddo Spark: prototipo académico de actividades y beneficios para familias."><title>{% block title %}Kiddo Spark · Ecosistema B2B2C{% endblock %}</title><link rel="icon" href="{% static 'logo.png' %}"><link rel="stylesheet" href="{% static 'css/styles.css' %}"><link rel="stylesheet" href="{% static 'portal.css' %}"><script src="{% static 'portal.js' %}" defer></script></head>
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kiddo Spark conecta a familias, centros y organizaciones con actividades extracurriculares en la Región de Valparaíso.">
+  <title>{% block title %}Kiddo Spark · Actividades extracurriculares{% endblock %}</title>
+  <link rel="icon" href="{% static 'logo.png' %}">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'portal.css' %}">
+  <link rel="stylesheet" href="{% static 'portal-theme.css' %}">
+  <script src="{% static 'portal.js' %}" defer></script>
+</head>
 <body class="platform">
-<a class="skip" href="#content">Saltar al contenido</a>
-<header class="portal-header"><div class="portal-header-in"><a href="{% url 'home' %}" class="brand" aria-label="Kiddo Spark, inicio"><img src="{% static 'logo.png' %}" alt="Kiddo Spark"></a><button class="nav-toggle" aria-expanded="false" aria-controls="main-nav">Menú ☰</button><nav id="main-nav" aria-label="Navegación principal"><a href="{% url 'explore' %}">Explorar</a><a href="{% url 'plans' %}">Planes y Sparks</a><a href="{% url 'organizations' %}">Proveedores</a><a href="{% url 'organizations' %}?kind=ally">Aliados</a><a href="{% url 'request_create' %}?kind=agreement">Empresas y colegios</a>{% if user.is_authenticated %}<a href="{% url 'dashboard' %}" class="nav-account">Mi panel</a>{% else %}<a href="{% url 'login' %}">Ingresar</a><a href="{% url 'register' %}" class="btn btn-primary">Crear cuenta</a>{% endif %}</nav></div></header>
-<div class="academic-strip">Prototipo académico · Datos ficticios · Sin cobros ni transferencias reales</div>
-{% if user.is_authenticated %}<nav class="account-nav" aria-label="Mi cuenta"><a href="{% url 'dashboard' %}">Resumen</a><a href="{% url 'bookings' %}">Reservas{% if user.is_staff %} y órdenes{% endif %}</a><a href="{% url 'requests' %}">Solicitudes</a><a href="{% url 'wallet' %}">{{ user.credits }} Sparks · {{ user.points }} puntos</a><a href="{% url 'explore' %}?favorites=1">Favoritos</a>{% if user.is_staff %}<a href="{% url 'management' 'activities' %}">Mantenedores</a><a href="{% url 'finance' %}">Finanzas demo</a><a href="{% url 'reputation' %}">Reputación</a>{% endif %}{% if user.is_superuser %}<a href="/superadmin/">Usuarios y permisos</a>{% endif %}<a href="{% url 'profile' %}">Perfil</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="text-button">Salir</button></form></nav>{% endif %}
-<main id="content" tabindex="-1">{% if messages %}<div class="portal-shell message-stack" role="status">{% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% block content %}{% endblock %}</main>
-<footer class="portal-footer"><div class="portal-shell footer-grid"><div><strong>Kiddo Spark</strong><p>Más elección para las familias.<br>Más oportunidades para los centros.</p></div><div><a href="{% url 'organization_register' %}">Registrar centro u organización</a><a href="{% url 'request_create' %}?kind=demo">Solicitar demostración</a><a href="{% url 'reference' %}">Ver propuesta original</a></div><div><p>Demostración para tesis de Ingeniería Comercial.<br>Usa información ficticia; no ingreses datos reales de menores.</p></div></div></footer>
-</body></html>
+  <a class="skip" href="#content">Saltar al contenido</a>
+  <div class="academic-strip">Prototipo académico · Datos demostrativos</div>
+  <header class="portal-header">
+    <div class="portal-header-in">
+      <a href="{% url 'home' %}" class="brand" aria-label="Kiddo Spark, inicio"><img src="{% static 'logo.png' %}" width="72" height="65" alt="Kiddo Spark"></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav">{% include 'portal/icon.html' with name='menu' %} Menú</button>
+      {% with route=request.resolver_match.url_name %}
+      <nav id="main-nav" aria-label="Navegación principal">
+        <div class="main-links">
+          <a href="{% url 'explore' %}"{% if route == 'explore' or route == 'activity' %} aria-current="page"{% endif %}>Explorar actividades</a>
+          <a href="{% url 'providers' %}"{% if route == 'providers' or route == 'provider_submissions' %} aria-current="page"{% endif %}>Proveedores</a>
+          <a href="{% url 'home' %}#convenios">Empresas y colegios</a>
+          <details class="nav-more">
+            <summary>Exploraciones {% include 'portal/icon.html' with name='chevron' %}</summary>
+            <div class="nav-more-links">
+              <a href="{% url 'plans' %}">Planes y Sparks</a>
+              <a href="{% url 'organizations' %}?kind=ally">Aliados de apoyo</a>
+              <a href="{% url 'reference' %}">Propuesta original</a>
+            </div>
+          </details>
+        </div>
+        <div class="account-links">
+          {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-primary">{% include 'portal/icon.html' with name='grid' %} Mi panel</a>
+          {% else %}
+            <a href="{% url 'login' %}">Ingresar</a>
+            <a href="{% url 'register' %}" class="btn btn-primary">Crear cuenta</a>
+          {% endif %}
+        </div>
+      </nav>
+      {% endwith %}
+    </div>
+  </header>
+  {% if user.is_authenticated %}
+    <nav class="account-nav" aria-label="Navegación de mi cuenta">
+      {% with route=request.resolver_match.url_name %}
+      <a href="{% url 'dashboard' %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Resumen</a>
+      <a href="{% url 'bookings' %}"{% if route == 'bookings' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Reservas</a>
+      <a href="{% url 'requests' %}"{% if route == 'requests' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
+      {% if user.is_staff %}
+        {% if perms.core.view_activity %}<a href="{% url 'management' 'activities' %}">Publicaciones</a>{% endif %}
+        {% if perms.core.view_schedule %}<a href="{% url 'management' 'schedules' %}">Horarios y cupos</a>{% endif %}
+        {% if perms.core.view_settlement %}<a href="{% url 'finance' %}">Finanzas demo</a>{% endif %}
+        {% if perms.core.view_review %}<a href="{% url 'reputation' %}">Reputación</a>{% endif %}
+      {% else %}
+        <a href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Favoritos</a>
+        <a href="{% url 'wallet' %}">{% include 'portal/icon.html' with name='spark' %} {{ user.credits }} Sparks</a>
+      {% endif %}
+      {% if user.is_superuser %}
+        <a href="{% url 'provider_review_queue' %}"{% if route == 'provider_review_queue' or route == 'provider_review' %} aria-current="page"{% endif %}>Validación de proveedores</a>
+        <a href="{% url 'superadmin:index' %}">Usuarios y permisos</a>
+      {% endif %}
+      <a href="{% url 'profile' %}">{% include 'portal/icon.html' with name='user' %} Perfil</a>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="text-button">Salir</button></form>
+      {% endwith %}
+    </nav>
+  {% endif %}
+  <main id="content" tabindex="-1">
+    {% if messages %}
+      <div class="portal-shell message-stack" role="status">
+        {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="portal-footer">
+    <div class="portal-shell footer-grid">
+      <div><strong>Kiddo Spark</strong><p>Actividades extracurriculares para familias de la Región de Valparaíso.</p></div>
+      <div><strong>Familias y proveedores</strong><a href="{% url 'explore' %}">Explorar el catálogo</a><a href="{% url 'providers' %}">Incorporar un centro</a><a href="{% url 'home' %}#convenios">Empresas y colegios</a></div>
+      <div><strong>Sobre el proyecto</strong><a href="{% url 'reference' %}">Ver propuesta original</a><p>Prototipo académico. Usa datos ficticios y evita ingresar información personal de menores.</p></div>
+    </div>
+  </footer>
+</body>
+</html>

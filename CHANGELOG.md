@@ -1,5 +1,45 @@
 # Historial de cambios
 
+## 2026-11-19 — Demo remota privada y opcional
+
+- `compartir_local.ps1` prepara un enlace temporal de Microsoft Dev Tunnels
+  para una copia de la demo con una base independiente y puerto local 8001.
+- README técnico y guía comercial explican instalación, acceso y cierre.
+
+- Los scripts de instalación y arranque ahora se llaman `instalar_local.ps1` e
+  `iniciar_local.ps1`, con guion bajo para ejecutarlos desde PowerShell.
+
+## 2026-11-19 — Instalación separada del encendido local
+
+- `instalar local.ps1` prepara el equipo y carga el catálogo inicial.
+- `iniciar local.ps1` aplica las migraciones al encender y ofrece apagar el
+  servidor local desde el mismo archivo.
+
+## 2026-11-19 — Inicio local desde un solo archivo
+
+- `iniciar local.ps1` prepara la base y el catálogo y arranca la demo en el
+  equipo. En la primera ejecución solicita permiso para descargar dependencias
+  si faltan y ofrece crear la cuenta de superadministración.
+
+## 2026-11-19 — Portada, navegación y presentación a jefatura
+
+- Portada con oferta piloto, recorridos por público, encuesta y objetivos, y
+  vista previa de convenios identificada como simulación.
+- Navegación, catálogo y paneles de familias y proveedores reorganizados con
+  iconos locales y acceso directo a sus tareas principales.
+- Guía no técnica para presentar y probar el prototipo en un solo computador.
+
+## 2026-11-19 — Incorporación y validación de proveedores
+
+- Portal de proveedores con alta de centros en las cuatro comunas piloto,
+  seguimiento privado de la ficha y reenvío tras observaciones.
+- Cola de superadministración con inicio de revisión, observación, rechazo y
+  aprobación. Cada decisión registra actor, fecha y motivo.
+- El catálogo y la reserva dependen de la habilitación del centro. La asignación
+  de permisos de operación se realiza por separado.
+- Inicio con acceso directo al catálogo y al portal de proveedores. Los nuevos
+  formularios y estados usan la identidad del proyecto y una distribución adaptable.
+
 ## 2026-11-14 — Plataforma académica con Django y SQLite
 
 ### Implementado

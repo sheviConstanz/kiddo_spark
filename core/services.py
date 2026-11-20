@@ -2,11 +2,63 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F, Sum
 from django.utils import timezone
-from .models import User, Schedule, Booking, Membership, Movement, Organization, Settlement, Withdrawal, RequestEvent, AuditLog
+from .models import User, Schedule, Booking, Membership, Movement, Organization, Settlement, Withdrawal, RequestEvent, AuditLog, ProviderReviewEvent
 
 
 def audit(user, action, obj):
     AuditLog.objects.create(actor=user, action=action, target=f'{obj._meta.model_name}:{obj.pk}')
+
+
+ProviderStatus = ProviderReviewEvent.Status
+PROVIDER_DECISIONS = {
+    ProviderStatus.PENDING: (ProviderStatus.REVIEWING,),
+    ProviderStatus.REVIEWING: (ProviderStatus.APPROVED, ProviderStatus.OBSERVED, ProviderStatus.REJECTED),
+}
+
+
+def provider_status(organization, latest):
+    if organization.approved:
+        return ProviderStatus.APPROVED
+    return ProviderStatus(latest.status) if latest else ProviderStatus.PENDING
+
+
+def lock_provider_revision(organization, revision, **scope):
+    # Acquire a SQLite write lock before reading the current event or state.
+    candidates = Organization.objects.filter(pk=organization.pk, kind='provider', approved=False, **scope)
+    if not candidates.update(approved=F('approved')):
+        raise ValidationError('La ficha ya no admite esta acción. Vuelve a consultar su estado.')
+    current = candidates.get()
+    latest = current.review_events.first()
+    if revision != (latest.pk if latest else 0):
+        raise ValidationError('La ficha cambió mientras estaba abierta. Revisa el historial antes de continuar.')
+    return current, latest
+
+
+@transaction.atomic
+def review_provider(actor, organization, revision, status, note):
+    if not actor.is_superuser:
+        raise ValidationError('Solo superadministración puede resolver la revisión.')
+    current, latest = lock_provider_revision(organization, revision, active=True)
+    if status not in PROVIDER_DECISIONS.get(provider_status(current, latest), ()) or not note.strip():
+        raise ValidationError('Selecciona una decisión válida y escribe el motivo.')
+    if status == ProviderStatus.APPROVED:
+        current.approved = True
+        current.save(update_fields=['approved'])
+    ProviderReviewEvent.objects.create(organization=current, actor=actor, status=status, note=note)
+
+
+@transaction.atomic
+def resubmit_provider(actor, organization, revision, updates):
+    current, latest = lock_provider_revision(organization, revision, created_by=actor, active=True)
+    if provider_status(current, latest) != ProviderStatus.OBSERVED:
+        raise ValidationError('Solo se puede reenviar una ficha que requiere corrección.')
+    for field, value in updates.items():
+        setattr(current, field, value)
+    current.save(update_fields=updates.keys())
+    ProviderReviewEvent.objects.create(
+        organization=current, actor=actor, status=ProviderStatus.PENDING,
+        note='El solicitante corrigió y reenvió la ficha.',
+    )
 
 
 @transaction.atomic
@@ -23,7 +75,7 @@ def activate_plan(user, plan):
 @transaction.atomic
 def reserve(user, schedule_id):
     # Conditional writes also serialize competing SQLite writers before reading balances.
-    if not Schedule.objects.filter(pk=schedule_id, active=True, available__gt=0, starts_at__gt=timezone.now(), activity__active=True, activity__organization__active=True, activity__organization__approved=True).update(available=F('available') - 1):
+    if not Schedule.objects.filter(pk=schedule_id, active=True, available__gt=0, starts_at__gt=timezone.now(), activity__active=True, activity__organization__active=True, activity__organization__approved=True, activity__organization__kind='provider').update(available=F('available') - 1):
         raise ValidationError('El horario no está disponible o no tiene cupos.')
     slot = Schedule.objects.select_related('activity').get(pk=schedule_id)
     if Booking.objects.filter(user=user, schedule=slot, status='confirmed').exists():

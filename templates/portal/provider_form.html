@@ -1,0 +1,22 @@
+{% extends 'portal/base.html' %}
+{% block title %}{{ title }} · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space">
+  <div class="provider-layout provider-intake">
+    <div>
+      <a class="inline-link" href="{% url 'providers' %}">Portal de proveedores</a>
+      <h1>{{ title }}</h1>
+      <p class="provider-lead">Completa la ficha con datos ficticios y sigue su revisión desde tu cuenta.</p>
+      <div class="notice">La lista de documentos de validación está por definir. En esta demostración no se solicitan archivos.</div>
+      <a class="inline-link" href="{% url 'provider_submissions' %}">Consultar mis fichas</a>
+    </div>
+    <div class="portal-card">
+      <form class="portal-form provider-fields" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn provider-primary" type="submit">Enviar ficha a revisión</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

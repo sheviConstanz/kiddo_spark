@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.utils import timezone
-from .models import User, Organization, Activity, Category, City, Schedule, Plan, ServiceRequest, Review, Campaign, BankAccount
+from .models import User, Organization, ProviderReviewEvent, Activity, Category, City, Schedule, Plan, ServiceRequest, Review, Campaign, BankAccount
 
 
 class RegisterForm(UserCreationForm):
@@ -30,6 +31,50 @@ class OrganizationForm(forms.ModelForm):
         fields = ['name', 'kind', 'city', 'description', 'email', 'phone']
         widgets = {'description': forms.Textarea(attrs={'rows': 4})}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['kind'].disabled = True
+
+
+class ProviderForm(forms.ModelForm):
+    demo_acknowledged = forms.BooleanField(label='Acepto participar en la demostración con datos ficticios.')
+
+    class Meta:
+        model = Organization
+        fields = ['name', 'city', 'specialty', 'description', 'contact_first_name', 'contact_last_name', 'email', 'phone', 'website']
+        widgets = {'description': forms.Textarea(attrs={'rows': 3})}
+        labels = {'name': 'Nombre de la academia, taller o club'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['city'].queryset = City.objects.filter(active=True, name__in=City.PILOT).order_by('name')
+        self.fields['specialty'].queryset = Category.objects.filter(active=True).order_by('name')
+        for field in ('specialty', 'phone', 'contact_first_name', 'contact_last_name'):
+            self.fields[field].required = True
+
+    def clean_website(self):
+        website = self.cleaned_data['website']
+        if website:
+            URLValidator(schemes=['http', 'https'])(website)
+        return website
+
+
+class ProviderCorrectionForm(ProviderForm):
+    revision = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
+
+
+class ProviderDecisionForm(forms.Form):
+    revision = forms.IntegerField(min_value=0, widget=forms.HiddenInput)
+    status = forms.ChoiceField(label='Decisión')
+    note = forms.CharField(label='Motivo o indicaciones para el solicitante', max_length=1600, widget=forms.Textarea(attrs={'rows': 3}))
+
+    def __init__(self, *args, next_states, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].choices = [('', 'Selecciona una opción')] + [
+            (status, label) for status, label in ProviderReviewEvent.Status.choices if status in next_states
+        ]
+
 
 class ActivityForm(forms.ModelForm):
     class Meta:
@@ -53,6 +98,10 @@ class ScheduleForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         from .access import activities
         self.fields['activity'].queryset = activities(user)
+        if not self.instance.pk:
+            self.fields['activity'].queryset = self.fields['activity'].queryset.filter(
+                organization__kind='provider', organization__approved=True, organization__active=True,
+            )
 
     def clean(self):
         data = super().clean()

@@ -31,6 +31,8 @@ class Named(models.Model):
 
 
 class City(Named):
+    PILOT = ('Viña del Mar', 'Valparaíso', 'Quilpué', 'Villa Alemana')
+
     class Meta:
         verbose_name = 'comuna'
 
@@ -49,13 +51,39 @@ class Organization(models.Model):
     description = models.TextField('descripción', blank=True)
     email = models.EmailField('correo de contacto')
     phone = models.CharField('teléfono', max_length=32, blank=True)
+    contact_first_name = models.CharField('nombre del contacto', max_length=80, blank=True)
+    contact_last_name = models.CharField('apellido del contacto', max_length=80, blank=True)
+    website = models.URLField('sitio web o red social', blank=True)
+    specialty = models.ForeignKey(Category, on_delete=models.PROTECT, null=True, blank=True, verbose_name='categoría del centro')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='registered_organizations')
     administrators = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='organizations', verbose_name='administradores')
     approved = models.BooleanField('aprobado', default=False)
     active = models.BooleanField('activo', default=True)
 
+    @property
+    def review_stage_label(self):
+        return ProviderReviewEvent.Status(self.review_stage).label
+
     def __str__(self):
         return self.name
+
+
+class ProviderReviewEvent(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Solicitud recibida'
+        REVIEWING = 'reviewing', 'En revisión'
+        OBSERVED = 'observed', 'Requiere corrección'
+        REJECTED = 'rejected', 'Rechazada'
+        APPROVED = 'approved', 'Aprobada'
+
+    organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name='review_events')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    status = models.CharField(max_length=12, choices=Status.choices)
+    note = models.TextField(blank=True, max_length=1600)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-pk']
 
 
 class Activity(models.Model):
