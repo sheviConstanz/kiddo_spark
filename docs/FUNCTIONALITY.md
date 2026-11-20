@@ -12,8 +12,8 @@ o ideas del material original. No se presupone un negocio operativo.
 | Horarios | Fecha, capacidad, cupos y disponibilidad | Datos iniciales ilustrativos, renovados por administrador |
 | Planes | CRUD y activaciones registradas | Recargas manuales demo; sin pagos ni renovación automática |
 | Sparks | Libro de movimientos y saldo por usuario | No existe moneda ni valor económico real |
-| Puntos | 50 por reserva y reversión al cancelar | Sin recompensas ni canjes acordados |
-| Reservas | Control de cupos/saldo, cancelación una sola vez, comprobantes y CSV | No se envían avisos externos |
+| Puntos | 50 al completar una reserva nueva, una vez | La migración conserva puntos ya acreditados. Los puntos no tienen canje |
+| Reservas | Solicitud con cupo y Sparks apartados, confirmación del proveedor asignado, cancelación una vez, comprobantes demo y CSV | El estado se consulta en el portal. Quedan pendientes los avisos externos y la liberación automática |
 | Convenios | Solicitudes con organización, contacto y estimación de familias | Aprobación académica, sin firma contractual ni elegibilidad automática |
 | Centros | Alta en comunas piloto, revisión, corrección, aprobación o rechazo e historial | Aprobación académica. Permisos asignados por separado. Documentos de validación por definir |
 | Alivios B2B | Diagnóstico, filtros por área, fichas de aliados, orientación, asesorías, cotizaciones y seguimiento | Aliados de ejemplo. La fecha y el canal son preferencias y no confirman una cita |
@@ -46,9 +46,10 @@ o ideas del material original. No se presupone un negocio operativo.
 - Desactivar elimina el registro del uso futuro sin borrar sus operaciones anteriores.
 - El HTML original reorganizado anteriormente permanece disponible como referencia
   explícitamente simulada; sus botones no escriben en la base de la plataforma.
-- En Estadísticas, el filtro usa fechas inclusivas de creación. Las reservas
-  canceladas se incluyen en el total y en la distribución por estado, y se
-  excluyen del gráfico diario y los rankings. La ocupación considera horarios
+- En Estadísticas, el filtro usa fechas inclusivas de creación. El total y la
+  distribución incluyen todos los estados. El gráfico diario y los rankings
+  cuentan las confirmadas y completadas. La ocupación incluye los cupos
+  apartados por solicitudes pendientes y considera horarios
   activos y futuros de actividades publicadas de centros activos y aprobados.
 
 ## Verificación pendiente

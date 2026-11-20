@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 2026-11-20 — Aprobación de reservas por el proveedor
+
+- Las reservas nuevas quedan **Pendiente de aprobar**, con el cupo y los
+  Sparks apartados. El proveedor del centro confirma desde el Seller Center.
+- Los estados se distinguen por texto y color. Cancelar devuelve cupo y Sparks
+  una vez. Los puntos de las nuevas reservas se acreditan al completar.
+- Documentación de los recorridos B2C y B2B contrastados con los modelos Bizagi.
+
 ## 2026-11-20 — Inicio y acceso por perfil
 
 - La portada pública presenta recorridos separados para clientes y proveedores.

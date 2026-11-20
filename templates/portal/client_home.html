@@ -19,9 +19,10 @@
           <li>
             <strong>{{ booking.schedule.activity.name }}</strong>
             <span>{{ booking.schedule.activity.organization.name }} · {{ booking.schedule.starts_at|date:'j/m/Y H:i' }}</span>
+            <div><span class="status-pill ks-booking-status is-{{ booking.status }}">{{ booking.get_status_display }}</span></div>
           </li>
         {% empty %}
-          <li>Tus próximos horarios confirmados aparecerán aquí.</li>
+          <li>Tus próximas solicitudes y reservas confirmadas aparecerán aquí.</li>
         {% endfor %}
       </ul>
       <a class="inline-link" href="{% url 'bookings' %}">Ver mis reservas {% include 'portal/icon.html' with name='arrow' %}</a>

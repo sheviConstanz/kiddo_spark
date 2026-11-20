@@ -166,16 +166,30 @@ class Membership(models.Model):
 
 
 class Booking(models.Model):
-    STATUS = [('confirmed', 'Confirmada'), ('completed', 'Completada'), ('cancelled', 'Cancelada')]
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pendiente de aprobar'
+        CONFIRMED = 'confirmed', 'Confirmada'
+        COMPLETED = 'completed', 'Completada'
+        CANCELLED = 'cancelled', 'Cancelada'
+
+    STATUS = Status.choices
+    ACTIVE_STATUSES = (Status.PENDING, Status.CONFIRMED)
+    CONFIRMED_STATUSES = (Status.CONFIRMED, Status.COMPLETED)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='bookings')
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name='bookings')
     sparks = models.PositiveIntegerField()
     amount = models.PositiveIntegerField('monto referencial CLP')
-    status = models.CharField(max_length=12, choices=STATUS, default='confirmed')
+    status = models.CharField(max_length=12, choices=STATUS, default=Status.PENDING)
+    points_awarded = models.BooleanField('puntos acreditados', default=False, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=['user', 'schedule'], condition=Q(status='confirmed'), name='one_active_booking')]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'schedule'], condition=Q(status__in=('pending', 'confirmed')),
+                name='one_active_booking',
+            ),
+        ]
 
     def __str__(self):
         return f'KS-{self.pk} · {self.schedule.activity}'

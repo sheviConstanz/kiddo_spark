@@ -40,7 +40,7 @@
       <a class="inline-link" href="{% url 'dashboard' %}">Todo el historial</a>
     </form>
     <div class="metric-grid">
-      <article class="metric"><span>Reservas del período</span><b>{{ booking_count }}</b><small>{{ completed_count }} completadas</small></article>
+      <article class="metric"><span>Reservas del período</span><b>{{ booking_count }}</b><small>{{ completed_count }} completadas{% if pending_booking_count %} · <a class="inline-link" href="{% url 'bookings' %}?status=pending">{{ pending_booking_count }} por aprobar</a>{% endif %}</small></article>
       <article class="metric"><span>Solicitudes del período</span><b>{{ request_count }}</b><small>{{ pending_count }} pendientes</small></article>
       <article class="metric"><span>Sparks reservados</span><b>{{ totals.sparks|default:0 }}</b><small>Excluye reservas canceladas</small></article>
       <article class="metric">

@@ -29,7 +29,7 @@ def home(request):
     if request.user.role != 'client':
         return redirect(access.account_start(request.user))
     upcoming = access.bookings(request.user).filter(
-        status='confirmed', schedule__starts_at__gte=timezone.now(),
+        status__in=m.Booking.ACTIVE_STATUSES, schedule__starts_at__gte=timezone.now(),
     ).select_related('schedule__activity__organization').order_by('schedule__starts_at', 'pk')
     return render(request, 'portal/client_home.html', {
         'upcoming': upcoming[:3],
@@ -191,7 +191,7 @@ def period_filter(request, qs):
 
 
 def booking_trends(bookings):
-    live = bookings.exclude(status='cancelled')
+    live = bookings.filter(status__in=m.Booking.CONFIRMED_STATUSES)
     series = list(live.annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id')).order_by('day'))
     max_count = max([x['count'] for x in series] or [1])
     for row in series:
@@ -212,10 +212,14 @@ def dashboard(request):
     requests = period_filter(request, access.requests(request.user))
     return render(request, 'portal/dashboard.html', {
         'booking_count': bookings.count(),
+        'pending_booking_count': bookings.filter(status=m.Booking.Status.PENDING).count(),
         'completed_count': bookings.filter(status='completed').count(),
         'request_count': requests.count(),
         'pending_count': requests.filter(status='pending').count(),
-        'totals': bookings.exclude(status='cancelled').aggregate(sparks=Sum('sparks'), amount=Sum('amount')),
+        'totals': bookings.aggregate(
+            sparks=Sum('sparks', filter=Q(status__in=(*m.Booking.CONFIRMED_STATUSES, m.Booking.Status.PENDING))),
+            amount=Sum('amount', filter=Q(status__in=m.Booking.CONFIRMED_STATUSES)),
+        ),
         'own_orgs': own_orgs,
         'user_count': m.User.objects.count() if request.user.is_superuser else None,
         **booking_trends(bookings),
@@ -240,7 +244,7 @@ def platform_statistics(request):
     recent_days = trends['series'][-7:]
     city_name = 'schedule__activity__organization__city__name'
     cities = list(
-        bookings.exclude(status='cancelled').order_by().values_list(city_name)
+        bookings.filter(status__in=m.Booking.CONFIRMED_STATUSES).order_by().values_list(city_name)
         .annotate(total=Count('pk')).order_by('-total', city_name)[:5]
     )
     today = timezone.localdate()
@@ -300,7 +304,7 @@ def reserve(request, pk):
     slot = get_object_or_404(m.Schedule, pk=pk)
     try:
         services.reserve(request.user, slot.pk)
-        messages.success(request, 'Reserva confirmada. Se descontaron los Sparks y se registraron 50 puntos.')
+        messages.success(request, 'Solicitud enviada. Se apartaron el cupo y los Sparks mientras el proveedor confirma.')
         return redirect('bookings')
     except (ValidationError, IntegrityError) as exc:
         messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else 'La reserva ya existe. Revisa tus reservas.')
@@ -309,12 +313,23 @@ def reserve(request, pk):
 
 @login_required
 def booking_list(request):
-    qs = access.bookings(request.user).select_related('user', 'schedule__activity__organization')
-    if request.GET.get('status') in dict(m.Booking.STATUS):
-        qs = qs.filter(status=request.GET['status'])
-    if request.GET.get('q'):
-        qs = qs.filter(Q(schedule__activity__name__icontains=request.GET['q']) | Q(user__username__icontains=request.GET['q']))
-    return render(request, 'portal/bookings.html', {'bookings': period_filter(request, qs).order_by('-created_at')})
+    approval_centers = access.booking_approval_centers(request.user)
+    slots_for_approval = services.bookable_schedules().filter(
+        pk=OuterRef('schedule_id'), activity__organization__in=approval_centers,
+    )
+    bookings = filtered_bookings(request).select_related('schedule__activity__organization').annotate(
+        can_approve=Exists(slots_for_approval),
+    )
+    return render(request, 'portal/bookings.html', {
+        'bookings': bookings,
+        'statuses': m.Booking.STATUS,
+        'active_statuses': m.Booking.ACTIVE_STATUSES,
+        'can_approve_bookings': approval_centers.exists(),
+        'managed_centers': (
+            set(access.organizations(request.user).values_list('pk', flat=True))
+            if request.user.is_staff and request.user.has_perm('core.change_booking') else set()
+        ),
+    })
 
 
 @login_required
@@ -324,14 +339,18 @@ def booking_action(request, pk, action):
     try:
         if action == 'cancel':
             services.cancel(request.user, obj)
+            messages.success(request, 'Reserva cancelada. Se liberó el cupo y se devolvieron tus Sparks.')
+        elif action == 'confirm':
+            services.confirm(request.user, obj)
+            messages.success(request, 'Reserva confirmada.')
         elif action == 'complete':
             access.require_manager(request.user, m.Booking)
             if not access.activities(request.user).filter(pk=obj.schedule.activity_id).exists():
                 raise PermissionDenied
             services.complete(request.user, obj)
+            messages.success(request, 'Asistencia registrada. La reserva quedó completada.')
         else:
             raise Http404
-        messages.success(request, 'Reserva actualizada.')
     except ValidationError as exc:
         messages.error(request, '; '.join(exc.messages))
     return redirect('bookings')
@@ -751,19 +770,23 @@ def csv_safe(value):
     return "'" + text if text.lstrip().startswith(('=', '+', '-', '@', '\t', '\r', '\n')) else text
 
 
-@login_required
-def export_bookings(request):
+def filtered_bookings(request):
     qs = period_filter(request, access.bookings(request.user)).select_related('user', 'schedule__activity')
     if request.GET.get('status') in dict(m.Booking.STATUS):
         qs = qs.filter(status=request.GET['status'])
     if request.GET.get('q'):
         qs = qs.filter(Q(schedule__activity__name__icontains=request.GET['q']) | Q(user__username__icontains=request.GET['q']))
+    return qs.order_by('-created_at', '-pk')
+
+
+@login_required
+def export_bookings(request):
     response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="KiddoSpark_reservas_DEMO.csv"'
     response.write('\ufeff')
     writer = csv.writer(response)
     writer.writerow(['Reserva', 'Usuario ficticio', 'Actividad', 'Fecha', 'Sparks', 'Monto referencial demo', 'Estado'])
-    for obj in qs.order_by('-created_at'):
+    for obj in filtered_bookings(request):
         writer.writerow([csv_safe(v) for v in [f'KS-{obj.pk}', obj.user.username, obj.schedule.activity.name, timezone.localtime(obj.schedule.starts_at).isoformat(), obj.sparks, obj.amount, obj.get_status_display()]])
     return response
 
@@ -777,7 +800,8 @@ def reputation(request):
 
 @login_required
 def document(request, pk):
-    obj = get_object_or_404(access.bookings(request.user).select_related('schedule__activity'), pk=pk)
+    bookings = access.bookings(request.user).exclude(status=m.Booking.Status.PENDING).select_related('schedule__activity')
+    obj = get_object_or_404(bookings, pk=pk)
     body = f'KIDDO SPARK - COMPROBANTE DEMO\nReserva: KS-{obj.pk}\nActividad: {obj.schedule.activity.name}\nEstado: {obj.get_status_display()}\nSparks: {obj.sparks}\nMonto referencial: CLP {obj.amount}\n\nNo acredita pagos ni constituye documento tributario. Prototipo académico.'
     response = HttpResponse(body, content_type='text/plain; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="KS-{obj.pk}_DEMO.txt"'

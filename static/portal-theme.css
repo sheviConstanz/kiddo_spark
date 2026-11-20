@@ -240,7 +240,13 @@
 .ks-client-hero h1 { max-width: none; }
 .ks-client-bookings { margin: 0 0 14px; padding: 0; list-style: none; }
 .ks-client-bookings li { display: grid; gap: 3px; padding: 8px 0; border-bottom: 1px solid var(--ks-border); }
-.ks-client-bookings li span { color: var(--ks-muted); font-size: 14px; }
+.ks-client-bookings li > span { color: var(--ks-muted); font-size: 14px; }
+.ks-booking-status { margin: 0; font-weight: 700; line-height: 1.35; }
+.ks-booking-status.is-pending { color: #344154; background: #e9edf2; }
+.ks-booking-status.is-confirmed { color: #07604a; background: #daf3e7; }
+.ks-booking-status.is-completed { color: #194879; background: #e7f1fb; }
+.ks-booking-status.is-cancelled { color: #8e2936; background: #fbe7eb; }
+.ks-booking-actions .btn { min-height: 40px; padding: 8px 12px; text-align: center; }
 .platform .chart-track span { background: #187e75; }
 .platform .chart-row { grid-template-columns: 85px minmax(0, 1fr) minmax(18px, max-content); }
 .platform .ks-statistics { padding-top: clamp(20px, 4vw, 44px); }

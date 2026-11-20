@@ -209,10 +209,11 @@ cuentas que falten. El instalador no pide crearlas.
 | Cliente | `usuario` | `usuario` | `usuario@demo.example.invalid` | Entra a su inicio con próximas reservas, favoritos, Sparks y catálogo. En **Solicitudes** puede consultar su historial. |
 | Proveedor | `proveedor` | `proveedor` | `proveedor@demo.example.invalid` | Entra al **Seller Center** del **Centro Kiddo Spark Demo**. Gestiona publicaciones, horarios y reservas del centro asignado. |
 
-Para probar una reserva y verla desde el proveedor, entra como `usuario`,
-activa un plan de prueba en **Planes y Sparks** y reserva
-**Taller de movimiento demo**. Si su horario ya venció, entra como
-`proveedor` y crea uno futuro en **Horarios y cupos**.
+Para probar la aprobación, entra como `usuario`, activa un plan de prueba en
+**Planes y Sparks** y solicita **Taller de movimiento demo**. Luego entra
+como `proveedor`, abre **Reservas → Ver pendientes por aprobar** y pulsa
+**Confirmar reserva**. Si el horario ya venció, crea uno futuro en **Horarios
+y cupos** antes de solicitarlo.
 
 Estos datos son de una instalación nueva. Si ya existe una cuenta con el
 mismo nombre o correo, se conserva con su contraseña y permisos. Las
@@ -292,12 +293,15 @@ horarios anteriores. Para demostrar otra franja, crea un horario en
 2. En **Planes y Sparks**, activa un plan demo. Cada activación añade Sparks;
    repetirla añade otra recarga registrada. Una cuenta nueva empieza sin saldo.
    No hay cobro ni renovación mensual automática.
-3. En **Explorar**, filtra, abre una actividad y reserva un horario.
-4. Consulta **Reservas** y **Mis Sparks**. Se descuenta saldo y se añaden 50 puntos.
-   Cancelar devuelve Sparks y revierte esos puntos una sola vez. Los puntos no
-   tienen canje ni valor monetario.
-5. Con un administrador del centro, valida asistencia. Con el usuario, deja
-   una opinión. El centro puede responder desde **Reputación**.
+3. En **Explorar**, filtra, abre una actividad y pulsa **Solicitar reserva**.
+   Se apartan el cupo y los Sparks. La reserva queda **Pendiente de aprobar**.
+4. Entra como proveedor del centro y pulsa **Confirmar reserva** en
+   **Reservas**. El cliente verá el estado **Confirmada** y podrá descargar el
+   comprobante demo. Si cancela mientras está pendiente o confirmada, la demo
+   devuelve el cupo y los Sparks una sola vez.
+5. Con el proveedor, pulsa **Validar asistencia** en la reserva confirmada.
+   Las nuevas reservas suman 50 puntos al completarse. El cliente puede dejar
+   una opinión y el centro puede responder desde **Reputación**.
 6. Solicita un convenio desde **Empresas y colegios** en la portada pública.
    Para mostrar una asesoría, ingresa como proveedor y abre **Alivios B2B**.
    Consulta el historial en **Solicitudes**.
@@ -318,6 +322,9 @@ actual refleja el monto referencial completo. El modelo actualizado fija una
 comisión del 10%, pendiente de implementar.
 Las campañas guardan actividad, nombre, presupuesto y estado; no contratan anuncios
 ni generan impresiones, clics o ROAS inventados.
+
+Los [flujos B2C y B2B de Bizagi](docs/FLOWS-BIZAGI.md) detallan qué partes
+de los diagramas se pueden demostrar y qué decisiones siguen pendientes.
 
 ## Navegación y estadísticas
 
@@ -357,7 +364,8 @@ La vista muestra datos agrupados de la demo.
 | Faltan tablas | Cierra la demo y vuelve a ejecutar **iniciar_local.ps1**. |
 | Catálogo vacío | Comprueba que los centros estén aprobados. Si faltan los datos iniciales, apaga la demo, ejecuta **instalar_local.ps1** y vuelve a iniciarla. |
 | No hay horarios | Crea un horario futuro y habilitado. |
-| No puedo reservar | Comprueba saldo, cupos y que no tengas ya una reserva confirmada allí. |
+| No puedo reservar | Comprueba saldo, cupos y que no tengas ya una reserva pendiente o confirmada para ese horario. |
+| No aparece «Confirmar reserva» | Entra como proveedor del centro asignado. El horario debe seguir vigente y la reserva debe estar pendiente. |
 | Administrador sin registros | Comprueba grupo, estado de personal y organización asignada. |
 | Contraseña olvidada | El superadministrador puede cambiarla desde usuarios; para su propia cuenta usa `manage.py changepassword nombre_usuario`. |
 

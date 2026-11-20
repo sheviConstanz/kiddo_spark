@@ -120,6 +120,19 @@ class DemoAccountTests(TestCase):
         slot = self.activity.schedules.get()
         self.assertRedirects(self.client.post(reverse('reserve', args=[slot.pk])), reverse('bookings'))
         booking = self.family.bookings.get(schedule=slot)
+        self.assertEqual(booking.status, m.Booking.Status.PENDING)
+        confirm = reverse('booking_action', args=[booking.pk, 'confirm'])
+        self.assertEqual(self.client.post(confirm).status_code, 403)
+        self.assertContains(self.client.get(reverse('bookings')), 'Pendiente de aprobar')
+        self.assertEqual(self.client.get(reverse('document', args=[booking.pk])).status_code, 404)
+
+        self.client.logout()
+        self.login_profile('admin')
+        self.assertEqual(self.client.post(confirm).status_code, 403)
+        self.assertNotContains(self.client.get(reverse('bookings')), f'action="{confirm}"')
+        stats = self.client.get(reverse('platform_statistics')).context
+        self.assertEqual(dict(stats['bookings_by_status'])['Pendiente de aprobar'], 1)
+        self.assertFalse(stats['recent_days'])
 
         self.client.logout()
         self.login_profile('proveedor')
@@ -130,7 +143,21 @@ class DemoAccountTests(TestCase):
         self.assertEqual(self.client.post(foreign_edit, {'name': 'Cambio indebido'}).status_code, 404)
         self.assertEqual(self.client.get(reverse('management', args=['categories'])).status_code, 403)
         self.assertContains(self.client.get(reverse('bookings')), f'KS-{booking.pk}')
+        self.assertContains(self.client.get(reverse('bookings'), {'status': 'pending'}), f'action="{confirm}"')
+        self.assertEqual(self.client.get(confirm).status_code, 405)
+        browser = Client(enforce_csrf_checks=True)
+        browser.force_login(m.User.objects.get(username='proveedor'))
+        self.assertEqual(browser.post(confirm).status_code, 403)
+        receipt = reverse('document', args=[booking.pk])
         complete = reverse('booking_action', args=[booking.pk, 'complete'])
+        self.assertRedirects(self.client.post(complete), reverse('bookings'))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, m.Booking.Status.PENDING)
+        self.assertRedirects(self.client.post(confirm), reverse('bookings'))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, m.Booking.Status.CONFIRMED)
+        self.assertContains(self.client.get(receipt), 'Confirmada')
+        self.assertEqual(m.Movement.objects.filter(booking=booking).count(), 1)
         self.assertRedirects(self.client.post(complete), reverse('bookings'))
         booking.refresh_from_db()
         self.assertEqual(booking.status, 'completed')
@@ -191,7 +218,7 @@ class DemoAccountTests(TestCase):
         self.assertTemplateUsed(landing, 'portal/home.html')
         self.assertContains(landing, 'Incorporar mi centro')
         slot = self.activity.schedules.get()
-        booking = m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0)
+        booking = m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0, status='confirmed')
         m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0, status='cancelled')
         admin = m.User.objects.get(username='admin')
         m.Booking.objects.create(user=admin, schedule=slot, sparks=4, amount=0)
@@ -293,7 +320,7 @@ class DemoAccountTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['booking_count'], 2)
         self.assertEqual(dict(response.context['bookings_by_status']),
-                         {'Confirmada': 1, 'Completada': 0, 'Cancelada': 1})
+                         {'Pendiente de aprobar': 0, 'Confirmada': 1, 'Completada': 0, 'Cancelada': 1})
         self.assertEqual(dict(response.context['requests_by_status'])['En revisión'], 1)
         self.assertEqual(response.context['published_count'], 2)
         self.assertEqual(response.context['provider_count'], 2)
@@ -617,10 +644,12 @@ class PortalTests(TestCase):
     def test_reserve_and_cancel_idempotence(self):
         booking = services.reserve(self.user, self.slot.pk)
         self.user.refresh_from_db(); self.slot.refresh_from_db()
-        self.assertEqual((self.user.credits, self.user.points, self.slot.available), (22, 50, 1))
+        self.assertEqual((self.user.credits, self.user.points, self.slot.available), (22, 0, 1))
         services.cancel(self.user, booking)
         with self.assertRaises(ValidationError):
             services.cancel(self.user, booking)
+        with self.assertRaises(ValidationError):
+            services.confirm(self.manager, booking)
         self.user.refresh_from_db(); self.slot.refresh_from_db()
         self.assertEqual((self.user.credits, self.user.points, self.slot.available), (26, 0, 2))
         self.assertEqual(m.Movement.objects.filter(booking=booking).count(), 2)
@@ -640,7 +669,10 @@ class PortalTests(TestCase):
         self.assertEqual(self.user.credits, 26)
 
     def test_duplicate_reservation_rolls_back(self):
-        services.reserve(self.user, self.slot.pk)
+        booking = services.reserve(self.user, self.slot.pk)
+        with self.assertRaises(ValidationError):
+            services.reserve(self.user, self.slot.pk)
+        services.confirm(self.manager, booking)
         with self.assertRaises(ValidationError):
             services.reserve(self.user, self.slot.pk)
         self.slot.refresh_from_db(); self.user.refresh_from_db()
@@ -658,6 +690,28 @@ class PortalTests(TestCase):
         with self.assertRaises(ValidationError):
             services.reserve(self.user, self.slot.pk)
 
+    def test_approval_uses_held_seat_and_cannot_be_repeated_or_confirm_expired_slots(self):
+        self.slot.capacity = self.slot.available = 1
+        self.slot.save()
+        booking = services.reserve(self.user, self.slot.pk)
+        services.confirm(self.manager, booking)
+        with self.assertRaises(ValidationError):
+            services.confirm(self.manager, booking)
+        self.slot.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual((self.slot.available, self.user.credits, self.user.points), (0, 22, 0))
+        services.cancel(self.user, booking)
+        next_booking = services.reserve(self.user, self.slot.pk)
+        m.Schedule.objects.filter(pk=self.slot.pk).update(starts_at=timezone.now() - timedelta(minutes=1))
+        with self.assertRaises(ValidationError):
+            services.confirm(self.manager, next_booking)
+        next_booking.refresh_from_db()
+        self.assertEqual(next_booking.status, m.Booking.Status.PENDING)
+        services.cancel(self.user, next_booking)
+        self.slot.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual((self.slot.available, self.user.credits, self.user.points), (1, 26, 0))
+
     def test_other_user_cannot_cancel_or_download(self):
         b = services.reserve(self.user, self.slot.pk)
         self.auth(self.other)
@@ -666,14 +720,19 @@ class PortalTests(TestCase):
 
     def test_complete_once_and_financial_balance(self):
         b = services.reserve(self.user, self.slot.pk)
+        services.confirm(self.manager, b)
         self.auth(self.manager)
         self.assertEqual(self.client.post(f'/reservas/{b.pk}/complete/').status_code, 302)
         with self.assertRaises(ValidationError): services.complete(self.manager, b)
         self.assertEqual(services.available_balance(self.org), 25000)
         self.assertEqual(m.Settlement.objects.count(), 1)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.points, 50)
 
     def test_withdrawals_reserve_balance_and_reject_releases(self):
-        b = services.reserve(self.user, self.slot.pk); services.complete(self.manager, b)
+        b = services.reserve(self.user, self.slot.pk)
+        services.confirm(self.manager, b)
+        services.complete(self.manager, b)
         w = services.withdraw(self.manager, self.org, 20000)
         self.assertEqual(services.available_balance(self.org), 5000)
         with self.assertRaises(ValidationError): services.withdraw(self.manager, self.org, 6000)
@@ -730,6 +789,7 @@ class PortalTests(TestCase):
         b = services.reserve(self.user, self.slot.pk)
         self.auth()
         self.assertEqual(self.client.get(f'/opiniones/{b.pk}/crear/').status_code, 404)
+        services.confirm(self.manager, b)
         services.complete(self.manager, b)
         self.client.post(f'/opiniones/{b.pk}/crear/', {'rating': 5, 'comment': '<script>alert(1)</script>'})
         self.client.post(f'/opiniones/{b.pk}/crear/', {'rating': 1, 'comment': 'Otro'})
@@ -752,10 +812,14 @@ class PortalTests(TestCase):
         foreign = m.Schedule.objects.create(
             activity=self.foreign_activity, starts_at=self.slot.starts_at, capacity=5, available=4,
         )
-        m.Booking.objects.create(user=self.manager, schedule=foreign, sparks=4, amount=10000)
+        m.Booking.objects.create(user=self.manager, schedule=foreign, sparks=4, amount=10000, status='confirmed')
         self.auth(self.manager)
         response = self.client.get('/panel/')
         self.assertEqual(response.context['booking_count'], 1)
+        self.assertEqual(response.context['pending_booking_count'], 1)
+        self.assertIsNone(response.context['totals']['amount'])
+        services.confirm(self.manager, b)
+        response = self.client.get('/panel/')
         self.assertEqual(response.context['totals']['amount'], 25000)
         services.cancel(self.user, b)
         response = self.client.get('/panel/')
@@ -815,6 +879,7 @@ class PortalTests(TestCase):
         self.assertEqual(self.client.post(f'/reservar/{self.slot.pk}/').status_code, 302)
         booking = m.Booking.objects.get(user=self.other)
         self.auth(self.manager)
+        self.client.post(f'/reservas/{booking.pk}/confirm/')
         self.client.post(f'/reservas/{booking.pk}/complete/')
         self.auth(self.other)
         self.client.post(f'/opiniones/{booking.pk}/crear/', {'rating': 4, 'comment': 'Buena experiencia demo'})
@@ -1012,11 +1077,12 @@ class PortalTests(TestCase):
             self.assertEqual(self.client.post(review, {'status': 'approved'}).status_code, 403)
         self.assertEqual(org.review_events.count(), 1)
 
-    def test_staff_cannot_complete_foreign_booking_even_as_owner(self):
+    def test_staff_cannot_confirm_or_complete_foreign_booking_even_as_owner(self):
         self.manager.credits = 20; self.manager.save()
         slot = m.Schedule.objects.create(activity=self.foreign_activity, starts_at=timezone.now() + timedelta(days=1), capacity=1, available=1)
         booking = services.reserve(self.manager, slot.pk)
         self.auth(self.manager)
+        self.assertEqual(self.client.post(f'/reservas/{booking.pk}/confirm/').status_code, 403)
         self.assertEqual(self.client.post(f'/reservas/{booking.pk}/complete/').status_code, 403)
 
     def test_database_enforces_email_case_insensitive_uniqueness(self):
@@ -1027,3 +1093,4 @@ class PortalTests(TestCase):
         booking = services.reserve(self.user, self.slot.pk)
         self.auth()
         self.assertNotContains(self.client.get('/reservas/exportar/?status=completed'), f'KS-{booking.pk}')
+        self.assertContains(self.client.get('/reservas/exportar/?status=pending'), 'Pendiente de aprobar')

@@ -24,15 +24,16 @@ tiempo para comparar alternativas son objetivos para evaluar en un piloto.
 | **Visitante** | Explorar el mapa referencial de las cuatro comunas piloto o buscar en el listado. Puede combinar filtros de comuna, categoría, edad, franja horaria, Sparks y cupos, y consultar el próximo horario disponible. |
 | **Cliente (familia)** | Tras ingresar ve sus próximas reservas, favoritos, saldo de **Sparks** y actividades. Puede activar un plan de prueba, reservar, descargar un comprobante demo, cancelar y dejar una opinión tras asistir. En Solicitudes puede revisar su historial. |
 | **Proveedor que quiere incorporarse** | Desde **Incorporar mi centro** abre su registro y envía una ficha. Al volver a ingresar, llega a **Mis fichas**, donde puede consultar la decisión y corregir datos si recibe observaciones. |
-| **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede crear, editar o desactivar publicaciones, administrar horarios y cupos, ver y exportar reservas, registrar asistencia y responder opiniones. El panel muestra reservas y actividades más solicitadas a partir de los registros de la demo. |
+| **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede crear, editar o desactivar publicaciones, administrar horarios y cupos, confirmar reservas vigentes de su centro, registrar asistencia y responder opiniones. |
 | **Equipo de Kiddo Spark** | El administrador entra primero a los gráficos de **Estadísticas** y desde ahí abre **Gestión operativa**. El superadministrador entra directo al panel de cuentas y permisos. Puede pulsar **Ver sitio** para revisar fichas de proveedores desde el portal. |
 | **Empresa, colegio o centro que busca apoyo** | Desde la portada pública se puede iniciar una solicitud de convenio. Los perfiles habilitados pueden pedir una demostración corporativa. En **Alivios B2B**, un proveedor puede pedir orientación, asesoría o una cotización. |
 
-Para mostrar cómo se conectan los roles, hagan una reserva familiar en una
-actividad con cupos. Abran la reserva desde la cuenta del centro, registren
-la asistencia y vuelvan a la cuenta familiar para dejar una opinión. Las
-reservas, cambios de cupos, opiniones y solicitudes quedan guardados al
-cerrar el navegador.
+Para mostrar cómo se conectan los roles, soliciten una reserva como cliente
+y muestren **Pendiente de aprobar** en gris. Cambien a la cuenta del centro,
+abran **Reservas** y pulsen **Confirmar reserva**. Vuelvan a la cuenta de
+cliente para ver **Confirmada** en verde. Pueden mostrar con otra solicitud
+cómo **Cancelada** aparece en rojo y devuelve los Sparks. Al validar la
+asistencia se acreditan los puntos y se habilita la opinión.
 
 **Qué se simula.** Los Sparks sirven para probar reservas y cancelaciones
 sin dinero real. Los comprobantes son ilustrativos. El Seller Center permite
@@ -92,8 +93,8 @@ la pantalla de la demo local.
 | Tiempo | Qué mostrar | Qué decir |
 | --- | --- | --- |
 | 1 min | Portada, comunas y cifras del piloto. | «Esta es la propuesta de servicio. La encuesta mide interés declarado y las otras cifras orientan qué queremos evaluar». |
-| 2 min | **Explorar actividades**. Seleccionen una comuna en el mapa, combinen filtros y abran una ficha con cupos. En una cuenta familiar, activen un plan demo si necesitan Sparks, hagan una reserva y ábranla en **Reservas**. | «El mapa orienta por comuna. Los horarios y cupos vienen de lo que registra el centro. La demo descuenta Sparks de prueba y guarda la reserva». |
-| 2 min | **Proveedores**. Muestren una ficha en revisión y, con superadministración, la cola de **Validación de proveedores**. Con un operador habilitado, abran **Publicaciones** y **Horarios y cupos**. | «Primero incorporamos la oferta. El equipo revisa al proveedor y registra el motivo de su decisión. El centro habilitado mantiene sus propios horarios y cupos». |
+| 2 min | **Explorar actividades**. Seleccionen una comuna, filtren y abran una ficha con cupos. Con la cuenta de cliente soliciten un horario y muestren el estado pendiente. | «La demo aparta el cupo y los Sparks mientras el centro responde». |
+| 2 min | Con la cuenta de proveedor, abran **Reservas** en el Seller Center y confirmen la solicitud. Muestren dónde administra sus horarios y cupos. | «El centro confirma las reservas de sus propios horarios. La familia puede consultar el estado desde su cuenta». |
 | 1 min | **Empresas y colegios** en la portada. Muestren la propuesta de convenio y el panel ilustrativo. | «Los convenios exploran un beneficio extracurricular para comunidades. El panel ilustra cómo ver participación agregada». |
 | 1 min | Cierre y conversación con jefatura. | «Queremos comentarios sobre el proceso y el valor para familias y centros, para definir qué mediríamos en un piloto». |
 

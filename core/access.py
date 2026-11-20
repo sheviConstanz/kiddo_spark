@@ -46,6 +46,12 @@ def bookings(user):
     return qs.filter(user=user)
 
 
+def booking_approval_centers(user):
+    if user.role == 'provider' and user.has_perm('core.change_booking'):
+        return user.organizations.filter(kind='provider')
+    return Organization.objects.none()
+
+
 def requests(user):
     qs = ServiceRequest.objects.all()
     if user.is_superuser:

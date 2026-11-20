@@ -36,7 +36,13 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
   los titulares de fichas anteriores y conserva sus credenciales.
 - Saldo y cupos se actualizan dentro de una transacción y con escrituras
   condicionales para impedir saldo negativo y reservas por encima de la capacidad.
-- Cancelar devuelve Sparks y cupos solo una vez; conserva historial.
+- La restricción de unicidad cubre reservas pendientes y confirmadas del mismo
+  cliente y horario. El proveedor asignado confirma en un horario vigente.
+  Confirmar conserva la retención original. La cancelación libera Sparks y cupo
+  una vez. Solo una reserva confirmada puede pasar a completada y generar puntos.
+- La migración 0009 conserva estados y reconoce los puntos de las reservas
+  históricas con un débito registrado. La síntesis de los diagramas está en
+  [Flujos Bizagi](FLOWS-BIZAGI.md).
 - Se protege el historial mediante desactivación y relaciones protegidas.
 - Los planes son activaciones académicas sin pasarela de pago.
 - Impresiones/clics/ROAS no se inventan como resultados reales.

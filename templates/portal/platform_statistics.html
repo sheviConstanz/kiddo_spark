@@ -39,7 +39,7 @@
     <div class="ks-stats-grid">
       <section class="portal-card ks-stats-card">
         <h3>Reservas por día</h3>
-        <p>Hasta 7 fechas recientes con reservas, sin contar las canceladas.</p>
+        <p>Hasta 7 fechas recientes con reservas confirmadas o completadas.</p>
         {% if recent_days %}
           <ul class="ks-stats-days">
             {% for row in recent_days %}
@@ -50,7 +50,7 @@
               </li>
             {% endfor %}
           </ul>
-        {% else %}<p class="ks-stats-empty">Sin reservas vigentes o completadas en estas fechas.</p>{% endif %}
+        {% else %}<p class="ks-stats-empty">Sin reservas confirmadas o completadas en estas fechas.</p>{% endif %}
       </section>
       <section class="portal-card ks-stats-card">
         <h3>Reservas por comuna</h3>
