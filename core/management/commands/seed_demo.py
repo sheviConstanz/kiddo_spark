@@ -20,6 +20,16 @@ def number(text, key):
     return int(re.search(r'\b' + key + r':(\d+)', text)[1])
 
 
+def example_start(period, now):
+    """Give newly seeded activities a future slot in their reference period."""
+    starts_at = timezone.localtime(now) + timedelta(days=7)
+    weekend = period == 'Fin de semana'
+    while (starts_at.weekday() >= 5) != weekend:
+        starts_at += timedelta(days=1)
+    hour = 10 if weekend or period == 'Mañana' else 17
+    return starts_at.replace(hour=hour, minute=0, second=0, microsecond=0)
+
+
 def seeded(model, key, lookup, defaults):
     existing = model.objects.filter(origin_key=key).first()
     if existing:
@@ -59,7 +69,7 @@ class Command(BaseCommand):
             age_min, age_max = map(int, field(line, 'age').split('-'))
             activity, created = seeded(Activity, 'activity:' + str(number(line, 'id')), {'name': field(line, 'name'), 'organization': org}, {'category': category, 'description': field(line, 'desc'), 'age_min': age_min, 'age_max': age_max, 'sparks': number(line, 'sparks'), 'price': price_by_name.get(field(line, 'name'), 0), 'icon': field(line, 'icon')})
             if created:
-                start = timezone.now().replace(hour=17, minute=0, second=0, microsecond=0) + timedelta(days=7)
+                start = example_start(field(line, 'time'), timezone.now())
                 spots = number(line, 'spots')
                 Schedule.objects.create(activity=activity, starts_at=start, capacity=max(1, spots), available=spots)
         default_city = City.objects.get(name='Valparaíso')

@@ -144,6 +144,49 @@
 .ks-explore-heading { max-width: 67ch; }
 .ks-explore-heading p { margin-bottom: 0; }
 .ks-filter-actions { display: flex; align-items: center; gap: 12px; }
+.platform .ks-catalog-period { flex-grow: 1.3; min-width: 165px; }
+.ks-catalog-filter-help { flex-basis: 100%; font-size: 12px; margin: 0; }
+.platform .ks-catalog-check { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.ks-catalog-check input { accent-color: var(--ks-teal); }
+.ks-catalog-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.ks-catalog-results { grid-area: 1 / 1; }
+.ks-catalog-results-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.ks-catalog-results-heading h2, .ks-catalog-results-heading p { margin: 0; }
+.ks-catalog-results-heading p { white-space: nowrap; }
+.ks-catalog-cards .activity-card { position: relative; }
+.ks-catalog-results, .ks-catalog-cards .activity-card { scroll-margin-top: 96px; }
+.ks-catalog-cards .activity-card:target { outline: 3px solid #24877a; outline-offset: 3px; }
+.platform .ks-catalog-availability { width: fit-content; padding: 4px 9px; border-radius: 8px; background: #f1f3f5; color: var(--ks-muted); font-weight: 700; }
+.platform .ks-catalog-availability.has-cupos { background: #dff4ea; color: #075f4f; }
+.ks-catalog-favorite { position: absolute; top: 10px; right: 10px; }
+.ks-catalog-favorite button {
+  display: grid; place-items: center; min-width: 44px; min-height: 44px;
+  border: 1px solid var(--ks-border); border-radius: 50%; color: #a33253; background: #fff; font-size: 17px;
+}
+.ks-catalog-favorite button[aria-pressed="true"] .ks-icon { fill: #d44f75; stroke: #a33253; }
+.platform .ks-catalog-map { padding: clamp(12px, 2vw, 22px); }
+.ks-map-heading { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.ks-map-heading h2 { margin: 0; font-size: 24px; }
+.ks-map-heading .ks-icon { color: var(--ks-teal); }
+.ks-map-canvas {
+  position: relative; min-height: 255px; aspect-ratio: 1.5;
+  border: 1px solid #b8d5d4; border-radius: 14px; background: #deefde url("catalog-map.svg") center / 100% 100% no-repeat;
+}
+.ks-map-pin {
+  position: absolute; left: var(--pin-x); top: var(--pin-y); transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; justify-content: center; min-height: 42px; gap: 5px;
+  padding: 6px 9px; border: 1px solid #689f98; border-radius: 10px;
+  background: #fff; color: var(--ks-navy); box-shadow: 0 3px 10px #17354636; font-size: 12px; font-weight: 750; white-space: nowrap;
+}
+.ks-map-pin b { border-radius: 8px; padding: 2px 5px; background: #dff4ee; color: #065f55; }
+.ks-map-pin:hover, .ks-map-pin[aria-current="location"] { color: #fff; background: #0a685d; }
+.ks-map-pin:focus-visible { z-index: 2; }
+.ks-map-hint { margin-bottom: 0; }
+.ks-map-preview { border-top: 1px solid var(--ks-border); margin-top: 16px; padding-top: 12px; }
+.ks-map-preview summary { cursor: pointer; color: var(--ks-navy); font-weight: 700; }
+.ks-map-preview ul { list-style: none; padding: 0; margin-bottom: 0; }
+.ks-map-preview li { display: grid; padding: 5px 0; }
+.ks-map-preview small { color: var(--ks-muted); }
 .platform .provider-hero h1 { max-width: 16ch; }
 .platform .provider-kicker { text-transform: uppercase; font-size: 12px; letter-spacing: .08em; }
 .ks-operator-tools h3 { margin: 12px 0 6px; }
@@ -160,6 +203,8 @@
   .ks-audiences, .ks-evidence-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 900px) {
+  .ks-catalog-layout { grid-template-columns: minmax(0, 1fr); }
+  .ks-catalog-results { grid-area: auto; }
   .platform .portal-header-in { flex-wrap: wrap; gap: 8px; min-height: 65px; }
   .platform .nav-toggle { display: inline-flex; align-items: center; gap: 7px; }
   .platform .portal-header nav { display: none; flex-basis: 100%; padding: 4px 0 12px; align-items: stretch; }
@@ -175,6 +220,9 @@
   .ks-home-strip .portal-shell { justify-content: flex-start; }
 }
 @media (max-width: 550px) {
+  .ks-catalog-results-heading { flex-wrap: wrap; }
+  .ks-map-canvas { min-height: 255px; aspect-ratio: auto; }
+  .ks-map-pin { padding-inline: 6px; font-size: 11px; }
   .platform :is(.portal-shell,.portal-header-in) { width: calc(100% - 32px); }
   .ks-audiences { grid-template-columns: minmax(0,1fr); }
   .ks-evidence { padding: 12px; }

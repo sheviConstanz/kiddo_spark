@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import StringIO
 from runpy import run_module
 from unittest.mock import patch
@@ -61,7 +61,7 @@ class PortalTests(TestCase):
 
     def test_local_visual_resources_resolve(self):
         from django.contrib.staticfiles import finders
-        for path in ['logo.png', 'css/styles.css', 'portal.css', 'portal-theme.css', 'portal-icons.svg', 'portal.js', 'admin/css/base.css']:
+        for path in ['logo.png', 'css/styles.css', 'portal.css', 'portal-theme.css', 'portal-icons.svg', 'catalog-map.svg', 'portal.js', 'admin/css/base.css']:
             with self.subTest(path=path):
                 self.assertIsNotNone(finders.find(path))
                 self.assertEqual(self.client.get('/static/' + path).status_code, 200)
@@ -73,6 +73,58 @@ class PortalTests(TestCase):
             self.assertContains(response, phrase)
         self.assertContains(response, f'href="{reverse("request_create")}?kind=agreement"')
         self.assertContains(response, f'href="{reverse("providers")}"')
+
+    def test_catalog_period_availability_and_map_use_the_same_filtered_set(self):
+        vina = m.City.objects.create(name='Viña del Mar')
+        self.foreign_org.city = vina
+        self.foreign_org.save(update_fields=['city'])
+        now = timezone.make_aware(datetime(2030, 5, 6, 8))
+        for activity, day, hour, capacity in (
+            (self.activity, 7, 10, 0),
+            (self.activity, 7, 17, 3),
+            (self.activity, 8, 10, 2),
+            (self.foreign_activity, 11, 10, 4),
+        ):
+            m.Schedule.objects.create(
+                activity=activity, starts_at=timezone.make_aware(datetime(2030, 5, day, hour)),
+                capacity=max(1, capacity), available=capacity,
+            )
+        endpoint = reverse('explore')
+        with patch('core.views.timezone.now', return_value=now):
+            response = self.client.get(endpoint, {
+                'q': self.cat.name, 'age': '8-10', 'period': 'morning', 'sparks': 4, 'available': 1,
+            })
+            self.assertEqual(response.status_code, 200)
+            result, = response.context['page'].object_list
+            self.assertEqual(result.pk, self.activity.pk)
+            self.assertEqual(result.catalog_cupos, 2)
+            self.assertEqual(timezone.localtime(result.catalog_next).day, 8)
+            self.assertEqual(
+                {point['city'].name: point['count'] for point in response.context['map_points']},
+                {self.city.name: 1, vina.name: 0},
+            )
+            self.assertContains(response, 'Mapa referencial por comuna')
+            self.assertContains(response, 'period=morning&amp;sparks=4&amp;available=1&amp;city=')
+
+            response = self.client.get(endpoint, {'city': vina.pk, 'period': 'weekend'})
+            self.assertEqual([item.pk for item in response.context['page']], [self.foreign_activity.pk])
+            self.assertContains(response, 'aria-current="location"')
+            self.assertContains(response, f'href="#actividad-{self.foreign_activity.pk}"')
+
+            response = self.client.get(endpoint, {'city': self.city.pk, 'period': 'after-school'})
+            self.assertEqual(response.context['page'][0].catalog_cupos, 3)
+            response = self.client.get(endpoint, {'city': vina.pk, 'period': 'morning'})
+            self.assertContains(response, 'No encontramos coincidencias')
+
+    def test_catalog_favorite_action_preserves_filters(self):
+        self.auth()
+        query = f'?city={self.city.pk}&age=8-10'
+        favorite = reverse('favorite', args=[self.activity.pk])
+        response = self.client.post(favorite + query, {'from_catalog': '1'})
+        self.assertRedirects(response, reverse('explore') + query)
+        response = self.client.get(reverse('explore') + query + '&favorites=1')
+        self.assertContains(response, 'aria-pressed="true"')
+        self.assertEqual([item.pk for item in response.context['page']], [self.activity.pk])
 
     def test_dashboard_prioritizes_actions_for_each_role(self):
         dashboard = reverse('dashboard')

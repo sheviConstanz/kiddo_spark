@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 395" preserveAspectRatio="none">
+  <defs>
+    <pattern id="water" width="44" height="30" patternUnits="userSpaceOnUse">
+      <path d="M2 15q8-7 16 0t16 0" fill="none" stroke="#91c5d0" opacity=".55" stroke-width="1.4" stroke-linecap="round"/>
+    </pattern>
+    <pattern id="land" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="5" r="1.3" fill="#aac7ac" opacity=".7"/>
+    </pattern>
+    <path id="coast" d="M228 0C207 43 177 44 177 85s35 47 28 75-42 27-56 55-17 45-32 70-36 49-30 110h553V0z"/>
+  </defs>
+  <path fill="#d3edf3" d="M0 0h640v395H0z"/>
+  <path fill="url(#water)" d="M0 0h640v395H0z"/>
+  <use href="#coast" fill="#dcebd8" stroke="#91bfae" stroke-width="4"/>
+  <use href="#coast" fill="url(#land)"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M127 271q35-62 82-99t58-77q130 13 163 107t144 104M198 200q111 61 258 56t166 30M278 101q75-26 146-1t135-35M326 249q-19 80-75 146M499 114q29 103 141 121" stroke="#fffdf5" stroke-width="5"/>
+    <path d="M125 271q37-60 84-99t58-77q130 13 163 107t144 104" stroke="#fff" stroke-width="10"/>
+  </g>
+</svg>

@@ -1,4 +1,4 @@
-<article class="activity-card">
+<article class="activity-card"{% if catalog %} id="actividad-{{ activity.pk }}" tabindex="-1"{% endif %}>
   <div class="activity-art art-{{ forloop.counter0|divisibleby:2|yesno:'mint,lavender' }}">
     <span aria-hidden="true">{{ activity.icon }}</span>
     <small>{% include 'portal/icon.html' with name='pin' %} {{ activity.organization.city }}</small>
@@ -7,10 +7,26 @@
     <p class="eyebrow">{{ activity.category }} · {{ activity.age_min }}–{{ activity.age_max }} años</p>
     <h3><a href="{% url 'activity' activity.pk %}">{{ activity.name }}</a></h3>
     <p>{{ activity.organization.name }}</p>
+    {% if catalog %}
+      <p class="ks-catalog-availability{% if activity.catalog_cupos %} has-cupos{% endif %}">
+        {% include 'portal/icon.html' with name='calendar' %}
+        {% if activity.catalog_cupos %}{{ activity.catalog_cupos }} cupo{{ activity.catalog_cupos|pluralize }} en próximos horarios{% else %}Sin cupos próximos{% endif %}
+      </p>
+      {% if activity.catalog_next %}<p class="muted">Próximo con cupos: {{ activity.catalog_next|date:"D d/m · H:i" }}</p>{% endif %}
+    {% endif %}
     <p class="muted">{{ activity.description|truncatechars:110 }}</p>
     <div class="card-bottom">
       <span class="spark-badge">{{ activity.sparks }} Sparks</span>
       <a class="inline-link" href="{% url 'activity' activity.pk %}" aria-label="Ver horarios de {{ activity.name }}">Ver horarios {% include 'portal/icon.html' with name='arrow' %}</a>
     </div>
   </div>
+  {% if catalog and user.is_authenticated %}
+    <form class="ks-catalog-favorite" method="post" action="{% url 'favorite' activity.pk %}?{{ request.GET.urlencode }}">
+      {% csrf_token %}
+      <input type="hidden" name="from_catalog" value="1">
+      <button type="submit" aria-pressed="{% if activity.catalog_favorite %}true{% else %}false{% endif %}" aria-label="{% if activity.catalog_favorite %}Quitar de favoritos{% else %}Guardar en favoritos{% endif %}: {{ activity.name }}">
+        {% include 'portal/icon.html' with name='heart' %}
+      </button>
+    </form>
+  {% endif %}
 </article>

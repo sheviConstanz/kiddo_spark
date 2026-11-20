@@ -21,7 +21,7 @@ tiempo para comparar alternativas son objetivos para evaluar en un piloto.
 
 | Quién la usa | Qué puede hacer en la demo |
 | --- | --- |
-| **Visitante** | Explorar actividades, buscar por nombre o centro, filtrar por comuna, categoría y edad, y revisar la ficha, los horarios y los cupos. |
+| **Visitante** | Explorar el mapa referencial de las cuatro comunas piloto o buscar en el listado. Puede combinar filtros de comuna, categoría, edad, franja horaria, Sparks y cupos, y consultar el próximo horario disponible. |
 | **Familia** | Crear una cuenta, guardar favoritos y activar un plan de prueba para cargar **Sparks**, los créditos de la demo. Puede reservar un horario con cupo, consultar sus movimientos, descargar un comprobante de ejemplo y cancelar una reserva confirmada para recuperar los Sparks. Después de que el centro marque la reserva como completada, puede dejar una opinión. |
 | **Proveedor que quiere incorporarse** | Registrar su centro, seguir el estado de su ficha y corregirla y reenviarla si recibe observaciones. Puede consultar si fue aprobada o rechazada y leer la decisión. |
 | **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede crear, editar o desactivar publicaciones, administrar horarios y cupos, ver y exportar reservas, registrar asistencia y responder opiniones. El panel muestra reservas y actividades más solicitadas a partir de los registros de la demo. |
@@ -77,7 +77,7 @@ la pantalla de la demo local.
 | Tiempo | Qué mostrar | Qué decir |
 | --- | --- | --- |
 | 1 min | Portada, comunas y cifras del piloto. | «Esta es la propuesta de servicio. La encuesta mide interés declarado y las otras cifras orientan qué queremos evaluar». |
-| 2 min | **Explorar actividades**. Filtren por comuna o edad, abran una ficha y comparen horarios. En una cuenta familiar, activen un plan demo si necesitan Sparks, hagan una reserva y ábranla en **Reservas**. | «La familia ve la oferta, el cupo y la confirmación. La demo descuenta Sparks de prueba y registra la reserva». |
+| 2 min | **Explorar actividades**. Seleccionen una comuna en el mapa, combinen filtros y abran una ficha con cupos. En una cuenta familiar, activen un plan demo si necesitan Sparks, hagan una reserva y ábranla en **Reservas**. | «El mapa orienta por comuna. Los horarios y cupos vienen de lo que registra el centro. La demo descuenta Sparks de prueba y guarda la reserva». |
 | 2 min | **Proveedores**. Muestren una ficha en revisión y, con superadministración, la cola de **Validación de proveedores**. Con un operador habilitado, abran **Publicaciones** y **Horarios y cupos**. | «Primero incorporamos la oferta. El equipo revisa al proveedor y registra el motivo de su decisión. El centro habilitado mantiene sus propios horarios y cupos». |
 | 1 min | **Empresas y colegios** en la portada. Muestren la propuesta de convenio y el panel ilustrativo. | «Los convenios exploran un beneficio extracurricular para comunidades. El panel ilustra cómo ver participación agregada». |
 | 1 min | Cierre y conversación con jefatura. | «Queremos comentarios sobre el proceso y el valor para familias y centros, para definir qué mediríamos en un piloto». |

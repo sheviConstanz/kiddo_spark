@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 2026-11-19 — Mapa y filtros del catálogo
+
+- Mapa referencial de las comunas piloto conectado con el listado y sus filtros.
+- Filtros por rango de edad, franja horaria y disponibilidad. Las tarjetas
+  muestran cupos, próximo horario con cupos y acceso a favoritos.
+- El catálogo inicial de una instalación nueva incluye horarios de ejemplo en
+  las tres franjas. Los horarios guardados conservan su configuración.
+
 ## 2026-11-19 — Demo remota privada y opcional
 
 - `compartir_local.ps1` prepara un enlace temporal de Microsoft Dev Tunnels

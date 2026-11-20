@@ -1,0 +1,33 @@
+<aside class="ks-catalog-map portal-card" aria-labelledby="catalog-map-heading">
+  <div class="ks-map-heading">
+    <h2 id="catalog-map-heading">{% include 'portal/icon.html' with name='pin' %} Mapa del catálogo</h2>
+    {% if selected_city %}<a class="inline-link" href="{% querystring city=None page=None %}#resultados">Todas las comunas</a>{% endif %}
+  </div>
+  <p class="muted">Mapa referencial por comuna. Los marcadores no indican una dirección exacta.</p>
+  {% if map_points %}
+    <div class="ks-map-canvas">
+      {% for point in map_points %}
+        <a class="ks-map-pin" style="--pin-x: {{ point.x }}%; --pin-y: {{ point.y }}%"
+           href="{% querystring city=point.city.pk page=None %}#resultados"
+           {% if selected_city == point.city %}aria-current="location"{% endif %}
+           aria-label="{% if selected_city and selected_city != point.city %}Ver {{ point.city.name }}{% else %}{{ point.city.name }}, {{ point.count }} actividad{{ point.count|pluralize:',es' }}{% endif %}">
+          <span class="ks-pin-label">{{ point.city.name }}</span>
+          {% if not selected_city or selected_city == point.city %}<b>{{ point.count }}</b>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+    <p class="ks-map-hint muted">Selecciona una comuna para filtrar el listado. Los números indican actividades, no cupos.</p>
+    {% if selected_city and page %}
+      <details class="ks-map-preview" open>
+        <summary>Actividades en {{ selected_city.name }} · esta página</summary>
+        <ul>
+          {% for activity in page %}
+            <li><a class="inline-link" href="#actividad-{{ activity.pk }}">{{ activity.name }}</a><small>{{ activity.sparks }} Sparks · {% if activity.catalog_cupos %}{{ activity.catalog_cupos }} cupos{% else %}Sin cupos{% endif %}</small></li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  {% else %}
+    <p class="notice">El mapa estará disponible cuando se carguen las comunas del piloto.</p>
+  {% endif %}
+</aside>

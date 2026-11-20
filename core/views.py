@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
-from django.db.models import Case, Count, OuterRef, Subquery, Sum, Avg, Q, F, Value, When
+from django.db.models import Case, Count, Exists, OuterRef, Subquery, Sum, Avg, Q, F, Value, When
 from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
@@ -32,20 +32,81 @@ def reference(request):
     return HttpResponse(html)
 
 
+def catalog_number(value):
+    return int(value) if value.isascii() and value.isdecimal() and len(value) <= 18 else None
+
+
+CATALOG_AGES = {'5-7': (5, 7), '8-10': (8, 10), '11-14': (11, 14)}
+SCHOOL_DAYS = (2, 3, 4, 5, 6)  # Django week_day: Sunday=1.
+CATALOG_PERIODS = {
+    'morning': ('Mañana', Q(starts_at__week_day__in=SCHOOL_DAYS, starts_at__hour__lt=12)),
+    'after-school': ('Después de clases',
+                     Q(starts_at__week_day__in=SCHOOL_DAYS, starts_at__hour__gte=15, starts_at__hour__lt=20)),
+    'weekend': ('Fin de semana', Q(starts_at__week_day__in=(7, 1))),
+}
+CATALOG_MAP_POSITIONS = {
+    'Valparaíso': (18, 66), 'Viña del Mar': (36, 27),
+    'Quilpué': (63, 49), 'Villa Alemana': (77, 76),
+}
+
+
 def explore(request):
+    filters = request.GET
     qs = public_activities()
     for key, lookup in [('city', 'organization__city_id'), ('category', 'category_id')]:
-        if request.GET.get(key, '').isdigit():
-            qs = qs.filter(**{lookup: request.GET[key]})
-    if request.GET.get('q'):
-        qs = qs.filter(Q(name__icontains=request.GET['q']) | Q(organization__name__icontains=request.GET['q']) | Q(description__icontains=request.GET['q']))
-    if request.GET.get('age', '').isdigit():
-        qs = qs.filter(age_min__lte=int(request.GET['age']), age_max__gte=int(request.GET['age']))
-    if request.GET.get('sparks', '').isdigit():
-        qs = qs.filter(sparks__lte=int(request.GET['sparks']))
-    if request.GET.get('favorites') and request.user.is_authenticated:
-        qs = qs.filter(favorite__user=request.user)
-    return render(request, 'portal/explore.html', {'page': Paginator(qs.order_by('name'), 12).get_page(request.GET.get('page')), 'categories': m.Category.objects.filter(active=True), 'cities': m.City.objects.filter(active=True)})
+        value = catalog_number(filters.get(key, ''))
+        if value is not None:
+            qs = qs.filter(**{lookup: value})
+    search = filters.get('q', '').strip()
+    if search:
+        qs = qs.filter(Q(name__icontains=search) | Q(organization__name__icontains=search)
+                       | Q(category__name__icontains=search) | Q(description__icontains=search))
+    age = filters.get('age', '')
+    age_range = CATALOG_AGES.get(age)
+    exact_age = catalog_number(age)
+    if age_range:
+        qs = qs.filter(age_min__lte=age_range[1], age_max__gte=age_range[0])
+    elif exact_age is not None:
+        qs = qs.filter(age_min__lte=exact_age, age_max__gte=exact_age)
+    if (sparks := catalog_number(filters.get('sparks', ''))) is not None:
+        qs = qs.filter(sparks__lte=sparks)
+    favorites_only = request.user.is_authenticated and bool(filters.get('favorites'))
+    if request.user.is_authenticated:
+        favorites = m.Favorite.objects.filter(activity=OuterRef('pk'), user=request.user)
+        if favorites_only:
+            qs = qs.filter(Exists(favorites))
+
+    slots = m.Schedule.objects.filter(activity=OuterRef('pk'), active=True, starts_at__gt=timezone.now())
+    if period := CATALOG_PERIODS.get(filters.get('period')):
+        slots = slots.filter(period[1])
+        qs = qs.filter(Exists(slots))
+    if filters.get('available') == '1':
+        qs = qs.filter(Exists(slots.filter(available__gt=0)))
+
+    cities = list(m.City.objects.filter(active=True).order_by('name'))
+    by_city = dict(qs.order_by().values('organization__city_id').annotate(total=Count('pk'))
+                   .values_list('organization__city_id', 'total'))
+    map_points = []
+    for city in cities:
+        if city.name in CATALOG_MAP_POSITIONS:
+            x, y = CATALOG_MAP_POSITIONS[city.name]
+            map_points.append({'city': city, 'x': x, 'y': y, 'count': by_city.get(city.pk, 0)})
+    selected_city = next((city for city in cities if str(city.pk) == filters.get('city')), None)
+    totals = slots.order_by().values('activity').annotate(total=Sum('available')).values('total')
+    qs = qs.annotate(
+        catalog_cupos=Coalesce(Subquery(totals), Value(0)),
+        catalog_next=Subquery(slots.filter(available__gt=0).order_by('starts_at', 'pk').values('starts_at')[:1]),
+    )
+    if request.user.is_authenticated:
+        qs = qs.annotate(catalog_favorite=Exists(favorites))
+    return render(request, 'portal/explore.html', {
+        'page': Paginator(qs.order_by('name', 'pk'), 12).get_page(filters.get('page')),
+        'categories': m.Category.objects.filter(active=True).order_by('name'),
+        'cities': cities, 'map_points': map_points, 'selected_city': selected_city,
+        'age_options': CATALOG_AGES, 'exact_age': exact_age,
+        'period_options': [(key, period[0]) for key, period in CATALOG_PERIODS.items()],
+        'favorites_only': favorites_only,
+    })
 
 
 def activity_detail(request, pk):
@@ -127,6 +188,8 @@ def favorite(request, pk):
     item, created = m.Favorite.objects.get_or_create(user=request.user, activity=obj)
     if not created:
         item.delete()
+    if request.POST.get('from_catalog') == '1':
+        return redirect(reverse('explore') + '?' + request.GET.urlencode())
     return redirect('activity', pk=pk)
 
 

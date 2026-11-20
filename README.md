@@ -11,7 +11,9 @@ local. Usa datos ficticios, nunca información real de menores ni cuentas bancar
 
 ## Instalar en un computador Windows
 
-1. Descomprime el proyecto completo. El equipo necesita Python 3.14 o 3.15.
+1. En el [repositorio de Kiddo Spark](https://github.com/sheviConstanz/kiddo_spark),
+   elige **Code → Download ZIP** y descomprime el proyecto completo. El equipo
+   necesita Python 3.14 o 3.15.
 2. Haz clic derecho en **instalar_local.ps1** y elige **Ejecutar con PowerShell**.
    En Windows 11, la opción puede aparecer bajo **Mostrar más opciones**.
 3. El script prepara la base y el catálogo. Si faltan dependencias, pide
@@ -68,6 +70,12 @@ un despliegue permanente.
 
 ## Roles y permisos
 
+En una instalación limpia, puedes explorar de inmediato sin iniciar sesión.
+Para probar una reserva, usa **Crear cuenta** en la portada y activa un plan
+demo en **Exploraciones → Planes y Sparks**. Para probar el panel de operador,
+primero crea el superadministrador cuando el instalador lo ofrezca y configura
+la cuenta del centro con los pasos de esta sección.
+
 | Rol | Qué puede hacer |
 | --- | --- |
 | Usuario común | Explorar, guardar favoritos, activar planes demo, reservar, cancelar, valorar experiencias completadas y seguir sus solicitudes. |
@@ -115,6 +123,14 @@ El script de inicio aplica las actualizaciones de la base local al arrancar.
 Para una presentación no técnica, ve la [guía para presentar Kiddo Spark a
 jefatura](GUIA-PRESENTACION.md). Incluye funciones por rol, preparación y un
 recorrido de siete minutos para el equipo de Ingeniería Comercial.
+
+En **Explorar actividades**, combina búsqueda, comuna, categoría, tramo de
+edad, horario, Sparks y cupos. Los marcadores del mapa filtran por comuna y
+cuentan las actividades que cumplen los filtros. El mapa es referencial.
+Los cupos y el próximo horario de las tarjetas se calculan desde las
+sesiones guardadas. En instalaciones existentes, el catálogo mantiene los
+horarios anteriores. Para demostrar otra franja, crea un horario en
+**Horarios y cupos**.
 
 1. Crea una cuenta ficticia desde **Crear cuenta**.
 2. En **Planes y Sparks**, activa un plan demo. Cada activación añade Sparks;

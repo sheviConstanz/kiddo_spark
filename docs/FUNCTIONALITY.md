@@ -7,7 +7,7 @@ o ideas del material original. No se presupone un negocio operativo.
 | --- | --- | --- |
 | Cuenta | Registro, login/logout, cambio de contraseña, edición de nombre | Sin envío de email; recuperación mediante responsable local |
 | Permisos | Tres roles; grupos y asignación de organizaciones | No es una certificación de seguridad productiva |
-| Exploración | Catálogo persistente, búsqueda, comuna, categoría, edad, Sparks y favoritos | Sin geolocalización ni mapa cartográfico real |
+| Exploración | Mapa referencial por comuna, búsqueda, categoría, edad, horario, Sparks, cupos y favoritos persistentes | El mapa agrupa por comuna. No muestra coordenadas ni direcciones de los centros |
 | Actividades | CRUD, rangos de edad, proveedor, categoría, valor y estado | Sin verificación externa de academias |
 | Horarios | Fecha, capacidad, cupos y disponibilidad | Datos iniciales ilustrativos, renovados por administrador |
 | Planes | CRUD y activaciones registradas | Recargas manuales demo; sin pagos ni renovación automática |
