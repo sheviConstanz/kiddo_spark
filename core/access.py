@@ -3,14 +3,22 @@ from django.db.models import Q
 from .models import Organization, Activity, Booking, ServiceRequest
 
 
+def operates_platform(user):
+    return user.is_superuser or (user.is_staff and user.has_perm('core.operate_platform'))
+
+
 def require_manager(user, model, action='change'):
-    if not user.is_staff or not user.has_perm(f'core.{action}_{model._meta.model_name}'):
+    model_name = model._meta.model_name
+    if not user.is_staff or not user.has_perm(f'core.{action}_{model_name}'):
         raise PermissionDenied('No tienes permisos para esta operación.')
+    if (model_name in {'settlement', 'withdrawal', 'bankaccount'}
+            and not user.is_superuser and operates_platform(user)):
+        raise PermissionDenied('La operación de plataforma no incluye finanzas de proveedores.')
 
 
 def organizations(user):
     qs = Organization.objects.all()
-    return qs if user.is_superuser else qs.filter(administrators=user) if user.is_staff else qs.none()
+    return qs if operates_platform(user) else qs.filter(administrators=user) if user.is_staff else qs.none()
 
 
 def activities(user):
@@ -22,6 +30,8 @@ def bookings(user):
     if user.is_superuser:
         return qs
     if user.is_staff and user.has_perm('core.view_booking'):
+        if operates_platform(user):
+            return qs
         return qs.filter(Q(user=user) | Q(schedule__activity__organization__in=organizations(user))).distinct()
     return qs.filter(user=user)
 
@@ -31,5 +41,7 @@ def requests(user):
     if user.is_superuser:
         return qs
     if user.is_staff and user.has_perm('core.view_servicerequest'):
+        if operates_platform(user):
+            return qs
         return qs.filter(Q(user=user) | Q(organization__in=organizations(user))).distinct()
     return qs.filter(user=user)

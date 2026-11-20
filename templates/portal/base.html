@@ -55,7 +55,7 @@
       {% if user.is_staff %}
         {% if perms.core.view_activity %}<a href="{% url 'management' 'activities' %}">Publicaciones</a>{% endif %}
         {% if perms.core.view_schedule %}<a href="{% url 'management' 'schedules' %}">Horarios y cupos</a>{% endif %}
-        {% if perms.core.view_settlement %}<a href="{% url 'finance' %}">Finanzas demo</a>{% endif %}
+        {% if user.is_superuser or not perms.core.operate_platform and perms.core.view_settlement %}<a href="{% url 'finance' %}">Finanzas demo</a>{% endif %}
         {% if perms.core.view_review %}<a href="{% url 'reputation' %}">Reputación</a>{% endif %}
       {% else %}
         <a href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Favoritos</a>

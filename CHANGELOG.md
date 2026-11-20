@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 2026-11-20 — Cuatro cuentas listas para la demo local
+
+- Migración de datos para superadministración, administración de plataforma,
+  familia y proveedor. Preserva las cuentas existentes y excluye la demo remota.
+- El administrador de plataforma puede editar el catálogo y gestionar solicitudes
+  y reservas. Usuarios, permisos, validación de proveedores y finanzas quedan
+  fuera de ese rol.
+- Instalación sin preguntas de creación de usuario. Credenciales de prueba y
+  recorrido por perfil documentados para el equipo.
+
 ## 2026-11-19 — Arranque local con doble clic
 
 - **Abrir Kiddo Spark.cmd** prepara una instalación nueva y abre la demo en

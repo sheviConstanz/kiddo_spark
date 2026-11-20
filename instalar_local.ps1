@@ -28,21 +28,7 @@ try {
     Write-Host 'Preparando la base y el catalogo de demostracion...'
     Invoke-LocalPython manage.py migrate --noinput
     Invoke-LocalPython manage.py seed_demo
-    $adminCheck = @'
-import os
-
-import django
-from django.contrib.auth import get_user_model
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'kiddo.settings')
-django.setup()
-print(int(get_user_model().objects.filter(is_superuser=True, is_active=True).exists()))
-'@
-    $adminExists = $adminCheck | & $pythonPath -B -
-    if ($LASTEXITCODE -ne 0) { throw 'No se pudo comprobar la cuenta de superadministracion.' }
-    if ($adminExists -eq '0' -and (Read-Host 'Crear una cuenta de superadministracion para la demo? [S/N]') -match '^(s|si)$') {
-        Invoke-LocalPython manage.py createsuperuser
-    }
+    Write-Host 'Consulta los usuarios de prueba en el README.'
     Write-Host 'Instalacion lista. Ejecuta iniciar_local.ps1 para encender la demo.' -ForegroundColor Green
 } catch {
     Write-Host ("No se pudo completar la instalacion. " + $_.Exception.Message) -ForegroundColor Red

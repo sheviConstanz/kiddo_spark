@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta
+from importlib import import_module
 from io import StringIO
 from runpy import run_module
+from types import SimpleNamespace
 from unittest.mock import patch
+from django.apps import apps
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.management import call_command
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase, TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
@@ -21,6 +24,7 @@ class TunnelSettingsTests(SimpleTestCase):
         self.assertEqual(configuration['ALLOWED_HOSTS'], ['example-8001.usw2.devtunnels.ms', '127.0.0.1'])
         self.assertEqual(configuration['DATABASES']['default']['NAME'].name, 'kiddo_tunnel.sqlite3')
         self.assertTrue(configuration['SESSION_COOKIE_SECURE'])
+        self.assertFalse(configuration['KIDDO_SEED_DEMO_ACCOUNTS'])
 
     def test_rejects_unrelated_or_malformed_origins(self):
         for origin in ('', 'http://example-8001.devtunnels.ms', 'https://example-8000.devtunnels.ms',
@@ -31,6 +35,125 @@ class TunnelSettingsTests(SimpleTestCase):
                     run_module('kiddo.tunnel_settings')
 
 
+class DemoAccountTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.activity = m.Activity.objects.get(origin_key='demo:operator-activity')
+        cls.center = cls.activity.organization
+        cls.family = m.User.objects.get(username='usuario')
+        cls.other_center = m.Organization.objects.create(
+            name='Centro ajeno a proveedor demo', city=cls.center.city, email='otro@example.invalid',
+            created_by=cls.family, approved=True,
+        )
+        cls.other_activity = m.Activity.objects.create(
+            organization=cls.other_center, name='Actividad de otro centro',
+            category=cls.activity.category, description='Otro centro ficticio',
+        )
+
+    def login_profile(self, username):
+        response = self.client.post(reverse('login'), {'username': username, 'password': username})
+        self.assertRedirects(response, reverse('dashboard'))
+
+    def test_data_migration_creates_four_login_profiles(self):
+        expected = {
+            'superadmin': ('correo@superadmin.cl', True, True),
+            'admin': ('admin@demo.example.invalid', True, False),
+            'usuario': ('usuario@demo.example.invalid', False, False),
+            'proveedor': ('proveedor@demo.example.invalid', True, False),
+        }
+        for username, (email, staff, root) in expected.items():
+            with self.subTest(username=username):
+                self.client.logout()
+                self.login_profile(username)
+                user = m.User.objects.get(username=username)
+                self.assertEqual((user.email, user.is_staff, user.is_superuser), (email, staff, root))
+                self.assertNotEqual(user.password, username)
+        self.assertTrue(self.center.approved)
+        self.assertTrue(self.activity.schedules.filter(starts_at__gt=timezone.now(), available__gt=0).exists())
+
+    def test_admin_edits_platform_catalogue_and_requests_but_cannot_use_sensitive_routes(self):
+        self.login_profile('admin')
+        categories = reverse('management', args=['categories'])
+        edit = reverse('edit_record', args=['categories', self.activity.category_id])
+        response = self.client.get(categories)
+        self.assertContains(response, edit)
+        self.assertNotContains(response, reverse('superadmin:core_user_changelist'))
+        self.assertRedirects(self.client.post(edit, {'name': 'Categoría actualizada', 'active': 'on'}), categories)
+        self.assertEqual(m.Category.objects.get(pk=self.activity.category_id).name, 'Categoría actualizada')
+        foreign_activity_edit = reverse('edit_record', args=['activities', self.other_activity.pk])
+        self.assertEqual(self.client.get(foreign_activity_edit).status_code, 200)
+        request_record = m.ServiceRequest.objects.create(
+            user=self.family, kind='agreement', entity_name='Colegio ficticio',
+            subject='Convenio', message='Prueba con otro usuario',
+        )
+        request_url = reverse('request_detail', args=[request_record.pk])
+        self.assertRedirects(self.client.post(request_url, {'status': 'reviewing', 'note': 'Revisión demo'}), request_url)
+
+        for url in (reverse('superadmin:core_user_changelist'), reverse('superadmin:auth_group_changelist')):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 302)
+            self.assertIn('/superadmin/login/', response.url)
+        # An extra grant from an operator group must not extend a global role to finance.
+        admin = m.User.objects.get(username='admin')
+        finance_permissions = Permission.objects.filter(
+            content_type__app_label='core',
+            codename__in=('view_settlement', 'change_bankaccount', 'add_withdrawal'),
+        )
+        admin.user_permissions.add(*finance_permissions)
+        for url in (reverse('finance'), reverse('bank', args=[self.center.pk]),
+                    reverse('withdrawal', args=[self.center.pk]), reverse('provider_review_queue')):
+            self.assertEqual(self.client.get(url).status_code, 403)
+        bank = reverse('bank', args=[self.center.pk])
+        self.assertEqual(self.client.post(bank, {'bank': 'Prueba', 'account_type': 'Demo', 'last_four': '1234'}).status_code, 403)
+        self.assertFalse(m.BankAccount.objects.filter(organization=self.center).exists())
+
+    def test_provider_operates_only_the_assigned_center_and_family_reservation(self):
+        self.login_profile('usuario')
+        self.assertEqual(self.client.get(reverse('management', args=['activities'])).status_code, 403)
+        plan = m.Plan.objects.create(name='Plan para el recorrido demo', sparks=10)
+        self.client.post(reverse('activate_plan', args=[plan.pk]))
+        slot = self.activity.schedules.get()
+        self.assertRedirects(self.client.post(reverse('reserve', args=[slot.pk])), reverse('bookings'))
+        booking = self.family.bookings.get(schedule=slot)
+
+        self.client.logout()
+        self.login_profile('proveedor')
+        activities = self.client.get(reverse('management', args=['activities']))
+        self.assertContains(activities, self.activity.name)
+        self.assertNotContains(activities, self.other_activity.name)
+        foreign_edit = reverse('edit_record', args=['activities', self.other_activity.pk])
+        self.assertEqual(self.client.post(foreign_edit, {'name': 'Cambio indebido'}).status_code, 404)
+        self.assertEqual(self.client.get(reverse('management', args=['categories'])).status_code, 403)
+        self.assertContains(self.client.get(reverse('bookings')), f'KS-{booking.pk}')
+        complete = reverse('booking_action', args=[booking.pk, 'complete'])
+        self.assertRedirects(self.client.post(complete), reverse('bookings'))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'completed')
+
+        self.client.logout()
+        self.login_profile('superadmin')
+        self.assertEqual(self.client.get(reverse('superadmin:core_user_changelist')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('bank', args=[self.center.pk])).status_code, 200)
+
+    def test_data_migration_leaves_existing_accounts_and_conflicting_emails_intact(self):
+        admin = m.User.objects.get(username='admin')
+        old_permissions = set(admin.user_permissions.values_list('pk', flat=True))
+        admin.email = 'cuenta-existente@example.invalid'
+        admin.set_password('Existing-Test-Password-482!')
+        admin.save()
+        self.family.username = 'familia_existente'
+        self.family.save(update_fields=['username'])
+
+        migration = import_module('core.migrations.0006_local_demo_accounts')
+        migration.create_local_accounts(apps, SimpleNamespace(connection=connection))
+        admin.refresh_from_db()
+        self.assertEqual(admin.email, 'cuenta-existente@example.invalid')
+        self.assertTrue(admin.check_password('Existing-Test-Password-482!'))
+        self.assertEqual(set(admin.user_permissions.values_list('pk', flat=True)), old_permissions)
+        self.assertFalse(m.User.objects.filter(username='usuario').exists())
+        self.assertTrue(m.User.objects.filter(username='familia_existente', pk=self.family.pk).exists())
+
+
 class PortalTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -39,8 +162,8 @@ class PortalTests(TestCase):
         cls.manager = m.User.objects.create_user('gestor', email='gestor@example.invalid', password='Manager-Example!59', is_staff=True)
         cls.manager.user_permissions.set(Permission.objects.filter(content_type__app_label='core').exclude(content_type__model='user'))
         cls.root = m.User.objects.create_superuser('super', 'super@example.invalid', 'Root-Example!59')
-        cls.city = m.City.objects.create(name='Valparaíso')
-        cls.cat = m.Category.objects.create(name='Deportes')
+        cls.city, _ = m.City.objects.get_or_create(name='Valparaíso')
+        cls.cat, _ = m.Category.objects.get_or_create(name='Deportes')
         cls.org = m.Organization.objects.create(name='Centro prueba', city=cls.city, created_by=cls.root, approved=True, email='centro@example.invalid')
         cls.org.administrators.add(cls.manager)
         cls.foreign_org = m.Organization.objects.create(name='Otro centro', city=cls.city, created_by=cls.root, approved=True, email='otro@example.invalid')

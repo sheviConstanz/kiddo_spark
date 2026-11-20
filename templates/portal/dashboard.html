@@ -1,12 +1,12 @@
 {% extends 'portal/base.html' %}
-{% block title %}{% if user.is_superuser %}Panel de operación{% elif user.is_staff %}Seller Center{% else %}Mi panel familiar{% endif %} · Kiddo Spark{% endblock %}
+{% block title %}{% if perms.core.operate_platform %}Panel de operación{% elif user.is_staff %}Seller Center{% else %}Mi panel familiar{% endif %} · Kiddo Spark{% endblock %}
 {% block content %}
 <section class="portal-shell section-space">
   <div class="section-heading ks-dashboard-title">
     <div>
-      <p class="ks-kicker">{% if user.is_superuser %}Operación Kiddo Spark{% elif user.is_staff %}Seller Center{% else %}Mi cuenta familiar{% endif %}</p>
+      <p class="ks-kicker">{% if perms.core.operate_platform %}Operación Kiddo Spark{% elif user.is_staff %}Seller Center{% else %}Mi cuenta familiar{% endif %}</p>
       <h1>Hola, {{ user.first_name|default:user.username }}</h1>
-      <p class="muted">{% if user.is_superuser %}Revisa el catálogo, las solicitudes de proveedores y la operación de la demo.{% elif user.is_staff %}Gestiona publicaciones, horarios y reservas de tus centros asignados.{% else %}Consulta tus actividades, reservas y movimientos de Sparks.{% endif %}</p>
+      <p class="muted">{% if user.is_superuser %}Revisa el catálogo, las solicitudes de proveedores y la operación de la demo.{% elif perms.core.operate_platform %}Gestiona el catálogo, las reservas y las solicitudes de la plataforma.{% elif user.is_staff %}Gestiona publicaciones, horarios y reservas de tus centros asignados.{% else %}Consulta tus actividades, reservas y movimientos de Sparks.{% endif %}</p>
     </div>
     {% if user.is_superuser %}<a class="btn btn-primary" href="{% url 'provider_review_queue' %}">Validar proveedores</a>
     {% elif user.is_staff and perms.core.view_activity %}<a class="btn btn-primary" href="{% url 'management' 'activities' %}">Ver publicaciones</a>
@@ -20,7 +20,7 @@
       <a class="portal-card ks-action-card" href="{% url 'bookings' %}">{% include 'portal/icon.html' with name='calendar' %} Reservas y comprobantes</a>
       <a class="portal-card ks-action-card" href="{% url 'requests' %}">{% include 'portal/icon.html' with name='list' %} Seguimiento de solicitudes</a>
       {% if user.is_staff %}
-        {% if perms.core.view_settlement %}<a class="portal-card ks-action-card" href="{% url 'finance' %}">{% include 'portal/icon.html' with name='chart' %} Finanzas demo</a>{% endif %}
+        {% if user.is_superuser or not perms.core.operate_platform and perms.core.view_settlement %}<a class="portal-card ks-action-card" href="{% url 'finance' %}">{% include 'portal/icon.html' with name='chart' %} Finanzas demo</a>{% endif %}
       {% else %}
         <a class="portal-card ks-action-card" href="{% url 'wallet' %}">{% include 'portal/icon.html' with name='spark' %} Sparks y movimientos</a>
         <a class="portal-card ks-action-card" href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Mis favoritos</a>
@@ -41,7 +41,8 @@
       <article class="metric"><span>Solicitudes del período</span><b>{{ request_count }}</b><small>{{ pending_count }} pendientes</small></article>
       <article class="metric"><span>Sparks reservados</span><b>{{ totals.sparks|default:0 }}</b><small>Excluye reservas canceladas</small></article>
       <article class="metric">
-        {% if user.is_staff %}<span>Monto referencial demo</span><b>${{ totals.amount|default:0 }}</b><small>No acredita cobros reales</small>
+        {% if perms.core.operate_platform and not user.is_superuser %}<span>Organizaciones</span><b>{{ own_orgs.count }}</b><small>Registradas en la plataforma</small>
+        {% elif user.is_superuser or perms.core.view_settlement %}<span>Monto referencial demo</span><b>${{ totals.amount|default:0 }}</b><small>No acredita cobros reales</small>
         {% else %}<span>Sparks disponibles</span><b>{{ user.credits }}</b><small>Saldo actual, fuera del filtro temporal</small>{% endif %}
       </article>
     </div>
@@ -59,7 +60,7 @@
       </article>
     </div>
   </section>
-  {% if user.is_staff and not user.is_superuser %}
+  {% if user.is_staff and not perms.core.operate_platform %}
     <section class="ks-panel-section" aria-labelledby="org-title">
       <h2 id="org-title">Organizaciones asignadas</h2>
       {% for org in own_orgs %}<span class="status-pill">{{ org.name }}</span>

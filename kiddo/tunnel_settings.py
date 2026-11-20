@@ -12,6 +12,7 @@ if not re.fullmatch(r'https://[a-z0-9-]+-8001(?:\.[a-z0-9-]+)?\.devtunnels\.ms',
     raise ImproperlyConfigured('Se requiere la URL HTTPS exacta de Dev Tunnels para el puerto 8001.')
 
 DEBUG = False
+KIDDO_SEED_DEMO_ACCOUNTS = False
 SECRET_KEY = get_random_secret_key()
 ALLOWED_HOSTS = [origin.removeprefix('https://'), '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = [origin]

@@ -48,10 +48,9 @@ la comprobación.
    **Enter**. Espera a que se abra el navegador. Si no se abre, entra a
    [Kiddo Spark local](http://127.0.0.1:8000/).
 
-Puedes explorar de inmediato. Si quieres hacer una reserva, crea una cuenta
-en la portada. Para probar la gestión de proveedores, pide a quien prepara
-la demo que deje listas las cuentas de prueba. La sección **Roles y permisos**
-explica cómo.
+Puedes explorar de inmediato. Para probar reservas, el panel del centro o
+la administración, usa las [cuentas de prueba](#roles-y-permisos).
+La instalación las prepara automáticamente.
 
 ## Encender y apagar
 
@@ -162,10 +161,8 @@ esa ventana del Símbolo del sistema. Para apagar la demo, vuelve a la ventana
 y pulsa **Ctrl+C**. Si Windows también bloquea Python, usa otro computador
 autorizado o pide ayuda a quien te entregó el proyecto.
 
-Para explorar o reservar, crea tu cuenta en la portada. Si vas a probar
-**Validación de proveedores** y aún no tienes cuenta de superadministración,
-ejecuta `.\.venv\Scripts\python.exe manage.py createsuperuser` antes de
-arrancar y sigue las preguntas de la pantalla.
+Cuando abras la demo local, usa las [cuentas de prueba](#roles-y-permisos).
+El paso que prepara la base ya se encarga de crearlas.
 
 </details>
 
@@ -193,26 +190,36 @@ La demo remota inicia una copia con catálogo ficticio y su propia base,
    ventana y el equipo encendidos mientras dure la presentación.
 
 La copia remota permite explorar el catálogo y crear cuentas familiares con
-datos ficticios. Para mostrar un rol de administración con las cuentas
+datos ficticios. Las cuatro cuentas de prueba son exclusivas de la demo local.
+Para mostrar un rol de administración con las cuentas
 preparadas, usa la demo local y comparte pantalla. Un enlace temporal no es
 un despliegue permanente.
 
 ## Roles y permisos
 
-En una instalación limpia, puedes explorar de inmediato sin iniciar sesión.
-Para probar una reserva, usa **Crear cuenta** en la portada y activa un plan
-demo en **Exploraciones → Planes y Sparks**. Para probar el panel de operador,
-primero crea el superadministrador con **instalar_local** o
-**instalar_local.ps1**, o con el paso opcional del Símbolo del sistema.
-Después configura la cuenta del centro con los pasos de esta sección.
+En [Kiddo Spark local](http://127.0.0.1:8000/), haz clic en **Ingresar**
+y usa el nombre de usuario y la contraseña de la fila que quieras probar.
+La primera vez que se prepara o actualiza la base, la migración crea las
+cuentas que falten. El instalador no pide crearlas.
 
-| Rol | Qué puede hacer |
-| --- | --- |
-| Usuario común | Explorar, guardar favoritos, activar planes demo, reservar, cancelar, valorar experiencias completadas y seguir sus solicitudes. |
-| Administrador | Gestionar módulos autorizados de sus organizaciones asignadas. No administra usuarios ni privilegios. |
-| Superadministrador | Gestionar la plataforma, usuarios, permisos y aprobación/asignación de organizaciones. |
+| Perfil | Usuario | Contraseña | Correo | Qué puede hacer |
+| --- | --- | --- | --- | --- |
+| Superadministrador | `superadmin` | `superadmin` | `correo@superadmin.cl` | Acceso completo. Puede gestionar usuarios y permisos, revisar proveedores y asignar operadores. |
+| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Edita el catálogo, horarios, categorías, comunas y planes. Gestiona reservas y solicitudes de la plataforma. El acceso a usuarios, grupos, permisos, validación de proveedores, datos bancarios y retiros está reservado. |
+| Usuario familiar | `usuario` | `usuario` | `usuario@demo.example.invalid` | Guarda favoritos, activa planes demo, reserva, cancela y valora sus propias experiencias. |
+| Proveedor | `proveedor` | `proveedor` | `proveedor@demo.example.invalid` | En **Mi panel**, gestiona las publicaciones, horarios y reservas del **Centro Kiddo Spark Demo**. Solo accede a su centro. |
 
-Para crear un administrador:
+Para probar una reserva y verla desde el proveedor, entra como `usuario`,
+activa un plan de prueba en **Exploraciones → Planes y Sparks** y reserva
+**Taller de movimiento demo**. Si su horario ya venció, entra como
+`proveedor` y crea uno futuro en **Horarios y cupos**.
+
+Estos datos son de una instalación nueva. Si ya existe una cuenta con el
+mismo nombre o correo, se conserva con su contraseña y permisos. Las
+credenciales de la tabla son públicas y están pensadas solo para esta demo
+local con datos ficticios. No las reutilices en otro sistema.
+
+Para dar acceso a otro operador de un centro:
 
 1. Ingresa como superadministrador y abre **Usuarios y permisos**.
 2. Crea un usuario con correo ficticio y contraseña propia.
@@ -223,8 +230,9 @@ Para crear un administrador:
 
 El grupo concede módulos; la asignación limita registros. Para limitar módulos,
 crea otro grupo con los permisos necesarios, sin asignar el grupo completo anterior.
-Un administrador sin organización asignada no podrá gestionar centros ajenos.
-Los convenios sin aliado destinatario los atiende el superadministrador.
+Un operador de proveedor sin centro asignado no podrá gestionar centros ajenos.
+El administrador de plataforma y el superadministrador pueden gestionar los
+convenios sin aliado destinatario.
 
 El registro público siempre crea usuarios comunes. Las contraseñas se guardan
 mediante hashes.

@@ -8,8 +8,8 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
 ## Incrementos autorizados
 1. Base: aplicación ejecutable, migraciones y portada móvil.
 2. Acceso: registro, login/logout y cambio de contraseña persistentes.
-3. Permisos: superadministrador, administradores asignados y usuario común;
-   comprobar prohibiciones por URL, no solamente ocultar botones.
+3. Permisos: superadministrador, administrador de plataforma, operador de
+   proveedor y usuario común. Comprobar permisos en las rutas, además de la interfaz.
 4. Catálogo: CRUD y filtros sobre actividades, centros, categorías y horarios.
 5. Sparks: planes, membresías y libro de movimientos sin cobros reales.
 6. Reservas: cupos/saldo consistentes; cancelación idempotente y validación.
@@ -22,8 +22,14 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
 
 ## Reglas y límites de demostración
 - Un usuario común solo consulta sus reservas, solicitudes y movimientos.
-- Administradores gestionan organizaciones asignadas y módulos autorizados.
+- El administrador de plataforma tiene acceso global al catálogo, las reservas
+  y las solicitudes. Quedan reservados usuarios, permisos, asignación de
+  operadores, validación de proveedores y finanzas sensibles.
+- Los operadores gestionan las organizaciones asignadas y los módulos autorizados.
 - Superadministradores gestionan todos los registros y permisos.
+- Una migración de datos prepara los cuatro perfiles ficticios locales. Respeta
+  cuentas existentes por usuario o correo. La configuración del túnel excluye
+  esta carga y utiliza otra base SQLite.
 - Registro público siempre crea usuarios comunes; nunca concede privilegios.
 - Saldo y cupos se actualizan dentro de una transacción y con escrituras
   condicionales para impedir saldo negativo y reservas por encima de la capacidad.

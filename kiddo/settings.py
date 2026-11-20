@@ -15,6 +15,8 @@ TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIR
 WSGI_APPLICATION = 'kiddo.wsgi.application'
 DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'var' / 'kiddo.sqlite3', 'OPTIONS': {'timeout': 20}}}
 AUTH_USER_MODEL = 'core.User'
+# Fixed credentials are for the local, fictional presentation database.
+KIDDO_SEED_DEMO_ACCOUNTS = True
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},

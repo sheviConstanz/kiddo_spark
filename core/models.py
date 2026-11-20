@@ -13,10 +13,15 @@ class User(AbstractUser):
 
     class Meta(AbstractUser.Meta):
         constraints = [models.UniqueConstraint(Lower('email'), name='unique_user_email_casefold')]
+        permissions = [('operate_platform', 'Puede operar el catálogo y las solicitudes de la plataforma')]
 
     @property
     def role_label(self):
-        return 'Superadministrador' if self.is_superuser else 'Administrador' if self.is_staff else 'Usuario'
+        if self.is_superuser:
+            return 'Superadministrador'
+        if self.is_staff:
+            return 'Administrador de plataforma' if self.has_perm('core.operate_platform') else 'Operador de proveedor'
+        return 'Usuario'
 
 
 class Named(models.Model):

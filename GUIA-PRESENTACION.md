@@ -25,7 +25,7 @@ tiempo para comparar alternativas son objetivos para evaluar en un piloto.
 | **Familia** | Crear una cuenta, guardar favoritos y activar un plan de prueba para cargar **Sparks**, los créditos de la demo. Puede reservar un horario con cupo, consultar sus movimientos, descargar un comprobante de ejemplo y cancelar una reserva confirmada para recuperar los Sparks. Después de que el centro marque la reserva como completada, puede dejar una opinión. |
 | **Proveedor que quiere incorporarse** | Registrar su centro, seguir el estado de su ficha y corregirla y reenviarla si recibe observaciones. Puede consultar si fue aprobada o rechazada y leer la decisión. |
 | **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede crear, editar o desactivar publicaciones, administrar horarios y cupos, ver y exportar reservas, registrar asistencia y responder opiniones. El panel muestra reservas y actividades más solicitadas a partir de los registros de la demo. |
-| **Equipo de Kiddo Spark** | Revisar, observar, aprobar o rechazar fichas, con un historial de las decisiones. Puede asignar permisos a operadores, administrar el catálogo y dar seguimiento a solicitudes. La aprobación del centro y la asignación del operador son pasos separados. |
+| **Equipo de Kiddo Spark** | El administrador de plataforma gestiona catálogo, reservas y solicitudes. El superadministrador también revisa fichas de proveedores, asigna operadores y administra cuentas y permisos. |
 | **Empresa, colegio o centro que busca apoyo** | Enviar una solicitud de convenio o demostración. Los centros también pueden consultar el directorio de aliados de ejemplo y solicitar asesoría o una cotización. Las solicitudes quedan guardadas y se puede revisar su avance. |
 
 Para mostrar cómo se conectan los roles, hagan una reserva familiar en una
@@ -56,12 +56,27 @@ y eviten datos de menores, medios de pago o cuentas bancarias reales.
 - En el mismo computador, abran [Kiddo Spark local](http://127.0.0.1:8000/).
   Compartan la pantalla o conéctenla al proyector. Esa dirección corresponde
   al computador que ejecuta la demo.
-- Antes de presentar, prueben el ingreso y elijan una actividad con horario
-  futuro y cupos. Preparen una cuenta familiar, una cuenta con acceso al
-  Seller Center y la cuenta de superadministración. Usen una ventana privada
+- Antes de presentar, prueben el ingreso y elijan **Taller de movimiento
+  demo** u otra actividad con horario futuro y cupos. Usen una ventana privada
   para la familia si quieren mantener superadministración abierta por separado.
 - Si la página no abre, quien prepara la demo puede seguir la sección
   **Encender y apagar** del [README](README.md).
+
+### Cuentas para mostrar los cuatro perfiles
+
+Las cuentas se crean al preparar la demo local. En la portada, pulsen
+**Ingresar**. Usen el mismo texto como nombre de usuario y contraseña.
+Si ya tenían una cuenta con ese nombre, sigan usando sus datos actuales.
+
+| Para mostrar | Usuario y contraseña |
+| --- | --- |
+| Familia que busca y reserva | `usuario` |
+| Centro que gestiona horarios y asistencia | `proveedor` |
+| Equipo que administra catálogo y solicitudes | `admin` |
+| Revisión de proveedores y gestión de permisos | `superadmin` |
+
+Son cuentas ficticias del computador local. Los correos y permisos están
+en el [README](README.md#roles-y-permisos).
 
 ## Recorrido sugerido de siete minutos
 

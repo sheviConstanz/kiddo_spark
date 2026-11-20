@@ -6,7 +6,7 @@ o ideas del material original. No se presupone un negocio operativo.
 | Área | Implementación funcional | Límite de demostración |
 | --- | --- | --- |
 | Cuenta | Registro, login/logout, cambio de contraseña, edición de nombre | Sin envío de email; recuperación mediante responsable local |
-| Permisos | Tres roles; grupos y asignación de organizaciones | No es una certificación de seguridad productiva |
+| Permisos | Superadministración, administrador de plataforma, operador de proveedor y cuenta familiar | La migración crea cuatro cuentas ficticias para uso local. El administrador de plataforma no accede a usuarios, permisos, validación de proveedores ni finanzas |
 | Exploración | Mapa referencial por comuna, búsqueda, categoría, edad, horario, Sparks, cupos y favoritos persistentes | El mapa agrupa por comuna. No muestra coordenadas ni direcciones de los centros |
 | Actividades | CRUD, rangos de edad, proveedor, categoría, valor y estado | Sin verificación externa de academias |
 | Horarios | Fecha, capacidad, cupos y disponibilidad | Datos iniciales ilustrativos, renovados por administrador |
@@ -27,7 +27,8 @@ o ideas del material original. No se presupone un negocio operativo.
 
 ## Flujos y decisiones
 - Alta pública siempre como usuario común. Los administradores se conceden desde
-  superadministración con permisos y centro asignado.
+  superadministración. Los operadores de proveedor requieren permisos y centro
+  asignado. Las cuentas ficticias preconfiguradas se reservan a la demo local.
 - Solicitudes corporativas generales: superadministración. Solicitudes a aliados:
   administradores asignados al aliado y superadministración. El solicitante sigue su historial.
 - Los administradores no acceden a objetos de otros centros mediante URLs directas.

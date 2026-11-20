@@ -415,7 +415,11 @@ def request_create(request):
 def request_detail(request, pk):
     obj = get_object_or_404(access.requests(request.user).select_related('user', 'organization'), pk=pk)
     form = f.TransitionForm(request.POST or None)
-    may_manage = request.user.is_staff and request.user.has_perm('core.change_servicerequest') and (request.user.is_superuser or obj.organization_id in access.organizations(request.user).values_list('pk', flat=True))
+    may_manage = (
+        request.user.is_staff and request.user.has_perm('core.change_servicerequest')
+        and (access.operates_platform(request.user)
+             or access.organizations(request.user).filter(pk=obj.organization_id).exists())
+    )
     if request.method == 'POST':
         if not may_manage:
             raise PermissionDenied
@@ -434,10 +438,10 @@ CRUD = {'activities': (m.Activity, f.ActivityForm, 'Actividades'), 'schedules': 
 def managed_queryset(user, kind):
     model = CRUD[kind][0]
     qs = model.objects.all()
-    if user.is_superuser:
+    if access.operates_platform(user):
         return qs
     if kind in ['categories', 'cities', 'plans']:
-        raise PermissionDenied('Este mantenedor es exclusivo del superadministrador.')
+        raise PermissionDenied('Este mantenedor requiere acceso de administración de plataforma.')
     if kind == 'organizations':
         return access.organizations(user)
     if kind == 'activities':
@@ -452,7 +456,13 @@ def management(request, kind='activities'):
     model, _, title = CRUD[kind]
     access.require_manager(request.user, model, 'view')
     qs = managed_queryset(request.user, kind)
-    return render(request, 'portal/management.html', {'items': qs.order_by('-pk'), 'kind': kind, 'title': title, 'crud': CRUD, 'can_add': request.user.has_perm(f'core.add_{model._meta.model_name}')})
+    return render(request, 'portal/management.html', {
+        'items': qs.order_by('-pk'), 'kind': kind, 'title': title,
+        'can_add': (kind != 'organizations' or request.user.is_superuser)
+                   and request.user.has_perm(f'core.add_{model._meta.model_name}'),
+        'can_edit': request.user.has_perm(f'core.change_{model._meta.model_name}'),
+        'can_deactivate': request.user.has_perm(f'core.delete_{model._meta.model_name}'),
+    })
 
 
 @login_required
