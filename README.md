@@ -11,20 +11,19 @@ local. Usa datos ficticios, nunca información real de menores ni cuentas bancar
 
 ## Antes de empezar en Windows
 
-Necesitas un computador con **Windows**, **Python 3.14 o 3.15**, un navegador
-y conexión a Internet para descargar el proyecto y preparar la primera
-instalación. Puedes hacer la instalación y abrir la demo desde el
-**Explorador de archivos**. No hace falta instalar Visual Studio Code, Git
-ni un programa de base de datos.
+Necesitas **Windows**, **Python 3.14 o 3.15**, un navegador e Internet para
+la primera instalación. Puedes hacer todo desde el Explorador de archivos.
+No necesitas Visual Studio Code.
 
-**Comprueba si tienes Python.** Abre **Inicio → Configuración →
-Aplicaciones → Aplicaciones instaladas** y busca **Python**. Si ves
-**Python 3.14** o **Python 3.15**, Windows lo tiene instalado. Una entrada
-que solo diga **Python Install Manager** es el instalador de Python. Revisa
-si también aparece una versión de Python. En Windows 10, la lista puede
-llamarse **Aplicaciones y características**.
+Para comprobar Python, busca **Aplicaciones instaladas** en el menú
+**Inicio** y escribe **Python** en la lista. Si aparece **Python 3.14** o
+**Python 3.15**, sigue con la descarga. Si no lo encuentras, pide ayuda o
+usa la [descarga oficial de Python](https://www.python.org/downloads/windows/).
 
-Si quieres confirmar que el equipo reconoce Python, abre **Inicio**, busca
+<details>
+<summary>Si solo aparece Python Install Manager o el instalador no encuentra Python</summary>
+
+Abre **Inicio**, busca
 **Símbolo del sistema** y escribe `python --version`. Pulsa **Enter**.
 Si ves, por ejemplo, `Python 3.14.7`, puedes continuar. Si Windows no
 reconoce el comando, abre Microsoft Store en vez de mostrar una versión
@@ -34,64 +33,105 @@ Si el instalador ofrece **Add Python to PATH**, marca esa opción para que
 Windows encuentre Python. Cierra y vuelve a abrir la ventana antes de repetir
 la comprobación.
 
-## Descargar e instalar Kiddo Spark
+</details>
 
-1. Abre la [página de descarga de Kiddo Spark en GitHub](https://github.com/sheviConstanz/kiddo_spark).
-   GitHub es el sitio donde están guardados los archivos del proyecto. En esa
-   página, haz clic en **Code** (el botón verde) y luego en **Download ZIP**.
-2. En **Descargas**, haz clic derecho sobre el archivo ZIP y selecciona
-   **Extraer todo**. Abre la carpeta extraída hasta ver el archivo
-   **instalar_local** o **instalar_local.ps1**. Ejecuta el archivo desde esa
-   carpeta, fuera del ZIP.
-3. Haz clic derecho en **instalar_local** o **instalar_local.ps1** y elige
-   **Ejecutar con PowerShell**. En Windows 11, esa opción puede aparecer
-   debajo de **Mostrar más opciones**.
-4. Si el instalador pide permiso para descargar los componentes que faltan,
-   responde **S** y pulsa **Enter**. El programa prepara la base y el catálogo.
-   Si ofrece crear una cuenta de superadministración, puedes omitir ese paso
-   para explorar o probar una reserva. Créala con datos ficticios si vas a
-   probar la gestión de proveedores.
+## Descargar y abrir Kiddo Spark
 
-**Por qué a veces no ves `.ps1`.** Windows puede ocultar la parte final del
-nombre del archivo. **instalar_local** e **instalar_local.ps1** son el mismo
-archivo. Lo mismo pasa con **iniciar_local** y **compartir_local**. Si quieres
-ver los nombres completos, activa **Ver → Mostrar → Extensiones de nombre
-de archivo** en el Explorador de Windows 11.
-[Ayuda de Microsoft sobre extensiones](https://support.microsoft.com/es-es/windows/experience/storage-filemanagement/common-file-name-extensions-in-windows).
+1. Abre la [página de Kiddo Spark](https://github.com/sheviConstanz/kiddo_spark),
+   donde están guardados los archivos. Haz clic en el botón verde **Code**
+   y luego en **Download ZIP**.
+2. En **Descargas**, haz clic derecho en el ZIP y elige **Extraer todo**.
+   Abre la carpeta que se acaba de crear.
+3. Haz **doble clic** en **Abrir Kiddo Spark**. Puede verse como
+   **Abrir Kiddo Spark.cmd** si Windows muestra el nombre completo.
+4. Si pregunta si puede descargar lo que falta, responde **S** y pulsa
+   **Enter**. Espera a que se abra el navegador. Si no se abre, entra a
+   [Kiddo Spark local](http://127.0.0.1:8000/).
 
-Vuelve a instalar solo si instalas en otro equipo, falta el entorno o cambió
-`requirements.txt`. Conserva la carpeta del proyecto y tus registros locales.
+Puedes explorar de inmediato. Si quieres hacer una reserva, crea una cuenta
+en la portada. Para probar la gestión de proveedores, pide a quien prepara
+la demo que deje listas las cuentas de prueba. La sección **Roles y permisos**
+explica cómo.
 
 ## Encender y apagar
 
-1. Haz clic derecho en **iniciar_local** o **iniciar_local.ps1** y elige
-   **Ejecutar con PowerShell**.
-   Cuando indique que está listo, abre [Kiddo Spark local](http://127.0.0.1:8000/).
-   Puedes cerrar la ventana de PowerShell después del aviso.
-2. Para apagarlo, ejecuta el mismo archivo otra vez y confirma con **S**.
+Para encender, vuelve a hacer doble clic en **Abrir Kiddo Spark**. Si la
+demo ya está encendida, el archivo abre la página otra vez. Para apagar,
+vuelve a la ventana negra que quedó abierta y pulsa **Ctrl+C**. Si Windows
+pregunta si quieres terminar, confirma. Cerrar el navegador deja la demo
+encendida.
 
-Si cambian el código, apaga y enciende la demo. Al iniciar, el script aplica
-las actualizaciones de la base que vengan con el código. Si solo cambian
-estilos o imágenes, puede bastar con recargar el navegador con **Ctrl+F5**.
-Para presentar la demo, comparte la pantalla o usa un proyector.
+Si te pasan una versión nueva, apaga la demo antes de abrirla. Conserva la
+carpeta donde la instalaste para mantener tus cuentas y reservas.
 
 ## Si Windows bloquea un archivo
+
+El archivo **Abrir Kiddo Spark** no usa PowerShell. Si Windows también lo
+bloquea, revisa el texto del aviso o usa los pasos del **Símbolo del sistema**
+que aparecen más abajo.
+
+### Si el aviso indica que el archivo se descargó de Internet
+
+Si descargaste Kiddo Spark desde el enlace oficial de este README y confías
+en el archivo, revisa si Windows ofrece desbloquear ese archivo concreto:
+
+1. En el Explorador, haz clic derecho en el archivo que mostró el aviso
+   (por ejemplo, **instalar_local** o **instalar_local.ps1**) y elige
+   **Propiedades**.
+2. En la pestaña **General**, baja hasta el final y busca **Desbloquear** en
+   el apartado **Seguridad**. Si aparece, marca la casilla y pulsa **Aplicar**
+   y **Aceptar**.
+3. Vuelve a hacer clic derecho sobre el archivo y elige
+   **Ejecutar con PowerShell**.
+
+Esta opción quita la marca de descarga del archivo. Si no aparece o el aviso
+sigue, fíjate en el mensaje exacto y revisa el apartado siguiente.
+[Instrucciones de Microsoft](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_signing?view=powershell-7.4#run-unsigned-scripts-using-the-remotesigned-policy).
+
+### Si el aviso es de Control inteligente de aplicaciones
 
 Si aparece un aviso de **Control inteligente de aplicaciones** en Windows 11
 que dice que el archivo podría no ser seguro, detente. Guarda una captura o
 copia el mensaje completo y envíalo a TI junto con el nombre del archivo y el
 enlace de descarga. Pide una versión firmada y aprobada para el equipo, o
 usa un computador autorizado para la demo. Mantén activada la protección.
-Microsoft indica que este control puede bloquear archivos en los que no puede
-confiar y que no permite excepciones por archivo.
+**Desbloquear** no crea una excepción en Control inteligente de aplicaciones.
+Microsoft indica que esta protección no admite excepciones por archivo.
 [Ayuda de Microsoft sobre Control inteligente de aplicaciones](https://support.microsoft.com/en-gb/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions).
 
-Si el mensaje dice que **la ejecución de scripts está deshabilitada**,
-comunícalo a TI tal como aparece. Ese aviso se refiere a la política de
-PowerShell. Si tienen una reunión antes de resolverlo, pueden presentar la
-demo compartiendo pantalla desde otro equipo autorizado.
+### Si PowerShell dice que la ejecución de scripts está deshabilitada
+
+Ese mensaje se refiere a la política de PowerShell. La casilla
+**Desbloquear** quita la marca de descarga, pero no cambia esa política.
+La opción más directa es hacer doble clic en **Abrir Kiddo Spark**.
+
+<details>
+<summary>Opción para quien prepara la demo en un computador personal</summary>
+
+En un **PC personal que tú administras**, si prefieres usar los scripts,
+abre la carpeta extraída, escribe `powershell` en la barra de direcciones
+del Explorador y pulsa **Enter**. Ejecuta `Get-ExecutionPolicy -List`.
+Si `MachinePolicy` y `UserPolicy` muestran `Undefined`, puedes permitir
+scripts locales de confianza solo para esta ventana:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\instalar_local.ps1
+.\iniciar_local.ps1
+```
+
+Ejecuta una línea a la vez en esa misma ventana. Si ya instalaste el
+proyecto, omite la línea de instalación. La política de esta sesión
+termina al cerrar PowerShell. Si el equipo está administrado o si el
+aviso persiste, usa la alternativa de abajo o consulta a TI.
+[Políticas de ejecución de PowerShell](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7.5#execution-policy-scope-and-precedence).
+
+</details>
 
 ### Abrir la demo sin scripts de PowerShell ni Visual Studio Code
+
+<details>
+<summary>Ver pasos para abrir la demo desde Símbolo del sistema</summary>
 
 Si Python ya funciona en tu computador, puedes usar esta alternativa con las
 protecciones de Windows activadas. En el Explorador, entra a la carpeta
@@ -127,6 +167,8 @@ Para explorar o reservar, crea tu cuenta en la portada. Si vas a probar
 ejecuta `.\.venv\Scripts\python.exe manage.py createsuperuser` antes de
 arrancar y sigue las preguntas de la pantalla.
 
+</details>
+
 ## Compartir una demo remota con acceso privado
 
 Este paso es opcional y queda separado de la instalación y el inicio local.
@@ -160,8 +202,9 @@ un despliegue permanente.
 En una instalación limpia, puedes explorar de inmediato sin iniciar sesión.
 Para probar una reserva, usa **Crear cuenta** en la portada y activa un plan
 demo en **Exploraciones → Planes y Sparks**. Para probar el panel de operador,
-primero crea el superadministrador cuando el instalador lo ofrezca y configura
-la cuenta del centro con los pasos de esta sección.
+primero crea el superadministrador con **instalar_local** o
+**instalar_local.ps1**, o con el paso opcional del Símbolo del sistema.
+Después configura la cuenta del centro con los pasos de esta sección.
 
 | Rol | Qué puede hacer |
 | --- | --- |
@@ -267,6 +310,7 @@ ni generan impresiones, clics o ROAS inventados.
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 .\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m unittest scripts.test_open_local
 node --check static/portal.js
 ```
 
@@ -284,6 +328,7 @@ de contraseña por email ni pruebas de carga. SQLite es para una demo de baja co
 ## Archivos y distribución
 
 - `core/`: datos, reglas, formularios, permisos, pruebas y migraciones.
+- `Abrir Kiddo Spark.cmd`: abre el programa desde el Explorador de Windows.
 - `kiddo/`: configuración y rutas.
 - `templates/`, `static/`, `assets/`: pantallas y recursos visuales.
 - `var/kiddo.sqlite3`: datos locales, excluidos de GitHub.

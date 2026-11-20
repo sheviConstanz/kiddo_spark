@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## 2026-11-19 — Arranque local con doble clic
+
+- **Abrir Kiddo Spark.cmd** prepara una instalación nueva y abre la demo en
+  el navegador sin ejecutar scripts de PowerShell.
+- README y guía comercial actualizados con el recorrido desde el Explorador.
+
 ## 2026-11-19 — Mapa y filtros del catálogo
 
 - Mapa referencial de las comunas piloto conectado con el listado y sus filtros.

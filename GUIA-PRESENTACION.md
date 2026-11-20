@@ -48,14 +48,11 @@ y eviten datos de menores, medios de pago o cuentas bancarias reales.
 
 ## Preparar el computador
 
-- Si el computador aún no está preparado, sigan la [guía de instalación
-  para Windows](README.md#antes-de-empezar-en-windows) y ejecuten
-  **instalar_local** o **instalar_local.ps1**.
-- En el Explorador de archivos, hagan clic derecho en **iniciar_local** o
-  **iniciar_local.ps1** y elijan **Ejecutar con PowerShell**. Cuando indique
-  que la demo está
-  lista, pueden cerrar esa ventana. Para apagarla, ejecuten el mismo archivo
-  y confirmen. Comprueben que las cuentas ficticias estén listas.
+- Si el computador aún no está preparado, sigan la
+  [guía para Windows](README.md#antes-de-empezar-en-windows).
+- En el Explorador, hagan doble clic en **Abrir Kiddo Spark** o
+  **Abrir Kiddo Spark.cmd**. Mantengan abierta la ventana negra durante
+  la demostración. Para apagarla, vuelvan a esa ventana y pulsen **Ctrl+C**.
 - En el mismo computador, abran [Kiddo Spark local](http://127.0.0.1:8000/).
   Compartan la pantalla o conéctenla al proyector. Esa dirección corresponde
   al computador que ejecuta la demo.
