@@ -9,38 +9,123 @@ de la propuesta original.
 simulados. Cuentas, reservas, solicitudes y cambios sí se guardan en una base
 local. Usa datos ficticios, nunca información real de menores ni cuentas bancarias.
 
-## Instalar en un computador Windows
+## Antes de empezar en Windows
 
-1. En el [repositorio de Kiddo Spark](https://github.com/sheviConstanz/kiddo_spark),
-   elige **Code → Download ZIP** y descomprime el proyecto completo. El equipo
-   necesita Python 3.14 o 3.15.
-2. Haz clic derecho en **instalar_local.ps1** y elige **Ejecutar con PowerShell**.
-   En Windows 11, la opción puede aparecer bajo **Mostrar más opciones**.
-3. El script prepara la base y el catálogo. Si faltan dependencias, pide
-   permiso para descargarlas. También ofrece crear la cuenta de
-   superadministración si no existe. Usa datos ficticios.
+Necesitas un computador con **Windows**, **Python 3.14 o 3.15**, un navegador
+y conexión a Internet para descargar el proyecto y preparar la primera
+instalación. Puedes hacer la instalación y abrir la demo desde el
+**Explorador de archivos**. No hace falta instalar Visual Studio Code, Git
+ni un programa de base de datos.
+
+**Comprueba si tienes Python.** Abre **Inicio → Configuración →
+Aplicaciones → Aplicaciones instaladas** y busca **Python**. Si ves
+**Python 3.14** o **Python 3.15**, Windows lo tiene instalado. Una entrada
+que solo diga **Python Install Manager** es el instalador de Python. Revisa
+si también aparece una versión de Python. En Windows 10, la lista puede
+llamarse **Aplicaciones y características**.
+
+Si quieres confirmar que el equipo reconoce Python, abre **Inicio**, busca
+**Símbolo del sistema** y escribe `python --version`. Pulsa **Enter**.
+Si ves, por ejemplo, `Python 3.14.7`, puedes continuar. Si Windows no
+reconoce el comando, abre Microsoft Store en vez de mostrar una versión
+o muestra una versión distinta, pide ayuda a TI o usa la
+[descarga oficial de Python para Windows](https://www.python.org/downloads/windows/).
+Si el instalador ofrece **Add Python to PATH**, marca esa opción para que
+Windows encuentre Python. Cierra y vuelve a abrir la ventana antes de repetir
+la comprobación.
+
+## Descargar e instalar Kiddo Spark
+
+1. Abre la [página de descarga de Kiddo Spark en GitHub](https://github.com/sheviConstanz/kiddo_spark).
+   GitHub es el sitio donde están guardados los archivos del proyecto. En esa
+   página, haz clic en **Code** (el botón verde) y luego en **Download ZIP**.
+2. En **Descargas**, haz clic derecho sobre el archivo ZIP y selecciona
+   **Extraer todo**. Abre la carpeta extraída hasta ver el archivo
+   **instalar_local** o **instalar_local.ps1**. Ejecuta el archivo desde esa
+   carpeta, fuera del ZIP.
+3. Haz clic derecho en **instalar_local** o **instalar_local.ps1** y elige
+   **Ejecutar con PowerShell**. En Windows 11, esa opción puede aparecer
+   debajo de **Mostrar más opciones**.
+4. Si el instalador pide permiso para descargar los componentes que faltan,
+   responde **S** y pulsa **Enter**. El programa prepara la base y el catálogo.
+   Si ofrece crear una cuenta de superadministración, puedes omitir ese paso
+   para explorar o probar una reserva. Créala con datos ficticios si vas a
+   probar la gestión de proveedores.
+
+**Por qué a veces no ves `.ps1`.** Windows puede ocultar la parte final del
+nombre del archivo. **instalar_local** e **instalar_local.ps1** son el mismo
+archivo. Lo mismo pasa con **iniciar_local** y **compartir_local**. Si quieres
+ver los nombres completos, activa **Ver → Mostrar → Extensiones de nombre
+de archivo** en el Explorador de Windows 11.
+[Ayuda de Microsoft sobre extensiones](https://support.microsoft.com/es-es/windows/experience/storage-filemanagement/common-file-name-extensions-in-windows).
 
 Vuelve a instalar solo si instalas en otro equipo, falta el entorno o cambió
 `requirements.txt`. Conserva la carpeta del proyecto y tus registros locales.
 
 ## Encender y apagar
 
-1. Haz clic derecho en **iniciar_local.ps1** y elige **Ejecutar con PowerShell**.
+1. Haz clic derecho en **iniciar_local** o **iniciar_local.ps1** y elige
+   **Ejecutar con PowerShell**.
    Cuando indique que está listo, abre [Kiddo Spark local](http://127.0.0.1:8000/).
    Puedes cerrar la ventana de PowerShell después del aviso.
-2. Para apagarlo, ejecuta **iniciar_local.ps1** otra vez y confirma con **S**.
+2. Para apagarlo, ejecuta el mismo archivo otra vez y confirma con **S**.
 
 Si cambian el código, apaga y enciende la demo. Al iniciar, el script aplica
 las actualizaciones de la base que vengan con el código. Si solo cambian
 estilos o imágenes, puede bastar con recargar el navegador con **Ctrl+F5**.
 Para presentar la demo, comparte la pantalla o usa un proyector.
 
-Si usas PowerShell, abre la carpeta del proyecto y ejecuta
-`.\instalar_local.ps1` para instalar o `.\iniciar_local.ps1` para encender
-o apagar. Los nombres llevan guion bajo y se escriben sin comillas.
+## Si Windows bloquea un archivo
 
-Si Windows bloquea la ejecución del archivo, consulta al responsable de TI.
-Puedes guardar el mensaje de error para ayudar al diagnóstico.
+Si aparece un aviso de **Control inteligente de aplicaciones** en Windows 11
+que dice que el archivo podría no ser seguro, detente. Guarda una captura o
+copia el mensaje completo y envíalo a TI junto con el nombre del archivo y el
+enlace de descarga. Pide una versión firmada y aprobada para el equipo, o
+usa un computador autorizado para la demo. Mantén activada la protección.
+Microsoft indica que este control puede bloquear archivos en los que no puede
+confiar y que no permite excepciones por archivo.
+[Ayuda de Microsoft sobre Control inteligente de aplicaciones](https://support.microsoft.com/en-gb/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions).
+
+Si el mensaje dice que **la ejecución de scripts está deshabilitada**,
+comunícalo a TI tal como aparece. Ese aviso se refiere a la política de
+PowerShell. Si tienen una reunión antes de resolverlo, pueden presentar la
+demo compartiendo pantalla desde otro equipo autorizado.
+
+### Abrir la demo sin scripts de PowerShell ni Visual Studio Code
+
+Si Python ya funciona en tu computador, puedes usar esta alternativa con las
+protecciones de Windows activadas. En el Explorador, entra a la carpeta
+extraída donde está `manage.py`. Haz clic en la barra de direcciones, escribe
+`cmd` y pulsa **Enter**. Se abrirá el **Símbolo del sistema** en esa carpeta.
+
+**La primera vez**, escribe estas líneas de a una y pulsa **Enter** al final
+de cada una. La segunda descarga los componentes del proyecto. Si una línea
+da error, detente y comparte el mensaje con quien te entregó la demo.
+
+```bat
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --no-deps -r requirements.txt
+.\.venv\Scripts\python.exe manage.py migrate --noinput
+.\.venv\Scripts\python.exe manage.py seed_demo
+```
+
+**Para abrir la demo**, ejecuta estas dos líneas. Si ya la instalaste con
+`instalar_local.ps1` y conservas la misma carpeta, empieza en este paso.
+
+```bat
+.\.venv\Scripts\python.exe manage.py migrate --noinput
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
+```
+
+Abre [Kiddo Spark local](http://127.0.0.1:8000/) en el navegador. Deja abierta
+esa ventana del Símbolo del sistema. Para apagar la demo, vuelve a la ventana
+y pulsa **Ctrl+C**. Si Windows también bloquea Python, usa otro computador
+autorizado o pide ayuda a quien te entregó el proyecto.
+
+Para explorar o reservar, crea tu cuenta en la portada. Si vas a probar
+**Validación de proveedores** y aún no tienes cuenta de superadministración,
+ejecuta `.\.venv\Scripts\python.exe manage.py createsuperuser` antes de
+arrancar y sigue las preguntas de la pantalla.
 
 ## Compartir una demo remota con acceso privado
 
@@ -48,11 +133,13 @@ Este paso es opcional y queda separado de la instalación y el inicio local.
 La demo remota inicia una copia con catálogo ficticio y su propia base,
 `var/kiddo_tunnel.sqlite3`. No usa las cuentas ni los datos de la demo local.
 
-1. Ejecuta **instalar_local.ps1** si el proyecto aún no está preparado.
+1. Ejecuta **instalar_local** o **instalar_local.ps1** si el proyecto aún no
+   está preparado.
 2. Instala [Microsoft Dev Tunnels CLI](https://learn.microsoft.com/en-us/azure/developer/dev-tunnels/get-started)
    en Windows. Abre PowerShell y ejecuta `devtunnel user login`. Completa el acceso
    con la cuenta aprobada para la demostración.
-3. Desde la carpeta del proyecto ejecuta `.\compartir_local.ps1`. Confirma
+3. En el Explorador, haz clic derecho en **compartir_local** o
+   **compartir_local.ps1** y elige **Ejecutar con PowerShell**. Confirma
    con **S** y espera el enlace HTTPS privado. La copia usa el puerto local
    **8001**. Puedes dejar la demo normal en **8000**.
 4. Abre el enlace con la misma cuenta usada en el paso anterior. Un enlace
