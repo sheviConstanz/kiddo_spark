@@ -54,11 +54,12 @@ La instalación las prepara automáticamente.
 
 ## Encender y apagar
 
-Para encender, vuelve a hacer doble clic en **Abrir Kiddo Spark**. Si la
-demo ya está encendida, el archivo abre la página otra vez. Para apagar,
-vuelve a la ventana negra que quedó abierta y pulsa **Ctrl+C**. Si Windows
-pregunta si quieres terminar, confirma. Cerrar el navegador deja la demo
-encendida.
+Para encender, haz doble clic en **Abrir Kiddo Spark**. Si la demo ya está
+encendida, el archivo abre la página otra vez. Para apagar, haz doble clic
+en **Apagar Kiddo Spark** o **Apagar Kiddo Spark.cmd**. Espera el mensaje
+**Kiddo Spark apagado**. Se libera el puerto local y se conservan tus datos.
+Si abriste la demo con una versión anterior y el archivo no la reconoce,
+vuelve a la ventana donde la encendiste y pulsa **Ctrl+C**.
 
 Si te pasan una versión nueva, apaga la demo antes de abrirla. Conserva la
 carpeta donde la instalaste para mantener tus cuentas y reservas.
@@ -441,6 +442,7 @@ de contraseña por email ni pruebas de carga. SQLite es para una demo de baja co
 
 - `core/`: datos, reglas, formularios, permisos, pruebas y migraciones.
 - `Abrir Kiddo Spark.cmd`: abre el programa desde el Explorador de Windows.
+- `Apagar Kiddo Spark.cmd`: detiene la demo local de esta carpeta.
 - `kiddo/`: configuración y rutas.
 - `templates/`, `static/`, `assets/`: pantallas y recursos visuales.
 - `var/kiddo.sqlite3`: datos locales, excluidos de GitHub.

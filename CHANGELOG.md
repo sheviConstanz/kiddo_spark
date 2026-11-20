@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## Apagado de la demo local
+
+- **Apagar Kiddo Spark.cmd** permite cerrar la demo desde el Explorador de
+  Windows y comprueba que su puerto quede libre.
+
 ## 2026-11-20 — Portada pública animada
 
 - La apertura destaca el catálogo familiar y la incorporación de centros con

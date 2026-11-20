@@ -104,7 +104,7 @@ def is_kiddo_spark(url):
 
 def serve(python, env, url):
     process = subprocess.Popen(
-        command(python, 'manage.py', 'runserver', f'{HOST}:{PORT}', '--noreload'), cwd=ROOT, env=env,
+        command(python, ROOT / 'manage.py', 'runserver', f'{HOST}:{PORT}', '--noreload'), cwd=ROOT, env=env,
     )
     try:
         deadline = time.monotonic() + 25
@@ -112,7 +112,7 @@ def serve(python, env, url):
             if is_kiddo_spark(url):
                 if process.poll() is not None:
                     break
-                print(f'Demo lista: {url}\nDeja esta ventana abierta. Para apagar, pulsa Ctrl+C.', flush=True)
+                print(f'Demo lista: {url}\nPara apagar, abre Apagar Kiddo Spark o pulsa Ctrl+C.', flush=True)
                 webbrowser.open(url)
                 if process.wait():
                     raise RuntimeError('La demo se cerró con un error.')
