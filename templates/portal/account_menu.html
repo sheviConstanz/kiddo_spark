@@ -1,0 +1,37 @@
+<details class="account-menu">
+  <summary class="btn btn-primary">
+    {% include 'portal/icon.html' with name='grid' %} Mi panel
+    {% include 'portal/icon.html' with name='chevron' %}
+  </summary>
+  <nav class="account-menu-items" aria-label="Navegación de mi cuenta">
+    {% if user.role == 'applicant' %}
+      <a href="{% url 'provider_submissions' %}"{% if route == 'provider_submissions' or route == 'provider_submission' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Mis fichas</a>
+    {% else %}
+      <a href="{% url 'dashboard' %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='user' %} Perfil</a>
+    {% endif %}
+    {% if user.is_superuser or user.is_staff and perms.core.operate_platform %}
+      <a href="{% url 'platform_statistics' %}"{% if route == 'platform_statistics' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='chart' %} Estadísticas</a>
+    {% endif %}
+    {% if user.role != 'applicant' %}
+      <a href="{% url 'bookings' %}"{% if route == 'bookings' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Reservas</a>
+      <a href="{% url 'requests' %}"{% if route == 'requests' or route == 'request_detail' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
+    {% endif %}
+    {% if user.is_staff %}
+      {% if perms.core.view_activity %}<a href="{% url 'management' 'activities' %}">{% include 'portal/icon.html' with name='store' %} Publicaciones</a>{% endif %}
+      {% if perms.core.view_schedule %}<a href="{% url 'management' 'schedules' %}">{% include 'portal/icon.html' with name='calendar' %} Horarios y cupos</a>{% endif %}
+      {% if user.is_superuser or not perms.core.operate_platform and perms.core.view_settlement %}<a href="{% url 'finance' %}">{% include 'portal/icon.html' with name='wallet' %} Finanzas demo</a>{% endif %}
+      {% if perms.core.view_review %}<a href="{% url 'reputation' %}">{% include 'portal/icon.html' with name='star' %} Reputación</a>{% endif %}
+    {% elif user.role == 'client' %}
+      <a href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Favoritos</a>
+      <a href="{% url 'wallet' %}"{% if route == 'wallet' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='spark' %} {{ user.credits }} Sparks</a>
+    {% endif %}
+    {% if user.is_superuser %}
+      <a href="{% url 'provider_review_queue' %}"{% if route == 'provider_review_queue' or route == 'provider_review' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='shield' %} Validación de proveedores</a>
+      <a href="{% url 'superadmin:index' %}">{% include 'portal/icon.html' with name='people' %} Usuarios y permisos</a>
+    {% endif %}
+    <a href="{% url 'profile' %}"{% if route == 'profile' or route == 'password_change' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='settings' %} Configuración de perfil</a>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}<button type="submit">{% include 'portal/icon.html' with name='logout' %} Salir</button>
+    </form>
+  </nav>
+</details>

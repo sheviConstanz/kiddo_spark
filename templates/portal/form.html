@@ -9,12 +9,12 @@
       {% csrf_token %}
       {{ form.as_p }}
       {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-      <button class="btn btn-primary" type="submit">{% if title == 'Iniciar sesión' %}Ingresar{% else %}Guardar y continuar{% endif %}</button>
+      <button class="btn btn-primary" type="submit">{% block submit_label %}{% if title == 'Iniciar sesión' %}Ingresar{% else %}Guardar y continuar{% endif %}{% endblock %}</button>
     </form>
     {% if title == 'Iniciar sesión' and not user.is_authenticated %}
       <p>¿Primera vez? <a class="inline-link" href="{% url 'register' %}{% if next %}?next={{ next|urlencode:'' }}{% endif %}">Crear cuenta de cliente</a> · <a class="inline-link" href="{% url 'register_provider' %}">Crear cuenta de proveedor</a></p>
     {% endif %}
-    <p class="muted"><a href="{% url 'home' %}">Volver al inicio</a></p>
+    {% block form_footer %}<p class="muted"><a href="{% url 'home' %}">Volver al inicio</a></p>{% endblock %}
   </div>
 </section>
 {% endblock %}

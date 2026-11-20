@@ -3,7 +3,7 @@
 {% block content %}
 <section class="portal-shell section-space">
   <a class="inline-link" href="{% url 'requests' %}">← Volver a solicitudes</a>
-  {% if item.relief_topic %}<p><a class="inline-link" href="{% url 'relief_home' %}#mis-solicitudes">Mis solicitudes de Alivios B2B</a></p>{% endif %}
+  {% if item.relief_topic and user.role != 'admin' %}<p><a class="inline-link" href="{% url 'relief_home' %}#mis-solicitudes">Mis solicitudes de Alivios B2B</a></p>{% endif %}
   <div class="section-heading">
     <div><div class="eyebrow">SOL-{{ item.pk }} · {{ item.get_kind_display }}</div><h1>{{ item.subject }}</h1></div>
     <span class="status-pill">{{ item.get_status_display }}</span>

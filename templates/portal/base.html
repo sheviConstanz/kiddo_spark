@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="{% static 'portal.css' %}">
   <link rel="stylesheet" href="{% static 'portal-theme.css' %}">
   <script src="{% static 'portal.js' %}" defer></script>
+  {% block page_head %}{% endblock %}
 </head>
 <body class="platform">
   <a class="skip" href="#content">Saltar al contenido</a>
@@ -19,7 +20,11 @@
     <div class="portal-header-in">
       <a href="{% url 'home' %}" class="brand" aria-label="Kiddo Spark, inicio"><img src="{% static 'logo.png' %}" width="72" height="65" alt="Kiddo Spark"></a>
       {% with route=request.resolver_match.url_name %}
-      <nav id="main-nav" aria-label="Navegación principal">
+      <nav id="main-nav" aria-label="Navegación principal"{% if user.role == 'admin' %} class="ks-admin-nav"{% endif %}>
+        {% if user.role == 'admin' %}
+          <a href="{% url 'explore' %}"{% if route == 'explore' or route == 'activity' %} aria-current="page"{% endif %}>Actividades</a>
+          <a href="{% url 'relief_home' %}"{% if route == 'relief_home' %} aria-current="page"{% endif %}>Alivios B2B</a>
+        {% else %}
         <a href="{% url 'explore' %}"{% if route == 'explore' or route == 'activity' %} aria-current="page"{% endif %}>Explorar actividades</a>
         {% if user.role != 'client' %}
           <a href="{% url 'providers' %}"{% if route == 'providers' %} aria-current="page"{% endif %}>Proveedores</a>
@@ -30,11 +35,15 @@
           <a href="{% url 'relief_home' %}"{% if route == 'relief_home' %} aria-current="page"{% endif %}>Alivios B2B</a>
           <a href="{% url 'reference' %}">Propuesta original</a>
         {% endif %}
+        {% endif %}
       </nav>
       <div class="account-links">
         {% if user.is_authenticated %}
-          {% if user.role == 'client' %}{% url 'dashboard' as panel_url %}{% else %}{% url account_start as panel_url %}{% endif %}
-          <a href="{{ panel_url }}" class="btn btn-primary"{% if request.path == panel_url %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Mi panel</a>
+          <a class="ks-notifications-link" href="{% url 'notifications' %}"{% if route == 'notifications' %} aria-current="page"{% endif %} aria-label="Notificaciones{% if unread_notification_count %}, {{ unread_notification_count }} sin leer{% endif %}">
+            {% include 'portal/icon.html' with name='bell' %}
+            {% if unread_notification_count %}<span class="ks-notifications-count" aria-hidden="true">{% if unread_notification_count > 99 %}99+{% else %}{{ unread_notification_count }}{% endif %}</span>{% endif %}
+          </a>
+          {% if user.role != 'admin' %}{% include 'portal/account_menu.html' %}{% endif %}
         {% else %}
           <a href="{% url 'login' %}">Ingresar</a>
           <a href="{% url 'register' %}" class="btn btn-primary">Crear cuenta</a>
@@ -43,50 +52,27 @@
       {% endwith %}
     </div>
   </header>
-  {% if show_account_navigation %}
-    <nav class="account-nav" aria-label="Navegación de mi cuenta">
-      {% with route=request.resolver_match.url_name %}
-      {% if user.role == 'applicant' %}
-        <a href="{% url 'provider_submissions' %}"{% if route == 'provider_submissions' or route == 'provider_submission' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Mis fichas</a>
-      {% else %}
-        <a href="{% url 'dashboard' %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} {% if user.role == 'admin' %}Gestión operativa{% else %}Resumen{% endif %}</a>
-      {% endif %}
-      {% if user.is_superuser or user.is_staff and perms.core.operate_platform %}
-        <a href="{% url 'platform_statistics' %}"{% if route == 'platform_statistics' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='chart' %} Estadísticas</a>
-      {% endif %}
-      {% if user.role != 'applicant' %}
-        <a href="{% url 'bookings' %}"{% if route == 'bookings' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Reservas</a>
-        <a href="{% url 'requests' %}"{% if route == 'requests' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
-      {% endif %}
-      {% if user.is_staff %}
-        {% if perms.core.view_activity %}<a href="{% url 'management' 'activities' %}">Publicaciones</a>{% endif %}
-        {% if perms.core.view_schedule %}<a href="{% url 'management' 'schedules' %}">Horarios y cupos</a>{% endif %}
-        {% if user.is_superuser or not perms.core.operate_platform and perms.core.view_settlement %}<a href="{% url 'finance' %}">Finanzas demo</a>{% endif %}
-        {% if perms.core.view_review %}<a href="{% url 'reputation' %}">Reputación</a>{% endif %}
-      {% elif user.role == 'client' %}
-        <a href="{% url 'explore' %}?favorites=1">{% include 'portal/icon.html' with name='heart' %} Favoritos</a>
-        <a href="{% url 'wallet' %}">{% include 'portal/icon.html' with name='spark' %} {{ user.credits }} Sparks</a>
-      {% endif %}
-      {% if user.is_superuser %}
-        <a href="{% url 'provider_review_queue' %}"{% if route == 'provider_review_queue' or route == 'provider_review' %} aria-current="page"{% endif %}>Validación de proveedores</a>
-        <a href="{% url 'superadmin:index' %}">Usuarios y permisos</a>
-      {% endif %}
-      <a href="{% url 'profile' %}">{% include 'portal/icon.html' with name='user' %} Perfil</a>
-      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="text-button">Salir</button></form>
-      {% endwith %}
-    </nav>
+  {% if workspace_navigation %}
+    <div class="ks-exec">
+      <div class="ks-exec-layout" data-workspace-layout="{{ user.role }}">
+        {% include 'portal/report_navigation.html' %}
   {% endif %}
-  <main id="content" tabindex="-1">
+  <main id="content" tabindex="-1"{% if workspace_navigation %} class="ks-exec-content"{% endif %}>
     {% if messages %}
-      <div class="portal-shell message-stack" role="status">
-        {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
+      <div class="portal-shell message-stack ks-feedback-stack">
+        {% for message in messages %}{% include 'portal/feedback.html' %}{% endfor %}
       </div>
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+  {% if workspace_navigation %}
+      </div>
+    </div>
+  {% endif %}
   <footer class="portal-footer">
     <div class="portal-shell footer-grid">
       <div><strong>Kiddo Spark</strong><p>Actividades extracurriculares para familias de la Región de Valparaíso.</p></div>
+      {% if user.role != 'admin' %}
       <div>
         <strong>Actividades y planes</strong><a href="{% url 'explore' %}">Explorar el catálogo</a>
         {% if user.role == 'client' %}<a href="{% url 'plans' %}">Planes y Sparks</a>
@@ -95,8 +81,10 @@
           <a href="{% if user.is_authenticated %}{% url 'public_landing' %}{% else %}{% url 'home' %}{% endif %}#convenios">Empresas y colegios</a>
         {% endif %}
       </div>
-      <div><strong>Sobre el proyecto</strong>{% if user.role != 'client' %}<a href="{% url 'reference' %}">Ver propuesta original</a>{% endif %}<p>Prototipo académico. Usa datos ficticios y evita ingresar información personal de menores.</p></div>
+      {% endif %}
+      <div><strong>Sobre el proyecto</strong>{% if user.role != 'client' and user.role != 'admin' %}<a href="{% url 'reference' %}">Ver propuesta original</a>{% endif %}<p>Prototipo académico. Usa datos ficticios y evita ingresar información personal de menores.</p></div>
     </div>
   </footer>
+  {% include 'portal/confirm_dialog.html' %}
 </body>
 </html>

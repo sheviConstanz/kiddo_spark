@@ -1,0 +1,12 @@
+<div class="ks-feedback is-{{ message.level_tag }}" role="{% if message.level_tag == 'error' or message.level_tag == 'warning' %}alert{% else %}status{% endif %}">
+  <span class="ks-feedback-icon" aria-hidden="true">
+    {% if message.level_tag == 'success' %}
+      {% include 'portal/icon.html' with name='check' %}
+    {% elif message.level_tag == 'error' or message.level_tag == 'warning' %}
+      {% include 'portal/icon.html' with name='alert' %}
+    {% else %}
+      {% include 'portal/icon.html' with name='info' %}
+    {% endif %}
+  </span>
+  <p>{{ message }}</p>
+</div>

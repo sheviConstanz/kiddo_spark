@@ -143,6 +143,8 @@ class Schedule(models.Model):
     capacity = models.PositiveIntegerField('capacidad', validators=[MinValueValidator(1)])
     available = models.PositiveIntegerField('cupos disponibles')
     active = models.BooleanField('habilitado', default=True)
+    cancelled_at = models.DateTimeField('cancelado el', null=True, blank=True, editable=False)
+    cancellation_reason = models.CharField('motivo de cancelación', max_length=500, blank=True, editable=False)
 
     class Meta:
         constraints = [models.CheckConstraint(condition=Q(available__lte=models.F('capacity')), name='schedule_capacity'), models.CheckConstraint(condition=Q(capacity__gte=1), name='schedule_positive_capacity')]
@@ -167,32 +169,49 @@ class Membership(models.Model):
 
 class Booking(models.Model):
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pendiente de aprobar'
-        CONFIRMED = 'confirmed', 'Confirmada'
-        COMPLETED = 'completed', 'Completada'
-        CANCELLED = 'cancelled', 'Cancelada'
+        RESERVED = 'reserved', 'Reservado'
+        CANCELLED = 'cancelled', 'Cancelado'
 
     STATUS = Status.choices
-    ACTIVE_STATUSES = (Status.PENDING, Status.CONFIRMED)
-    CONFIRMED_STATUSES = (Status.CONFIRMED, Status.COMPLETED)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='bookings')
     schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name='bookings')
     sparks = models.PositiveIntegerField()
     amount = models.PositiveIntegerField('monto referencial CLP')
-    status = models.CharField(max_length=12, choices=STATUS, default=Status.PENDING)
+    status = models.CharField(max_length=12, choices=STATUS, default=Status.RESERVED)
+    attendance_recorded = models.BooleanField('asistencia registrada', default=False, editable=False)
     points_awarded = models.BooleanField('puntos acreditados', default=False, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'schedule'], condition=Q(status__in=('pending', 'confirmed')),
+                fields=['user', 'schedule'], condition=Q(status='reserved', attendance_recorded=False),
                 name='one_active_booking',
             ),
+            models.CheckConstraint(condition=Q(status__in=('reserved', 'cancelled')), name='booking_valid_status'),
         ]
 
     def __str__(self):
         return f'KS-{self.pk} · {self.schedule.activity}'
+
+
+class Notification(models.Model):
+    class Kind(models.TextChoices):
+        RESERVED = 'reserved', 'Reserva registrada'
+        BOOKING_RECEIVED = 'booking_received', 'Nueva reserva en tu centro'
+        BOOKING_CANCELLED = 'booking_cancelled', 'Reserva cancelada'
+        SCHEDULE_CANCELLED = 'schedule_cancelled', 'Horario cancelado'
+
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    booking = models.ForeignKey(Booking, on_delete=models.PROTECT, null=True, blank=True)
+    kind = models.CharField(max_length=18, choices=Kind.choices)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+        indexes = [models.Index(fields=['recipient', 'read_at'], name='notification_recipient_read')]
 
 
 class Movement(models.Model):

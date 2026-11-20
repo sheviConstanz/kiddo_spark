@@ -1,0 +1,195 @@
+{% extends 'portal/base.html' %}
+{% block title %}{% if viewing_as_admin %}Vista por centro{% else %}Seller Center{% endif %} · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="ks-statistics ks-provider-report">
+  <header class="ks-exec-heading">
+    <div>
+      <p class="ks-kicker">{% if viewing_as_admin %}Estadísticas de la plataforma{% else %}Seller Center{% endif %}</p>
+      <h1>{% if selected_center %}{{ selected_center.name }}{% else %}Resumen ejecutivo B2B{% endif %}</h1>
+      <p class="muted">{% if selected_center %}{{ selected_center.city }} · {% endif %}Reservas, capacidad y calidad del servicio.</p>
+    </div>
+    {% if viewing_as_admin %}
+      <a class="btn btn-outline" href="{% url 'platform_statistics' %}">Ver toda la plataforma</a>
+    {% elif perms.core.add_activity %}
+      <a class="btn btn-primary" href="{% url 'create_record' 'activities' %}">{% include 'portal/icon.html' with name='store' %} Nueva publicación</a>
+    {% elif perms.core.view_booking %}
+      <a class="btn btn-outline" href="{% url 'bookings' %}">Abrir reservas</a>
+    {% endif %}
+  </header>
+  <p class="ks-exec-note">{% include 'portal/icon.html' with name='chart' %} Los montos se calculan a partir de las reservas de la demo y son referenciales.</p>
+
+  <section class="ks-stats-period" aria-labelledby="provider-period">
+    <h2 id="provider-period">Rendimiento del período</h2>
+    <details class="ks-exec-filters">
+      <summary class="btn btn-outline">{% include 'portal/icon.html' with name='settings' %} Filtros de centro, taller y fecha</summary>
+      <p class="muted" id="center-period-help">Las fechas filtran por el día en que se creó cada reserva.</p>
+    <form class="ks-stats-filter" method="get" aria-describedby="center-period-help" data-report-filters>
+      <label>Centro
+        <select name="center">
+          <option value="">Todos los centros{% if not viewing_as_admin %} asignados{% endif %}</option>
+          {% for center in centers %}
+            <option value="{{ center.pk }}" {% if center == selected_center %}selected{% endif %}>{{ center.name }} · {{ center.city }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Taller
+        <select name="activity">
+          <option value="">Todos los talleres</option>
+          {% for activity in activities %}
+            <option value="{{ activity.pk }}" {% if activity == selected_activity %}selected{% endif %}>{{ activity.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Desde <input type="date" name="from" value="{{ request.GET.from }}"></label>
+      <label>Hasta <input type="date" name="to" value="{{ request.GET.to }}"></label>
+      <button class="btn btn-primary" type="submit">Aplicar filtros</button>
+    </form>
+    </details>
+    <div class="ks-stats-shortcuts">
+      {% for label, start in periods %}
+        <a href="{{ metrics_url }}?from={{ start|date:'Y-m-d' }}&amp;to={{ today|date:'Y-m-d' }}{% if selected_center %}&amp;center={{ selected_center.pk }}{% endif %}{% if selected_activity %}&amp;activity={{ selected_activity.pk }}{% endif %}">{{ label }}</a>
+      {% endfor %}
+      <a href="{{ metrics_url }}{% if selected_center or selected_activity %}?center={{ selected_center.pk|default:'' }}{% if selected_activity %}&amp;activity={{ selected_activity.pk }}{% endif %}{% endif %}">Todo el historial</a>
+    </div>
+
+    {% if not centers %}
+      <p class="empty-state">Tu cuenta todavía no tiene centros asignados.</p>
+    {% endif %}
+    {% with data=summary.counts %}
+      <dl class="ks-stats-kpis ks-exec-kpis">
+        <div>
+          <dt>{% include 'portal/icon.html' with name='calendar' %} Reservas vigentes y realizadas</dt>
+          <dd>{{ data.reserved }}</dd>
+          {% if summary.prior_orders != None %}<small>{{ summary.prior_orders }} en el período anterior equivalente</small>{% endif %}
+        </div>
+        <div>
+          <dt>{% include 'portal/icon.html' with name='check' %} Asistencias</dt>
+          <dd>{{ data.attended }}</dd>
+          <small>{% if data.reserved %}{% widthratio data.attended data.reserved 100 %}% de las reservas vigentes o realizadas{% else %}Sin reservas para medir{% endif %}</small>
+        </div>
+        <div{% if summary.cancel_alert %} class="ks-report-warning"{% endif %}>
+          <dt>{% include 'portal/icon.html' with name='bell' %} Cancelaciones</dt><dd>{{ data.cancelled }}</dd>
+          <small>{% if data.total %}{% widthratio data.cancelled data.total 100 %}% del total{% else %}Sin reservas para medir{% endif %}{% if summary.cancel_alert %} · Sobre el umbral del 5%{% endif %}</small>
+        </div>
+        <div>
+          <dt>{% include 'portal/icon.html' with name='people' %} Familias con reserva</dt><dd>{{ summary.families }}</dd>
+          {% if summary.families %}<small>{% widthratio summary.returning summary.families 100 %}% reservó más de una vez</small>{% endif %}
+        </div>
+        <div>
+          <dt>{% include 'portal/icon.html' with name='star' %} Calificación media</dt>
+          <dd>{% if summary.rating != None %}{{ summary.rating|floatformat:1 }} <small>/ 5</small>{% else %}<span class="ks-stats-no-rate">Sin valoraciones</span>{% endif %}</dd>
+          <small>{{ summary.rating_total }} opiniones</small>
+        </div>
+        <div>
+          <dt>{% include 'portal/icon.html' with name='wallet' %} Valor referencial de asistencias</dt>
+          <dd>$&nbsp;{{ data.attended_amount|floatformat:'0g' }}</dd>
+          <small>CLP demo · {{ data.attended }} asistencias registradas</small>
+        </div>
+      </dl>
+
+      <div class="ks-exec-hero-row">
+        {% include 'portal/booking_timeline.html' with chart=summary.timeline only %}
+        <section class="portal-card ks-stats-card ks-exec-priorities">
+          <h3>Seguimiento operativo</h3>
+          <p>Capacidad actual y actividad del período.</p>
+          <ul>
+            <li>
+              <span class="ks-exec-task-icon">{% include 'portal/icon.html' with name='calendar' %}</span>
+              <div><strong>{{ summary.limited_slots }} horarios con hasta 2 cupos</strong><small>Próximos horarios publicados</small></div>
+              {% if perms.core.view_schedule %}<a href="{% url 'management' 'schedules' %}">Ver horarios</a>{% endif %}
+            </li>
+            <li>
+              <span class="ks-exec-task-icon">{% include 'portal/icon.html' with name='star' %}</span>
+              <div><strong>{{ summary.unanswered_reviews }} opiniones sin respuesta</strong><small>De reservas del período</small></div>
+              {% if not viewing_as_admin and perms.core.view_review %}<a href="{% url 'reputation' %}">Ver opiniones</a>{% endif %}
+            </li>
+            <li>
+              <span class="ks-exec-task-icon">{% include 'portal/icon.html' with name='list' %}</span>
+              <div><strong>{{ data.cancelled }} cancelaciones</strong><small>{{ data.center_cancelled }} asociadas a cancelación del centro</small></div>
+              {% if perms.core.view_booking %}<a href="{% url 'bookings' %}?status=cancelled{% if viewing_as_admin and selected_center %}&amp;center={{ selected_center.pk }}{% endif %}">Ver reservas</a>{% endif %}
+            </li>
+          </ul>
+        </section>
+      </div>
+      <div class="ks-stats-grid">
+        <section class="portal-card ks-stats-card">
+          <h3>Ocupación de próximos horarios</h3>
+          <p>Capacidad publicada futura del centro o taller seleccionado.</p>
+          {% with cap=summary.capacity %}
+            {% if cap.seats %}
+              <p class="ks-stats-occupancy"><strong>{% widthratio cap.used cap.seats 100 %}%</strong> de ocupación</p>
+              <div class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio cap.used cap.seats 100 %}%"></span></div>
+              <ul class="ks-stats-legend"><li><b>{{ cap.used }}</b> ocupados</li><li><b>{{ cap.available }}</b> libres</li><li><b>{{ cap.slots }}</b> horarios</li></ul>
+            {% else %}<p class="ks-stats-empty">Sin horarios futuros publicados.</p>{% endif %}
+          {% endwith %}
+        </section>
+        <section class="portal-card ks-stats-card ks-stats-wide">
+          <h3>Reservas por día y hora de la actividad</h3>
+          <p>Bloques de tres horas en horario local. El color más oscuro indica mayor concentración.</p>
+          {% if summary.heatmap.peak %}
+            <p><strong>Mayor concentración</strong> · {{ summary.heatmap.peak_day }} desde las {{ summary.heatmap.peak_hour|stringformat:'02d' }}:00 · {{ summary.heatmap.peak }} reservas</p>
+            <div class="table-wrap ks-report-heat">
+              <table aria-label="Reservas por día y hora">
+                <thead><tr><th scope="col">Día</th>{% for hour in summary.heatmap.hours %}<th scope="col">{{ hour|stringformat:'02d' }}:00</th>{% endfor %}</tr></thead>
+                <tbody>
+                  {% for day, cells in summary.heatmap.rows %}
+                    <tr><th scope="row">{{ day }}</th>{% for count, level in cells %}<td class="ks-heat-{{ level }}">{{ count }}</td>{% endfor %}</tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}<p class="ks-stats-empty">Sin reservas para identificar los horarios más demandados.</p>{% endif %}
+        </section>
+        <section class="portal-card ks-stats-card">
+          <h3>Quién vuelve a reservar</h3>
+          <p>Familias con una o más reservas dentro de estas fechas.</p>
+          <ul class="ks-stats-rows">
+            <li><span>Una reserva</span><b>{{ summary.one_booking }}</b><span class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio summary.one_booking summary.families 100 %}%"></span></span></li>
+            <li><span>Dos o más reservas</span><b>{{ summary.returning }}</b><span class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio summary.returning summary.families 100 %}%"></span></span></li>
+          </ul>
+        </section>
+        <section class="portal-card ks-stats-card">
+          <h3>Valoraciones por puntuación</h3>
+          <p>Opiniones de las reservas del período, en una escala de 1 a 5.</p>
+          {% include 'portal/statistic_states.html' with records=summary.scores total=summary.rating_total only %}
+        </section>
+        <section class="portal-card ks-stats-card">
+          <h3>Cancelaciones por origen</h3>
+          <ul class="ks-stats-rows">
+            <li><span>Por cancelación del centro</span><b>{{ data.center_cancelled }}</b><span class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio data.center_cancelled data.cancelled 100 %}%"></span></span></li>
+            <li><span>Otras cancelaciones</span><b>{{ data.other_cancelled }}</b><span class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio data.other_cancelled data.cancelled 100 %}%"></span></span></li>
+          </ul>
+          {% if summary.reasons %}
+            <ul class="ks-stats-legend">{% for item in summary.reasons %}<li><b>{{ item.total }}</b> · {{ item.schedule__cancellation_reason }}</li>{% endfor %}</ul>
+          {% endif %}
+        </section>
+        <section class="portal-card ks-stats-card">
+          <h3>Valor de reservas demo</h3>
+          <p>Estimación a partir de los precios de las actividades reservadas.</p>
+          <dl class="ks-stats-kpis ks-stats-kpis-catalog">
+            <div><dt>Valor total</dt><dd>$ {{ data.booking_amount|floatformat:'0g' }}</dd></div>
+            <div><dt>Valor medio</dt><dd>{% if data.ticket != None %}$ {{ data.ticket|floatformat:'0g' }}{% else %}<span class="ks-stats-no-rate">Sin reservas</span>{% endif %}</dd></div>
+          </dl>
+        </section>
+      </div>
+    {% endwith %}
+  </section>
+  <section class="ks-stats-period" aria-labelledby="workshop-title">
+    <div class="section-heading">
+      <div><h2 id="workshop-title">Rendimiento por taller</h2>
+        <p class="muted">Hasta 12 talleres con movimientos en el período, ordenados por reservas vigentes y realizadas.</p></div>
+      <a class="btn btn-outline" href="{% querystring export='workshops' %}">Exportar CSV</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Taller</th><th scope="col">Reservas</th><th scope="col">Canceladas</th><th scope="col">Asistencias</th><th scope="col">Valor referencial demo</th></tr></thead>
+        <tbody>
+          {% for activity in summary.workshops %}
+            <tr><th scope="row">{{ activity.schedule__activity__name }}</th><td>{{ activity.reserved }}</td><td>{{ activity.cancelled }}</td><td>{{ activity.attended }}</td><td>$ {{ activity.demo_amount|floatformat:'0g' }}</td></tr>
+          {% empty %}<tr><td colspan="5">No hay reservas registradas para estos filtros.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

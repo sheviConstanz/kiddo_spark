@@ -1,0 +1,83 @@
+{% with route=request.resolver_match.url_name %}
+<aside class="ks-exec-sidebar">
+  <div class="ks-exec-identity">
+    <span class="ks-exec-mark">{% if user.role == 'provider' %}{% include 'portal/icon.html' with name='store' %}{% else %}{% include 'portal/icon.html' with name='chart' %}{% endif %}</span>
+    <div class="ks-exec-label">
+      <strong>{% if user.role == 'provider' %}Seller Center{% else %}Administración{% endif %}</strong>
+      {% if selected_center %}<small>{{ selected_center.name }}</small>{% endif %}
+    </div>
+    <button class="ks-sidebar-toggle" type="button" aria-label="Plegar menú lateral" aria-expanded="true" aria-controls="workspace-links" data-workspace-toggle hidden>
+      {% include 'portal/icon.html' with name='menu' %}
+    </button>
+  </div>
+  <nav id="workspace-links" aria-label="Navegación del tablero">
+    <details class="ks-workspace-group"{% if workspace_group == 'operations' %} open{% endif %}>
+      <summary>Operación {% include 'portal/icon.html' with name='chevron' %}</summary>
+      {% if user.role == 'provider' %}
+        <a href="{% url 'dashboard' %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Resumen ejecutivo</a>
+      {% else %}
+        <a href="{% url 'platform_statistics' %}"{% if route == 'platform_statistics' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='chart' %} Estadísticas</a>
+      {% endif %}
+      {% if perms.core.view_booking %}
+        <a href="{% url 'bookings' %}"{% if route == 'bookings' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='briefcase' %} Reservas</a>
+      {% endif %}
+      {% if perms.core.view_servicerequest %}
+        <a href="{% url 'requests' %}"{% if route == 'requests' or route == 'request_detail' or route == 'request_create' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
+      {% endif %}
+    </details>
+
+    {% if perms.core.view_organization or perms.core.view_activity or perms.core.view_schedule or perms.core.view_campaign or perms.core.operate_platform and perms.core.view_category or perms.core.operate_platform and perms.core.view_city or perms.core.operate_platform and perms.core.view_plan %}
+      <details class="ks-workspace-group"{% if workspace_group == 'data' %} open{% endif %}>
+        <summary>Gestión de datos {% include 'portal/icon.html' with name='chevron' %}</summary>
+        {% if perms.core.view_organization %}
+          <a href="{% url 'management' 'organizations' %}"{% if workspace_kind == 'organizations' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='store' %} {% if user.role == 'admin' %}Proveedores{% else %}Organizaciones{% endif %}</a>
+        {% endif %}
+        {% if perms.core.view_activity %}
+          <a href="{% url 'management' 'activities' %}"{% if workspace_kind == 'activities' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Publicaciones y actividades</a>
+        {% endif %}
+        {% if perms.core.view_schedule %}
+          <a href="{% url 'management' 'schedules' %}"{% if workspace_kind == 'schedules' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Horarios y cupos</a>
+        {% endif %}
+        {% if perms.core.operate_platform %}
+          {% if perms.core.view_category %}<a href="{% url 'management' 'categories' %}"{% if workspace_kind == 'categories' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Categorías</a>{% endif %}
+          {% if perms.core.view_city %}<a href="{% url 'management' 'cities' %}"{% if workspace_kind == 'cities' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='pin' %} Comunas</a>{% endif %}
+          {% if perms.core.view_plan %}<a href="{% url 'management' 'plans' %}"{% if workspace_kind == 'plans' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='spark' %} Planes demo</a>{% endif %}
+        {% endif %}
+        {% if perms.core.view_campaign %}
+          <a href="{% url 'management' 'campaigns' %}"{% if workspace_kind == 'campaigns' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='chart' %} Campañas demo</a>
+        {% endif %}
+      </details>
+    {% endif %}
+
+    {% if user.role == 'provider' %}
+      {% if perms.core.view_review or perms.core.view_settlement %}
+        <details class="ks-workspace-group"{% if workspace_group == 'performance' %} open{% endif %}>
+          <summary>Desempeño {% include 'portal/icon.html' with name='chevron' %}</summary>
+          {% if perms.core.view_review %}<a href="{% url 'reputation' %}"{% if route == 'reputation' or route == 'reply_review' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='star' %} Reputación</a>{% endif %}
+          {% if perms.core.view_settlement %}<a href="{% url 'finance' %}"{% if route == 'finance' or route == 'withdrawal' or route == 'bank' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='wallet' %} Finanzas demo</a>{% endif %}
+        </details>
+      {% endif %}
+      <details class="ks-workspace-group">
+        <summary>Ecosistema {% include 'portal/icon.html' with name='chevron' %}</summary>
+        <a href="{% url 'relief_home' %}">{% include 'portal/icon.html' with name='spark' %} Alivios B2B</a>
+        <a href="{% url 'public_landing' %}">{% include 'portal/icon.html' with name='compass' %} Ver portada pública</a>
+      </details>
+    {% elif user.is_superuser %}
+      <details class="ks-workspace-group">
+        <summary>Superadministración {% include 'portal/icon.html' with name='chevron' %}</summary>
+        <a href="{% url 'superadmin:core_user_changelist' %}">{% include 'portal/icon.html' with name='people' %} Usuarios y roles</a>
+        <a href="{% url 'superadmin:core_organization_changelist' %}">{% include 'portal/icon.html' with name='settings' %} Asignar administradores</a>
+        <a href="{% url 'provider_review_queue' %}">{% include 'portal/icon.html' with name='shield' %} Validación de proveedores</a>
+      </details>
+    {% else %}
+      <details class="ks-workspace-group"{% if workspace_group == 'account' %} open{% endif %}>
+        <summary>Cuenta {% include 'portal/icon.html' with name='chevron' %}</summary>
+        <a href="{% url 'profile' %}"{% if route == 'profile' or route == 'password_change' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='settings' %} Configuración de perfil</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}<button type="submit">{% include 'portal/icon.html' with name='logout' %} Salir</button>
+        </form>
+      </details>
+    {% endif %}
+  </nav>
+</aside>
+{% endwith %}

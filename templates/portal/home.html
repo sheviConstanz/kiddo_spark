@@ -1,29 +1,39 @@
 {% extends 'portal/base.html' %}
+{% load static %}
 {% block title %}Kiddo Spark · Actividades para crecer{% endblock %}
+{% block page_head %}
+  <link rel="stylesheet" href="{% static 'landing.css' %}">
+  <script src="{% static 'landing.js' %}" defer></script>
+{% endblock %}
 {% block content %}
-<section class="ks-home-hero">
-  <div class="portal-shell ks-hero-layout">
-    <div class="ks-hero-text">
-      <p class="ks-kicker">Actividades extracurriculares · 5 a 14 años</p>
-      <h1>Descubre actividades que despiertan su curiosidad</h1>
-      <p class="ks-hero-lead">Encuentra, compara y reserva actividades cerca de ti. Kiddo Spark reúne a familias, academias, talleres y clubes en un solo lugar.</p>
+<div class="ks-landing">
+<section class="ks-landing-hero" aria-labelledby="landing-title">
+  <div class="portal-shell ks-landing-layout">
+    <div class="ks-landing-copy">
+      <p class="ks-landing-eyebrow">Actividades extracurriculares · 5 a 14 años</p>
+      <h1 id="landing-title">Su próxima gran aventura <span>empieza cerca.</span></h1>
+      <p class="ks-landing-lead">Encuentra, compara y reserva actividades en la Región de Valparaíso. Kiddo Spark reúne a familias, academias, talleres y clubes en un solo lugar.</p>
       <div class="cta-row">
-        <a class="btn ks-coral" href="{% url 'explore' %}">Explorar actividades {% include 'portal/icon.html' with name='arrow' %}</a>
-        <a class="btn ks-hero-secondary" href="{% url 'providers' %}">Incorporar mi centro</a>
+        <a class="btn ks-landing-primary" href="{% url 'explore' %}">Explorar actividades</a>
+        <a class="btn btn-outline" href="{% url 'providers' %}">Incorporar mi centro</a>
       </div>
-      <p class="ks-territory">{% include 'portal/icon.html' with name='pin' %} <span>Viña del Mar, Valparaíso, Quilpué y Villa Alemana</span></p>
+      <p class="ks-landing-territory">{% include 'portal/icon.html' with name='pin' %} <span>Viña del Mar, Valparaíso, Quilpué y Villa Alemana</span></p>
     </div>
-    <div class="ks-hero-board">
-      <div class="ks-board-header">
-        <div><span class="ks-kicker">Ideas para empezar</span><h2>¿Qué le gustaría probar?</h2></div>
-        <span class="ks-board-spark">{% include 'portal/icon.html' with name='spark' %}</span>
-      </div>
-      <div class="ks-hero-categories">
-        <a class="ks-pick ks-lilac" href="{% url 'explore' %}?q=Rob%C3%B3tica">{% include 'portal/icon.html' with name='robot' %}<strong>Robótica STEAM</strong><span>Aprender creando</span></a>
-        <a class="ks-pick ks-peach" href="{% url 'explore' %}?q=Jiu-Jitsu">{% include 'portal/icon.html' with name='sport' %}<strong>Jiu-Jitsu</strong><span>Disciplina y confianza</span></a>
-        <a class="ks-pick ks-mint" href="{% url 'explore' %}?q=Nataci%C3%B3n">{% include 'portal/icon.html' with name='waves' %}<strong>Natación</strong><span>Movimiento y juego</span></a>
-        <a class="ks-pick ks-cream" href="{% url 'explore' %}?q=Piano">{% include 'portal/icon.html' with name='music' %}<strong>Música</strong><span>Creatividad y expresión</span></a>
-      </div>
+    <div class="ks-landing-showcase">
+      <figure class="ks-landing-photo">
+        <img src="{% static 'taller-robotica.jpg' %}" width="1200" height="800" fetchpriority="high" decoding="async"
+             alt="Un grupo de niños arma un robot con ruedas con ayuda de su instructora.">
+        <figcaption>Escena ilustrativa</figcaption>
+      </figure>
+      <a class="ks-landing-feature" href="{% url 'explore' %}?q=Rob%C3%B3tica">
+        <span class="ks-icon-tile ks-lilac">{% include 'portal/icon.html' with name='robot' %}</span>
+        <span><strong>Robótica STEAM</strong><small>Aprender creando</small></span>
+      </a>
+      <nav class="ks-landing-disciplines" aria-label="Ideas de actividades">
+        <a class="ks-peach" href="{% url 'explore' %}?q=Jiu-Jitsu">{% include 'portal/icon.html' with name='sport' %}<span><strong>Jiu-Jitsu</strong><small>Disciplina y confianza</small></span></a>
+        <a class="ks-mint" href="{% url 'explore' %}?q=Nataci%C3%B3n">{% include 'portal/icon.html' with name='waves' %}<span><strong>Natación</strong><small>Movimiento y juego</small></span></a>
+        <a class="ks-cream" href="{% url 'explore' %}?q=Piano">{% include 'portal/icon.html' with name='music' %}<span><strong>Música</strong><small>Creatividad y expresión</small></span></a>
+      </nav>
     </div>
   </div>
 </section>
@@ -33,10 +43,10 @@
   <span>{% include 'portal/icon.html' with name='shield' %} Proveedores revisados para el piloto</span>
 </div></div>
 
-<section class="portal-shell section-space" aria-labelledby="catalog-title">
+<section class="portal-shell section-space ks-landing-catalog" aria-labelledby="catalog-title">
   <div class="section-heading">
-    <div><p class="ks-kicker">Catálogo de demostración</p><h2 id="catalog-title">Actividades para descubrir</h2><p class="muted">Compara por comuna, categoría y edad. Revisa los horarios y cupos en cada ficha.</p></div>
-    <a class="btn btn-outline" href="{% url 'explore' %}">Ver catálogo {% include 'portal/icon.html' with name='arrow' %}</a>
+    <div data-landing-reveal><p class="ks-kicker">Catálogo de demostración</p><h2 id="catalog-title">Actividades para descubrir</h2><p class="muted">Compara por comuna, categoría y edad. Revisa los horarios y cupos en cada ficha.</p></div>
+    <a class="btn btn-outline" href="{% url 'explore' %}">Ver catálogo</a>
   </div>
   <div class="cards three">
     {% for activity in activities %}{% include 'portal/activity_card.html' %}{% empty %}
@@ -45,41 +55,41 @@
   </div>
 </section>
 
-<section class="ks-section-soft section-space" aria-labelledby="audience-title">
+<section class="ks-landing-audiences section-space" aria-labelledby="audience-title">
   <div class="portal-shell">
-    <div class="section-heading">
-      <div><p class="ks-kicker">Una plataforma, distintos roles</p><h2 id="audience-title">Cómo participa cada organización y familia</h2></div>
+    <div class="section-heading" data-landing-reveal>
+      <div><h2 id="audience-title">Un lugar para familias, centros y comunidades</h2></div>
     </div>
     <div class="ks-audiences">
-      <article class="portal-card ks-audience">
+      <article class="portal-card ks-audience" data-landing-reveal>
         <span class="ks-icon-tile ks-mint">{% include 'portal/icon.html' with name='people' %}</span>
         <h3>Familias</h3><p>Un adulto responsable compara opciones y administra las reservas de su familia. Los planes y Sparks permiten ensayar una forma flexible de combinar actividades.</p>
-        <a class="inline-link" href="{% url 'plans' %}">Conocer los planes demo {% include 'portal/icon.html' with name='arrow' %}</a>
+        <a class="inline-link" href="{% url 'plans' %}">Conocer los planes demo</a>
       </article>
-      <article class="portal-card ks-audience">
+      <article class="portal-card ks-audience" data-landing-reveal>
         <span class="ks-icon-tile ks-peach">{% include 'portal/icon.html' with name='store' %}</span>
         <h3>Proveedores</h3><p>Academias, talleres y clubes envían su ficha para revisión. Una vez habilitados, ofrecen actividades y administran horarios, cupos y reservas.</p>
-        <a class="inline-link" href="{% url 'providers' %}">Incorporar mi centro {% include 'portal/icon.html' with name='arrow' %}</a>
+        <a class="inline-link" href="{% url 'providers' %}">Incorporar mi centro</a>
       </article>
-      <article class="portal-card ks-audience">
+      <article class="portal-card ks-audience" data-landing-reveal>
         <span class="ks-icon-tile ks-lilac">{% include 'portal/icon.html' with name='briefcase' %}</span>
         <h3>Empresas y equipos de RR. HH.</h3><p>La propuesta de convenio permite explorar un beneficio subsidiado, definir elegibilidad y medir participación con indicadores agregados.</p>
-        <a class="inline-link" href="#convenios">Ver propuesta de convenio {% include 'portal/icon.html' with name='arrow' %}</a>
+        <a class="inline-link" href="#convenios">Ver propuesta de convenio</a>
       </article>
-      <article class="portal-card ks-audience">
+      <article class="portal-card ks-audience" data-landing-reveal>
         <span class="ks-icon-tile ks-cream">{% include 'portal/icon.html' with name='school' %}</span>
         <h3>Colegios y comunidades</h3><p>Pueden complementar su oferta extracurricular con actividades de centros externos y dar seguimiento al uso agregado del beneficio.</p>
-        <a class="inline-link" href="{% url 'request_create' %}?kind=agreement">Solicitar un convenio {% include 'portal/icon.html' with name='arrow' %}</a>
+        <a class="inline-link" href="{% url 'request_create' %}?kind=agreement">Solicitar un convenio</a>
       </article>
     </div>
   </div>
 </section>
 
-<section class="portal-shell section-space" aria-labelledby="pilot-title">
-  <div class="section-heading">
+<section class="portal-shell section-space ks-landing-pilot" aria-labelledby="pilot-title">
+  <div class="section-heading" data-landing-reveal>
     <div><p class="ks-kicker">Impacto y medición</p><h2 id="pilot-title">Qué sabemos y qué queremos medir</h2><p class="muted">La encuesta recoge intención declarada. El alcance y los objetivos orientan la evaluación del piloto.</p></div>
   </div>
-  <div class="ks-evidence-grid">
+  <div class="ks-evidence-grid" data-landing-reveal>
     <article class="ks-evidence"><span>Encuesta B2C</span><strong>58,72 %</strong><p>Alta intención de uso en 192 de 327 respuestas elegibles.</p></article>
     <article class="ks-evidence"><span>Alcance del piloto</span><strong>4 comunas</strong><p>Viña del Mar, Valparaíso, Quilpué y Villa Alemana.</p></article>
     <article class="ks-evidence"><span>Meta operativa</span><strong>≥95 %</strong><p>De publicaciones vigentes en el catálogo durante el piloto.</p></article>
@@ -89,14 +99,14 @@
 
 <section id="convenios" class="ks-convenios section-space" aria-labelledby="convenios-title">
   <div class="portal-shell ks-convenios-layout">
-    <div>
+    <div data-landing-reveal>
       <p class="ks-kicker">Convenios en exploración</p>
       <h2 id="convenios-title">Un beneficio extracurricular para empresas y colegios</h2>
       <p>La propuesta permite aportar Sparks a familias elegibles y consultar categorías, uso y participación sin administrar un convenio por cada centro.</p>
       <p>Los indicadores del convenio se plantean de forma agregada y la unidad de análisis es el adulto responsable.</p>
-      <a class="btn ks-coral" href="{% url 'request_create' %}?kind=agreement">Solicitar un convenio {% include 'portal/icon.html' with name='arrow' %}</a>
+      <a class="btn ks-landing-primary" href="{% url 'request_create' %}?kind=agreement">Solicitar un convenio</a>
     </div>
-    <div class="ks-preview">
+    <div class="ks-preview" data-landing-reveal>
       <div class="ks-preview-head">
         <div><p class="ks-kicker">Ejemplo ilustrativo</p><h3>Panel de convenio</h3></div>
         <span class="status-pill">Simulación</span>
@@ -113,4 +123,5 @@
     </div>
   </div>
 </section>
+</div>
 {% endblock %}

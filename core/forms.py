@@ -98,6 +98,9 @@ class ScheduleForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         from .access import activities
         self.fields['activity'].queryset = activities(user)
+        if self.instance.pk and self.instance.active:
+            self.fields['active'].disabled = True
+            self.fields['active'].help_text = 'Para retirar este horario, usa Cancelar horario desde Horarios y cupos.'
         if not self.instance.pk:
             self.fields['activity'].queryset = self.fields['activity'].queryset.filter(
                 organization__kind='provider', organization__approved=True, organization__active=True,
@@ -116,6 +119,14 @@ class ScheduleForm(forms.ModelForm):
         if data.get('capacity'):
             self.instance.available = data['capacity'] - occupied
         return data
+
+
+class ScheduleCancellationForm(forms.Form):
+    reason = forms.CharField(
+        label='Motivo de la cancelación', max_length=500,
+        widget=forms.Textarea(attrs={'rows': 5}),
+        help_text='El motivo aparecerá en el aviso para los clientes con una reserva vigente.',
+    )
 
 
 class PlanForm(forms.ModelForm):

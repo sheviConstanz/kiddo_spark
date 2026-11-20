@@ -1,9 +1,11 @@
+from datetime import timedelta
+
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import F, Sum
 from django.utils import timezone
-from .access import booking_approval_centers
-from .models import User, Schedule, Booking, Membership, Movement, Organization, Settlement, Withdrawal, RequestEvent, AuditLog, ProviderReviewEvent
+from .access import may_reserve, schedule_cancellation_centers
+from .models import User, Schedule, Booking, Membership, Movement, Notification, Organization, Settlement, Withdrawal, RequestEvent, AuditLog, ProviderReviewEvent
 
 
 def audit(user, action, obj):
@@ -91,56 +93,102 @@ def bookable_schedules():
     )
 
 
+def schedule_cancellation_cutoff(now):
+    return now + timedelta(hours=48)
+
+
+def booking_message(booking, detail):
+    start = timezone.localtime(booking.schedule.starts_at)
+    return f'{booking.schedule.activity.name} · {start:%d/%m/%Y %H:%M}. {detail}'
+
+
+def notify_booking(booking, kind, detail):
+    Notification.objects.create(
+        recipient_id=booking.user_id, booking=booking, kind=kind,
+        message=booking_message(booking, detail),
+    )
+
+
 @transaction.atomic
 def reserve(user, schedule_id):
+    if not may_reserve(user):
+        raise PermissionDenied('Este perfil no puede crear reservas.')
     # Conditional writes also serialize competing SQLite writers before reading balances.
     if not bookable_schedules().filter(pk=schedule_id, available__gt=0).update(available=F('available') - 1):
         raise ValidationError('El horario no está disponible o no tiene cupos.')
     slot = Schedule.objects.select_related('activity').get(pk=schedule_id)
-    if Booking.objects.filter(user=user, schedule=slot, status__in=Booking.ACTIVE_STATUSES).exists():
-        raise ValidationError('Ya tienes una reserva pendiente o confirmada para este horario.')
+    if Booking.objects.filter(user=user, schedule=slot, status=Booking.Status.RESERVED, attendance_recorded=False).exists():
+        raise ValidationError('Ya tienes una reserva para este horario.')
     if not User.objects.filter(pk=user.pk, credits__gte=slot.activity.sparks).update(credits=F('credits') - slot.activity.sparks):
         raise ValidationError('No tienes suficientes Sparks. Activa un plan de demostración.')
     booking = Booking.objects.create(user=user, schedule=slot, sparks=slot.activity.sparks, amount=slot.activity.price)
-    Movement.objects.create(user=user, delta=-booking.sparks, description='Sparks apartados al solicitar la reserva', booking=booking)
+    Movement.objects.create(user=user, delta=-booking.sparks, description='Reserva de actividad', booking=booking)
+    notify_booking(booking, Notification.Kind.RESERVED, f'Se descontaron {booking.sparks} Sparks.')
+    operators = slot.activity.organization.administrators.filter(is_active=True, is_staff=True).exclude(pk=user.pk)
+    notice = booking_message(booking, f'La reserva KS-{booking.pk} ya está confirmada.')
+    Notification.objects.bulk_create([
+        Notification(recipient=operator, booking=booking, kind=Notification.Kind.BOOKING_RECEIVED, message=notice)
+        for operator in operators if operator.role == 'provider' and operator.has_perm('core.view_booking')
+    ])
     audit(user, 'reserve', booking)
     return booking
 
 
-def confirm(user, booking):
-    centers = booking_approval_centers(user)
-    if not centers.filter(pk=booking.schedule.activity.organization_id).exists():
-        raise PermissionDenied
-    slots = bookable_schedules().filter(activity__organization__in=centers)
-    with transaction.atomic():
-        if not Booking.objects.filter(
-            pk=booking.pk, status=Booking.Status.PENDING, schedule__in=slots,
-        ).update(status=Booking.Status.CONFIRMED):
-            raise ValidationError('Solo puedes confirmar solicitudes pendientes de horarios vigentes.')
-        audit(user, 'confirm_booking', booking)
+def _refund_booking(booking):
+    current = Booking.objects.filter(pk=booking.pk, status=Booking.Status.RESERVED, attendance_recorded=False)
+    if not current.update(status=Booking.Status.CANCELLED):
+        raise ValidationError('La reserva ya fue cancelada o tiene asistencia registrada.')
+    Schedule.objects.filter(pk=booking.schedule_id).update(available=F('available') + 1)
+    refund = {'credits': F('credits') + booking.sparks}
+    if Booking.objects.filter(pk=booking.pk, points_awarded=True).update(points_awarded=False):
+        refund['points'] = F('points') - 50
+    User.objects.filter(pk=booking.user_id).update(**refund)
+    Movement.objects.create(user_id=booking.user_id, delta=booking.sparks, description='Devolución por cancelación', booking=booking)
 
 
 @transaction.atomic
 def cancel(user, booking):
     if booking.user_id != user.pk:
         raise ValidationError('Solo el titular puede cancelar su reserva.')
-    current = Booking.objects.filter(pk=booking.pk, user=user)
-    if not current.filter(status__in=Booking.ACTIVE_STATUSES).update(status=Booking.Status.CANCELLED):
-        raise ValidationError('La reserva ya fue cancelada o completada.')
-    Schedule.objects.filter(pk=booking.schedule_id).update(available=F('available') + 1)
-    refund = {'credits': F('credits') + booking.sparks}
-    if current.filter(points_awarded=True).update(points_awarded=False):
-        refund['points'] = F('points') - 50
-    User.objects.filter(pk=user.pk).update(**refund)
-    Movement.objects.create(user=user, delta=booking.sparks, description='Devolución por cancelación', booking=booking)
+    _refund_booking(booking)
+    notify_booking(booking, Notification.Kind.BOOKING_CANCELLED, f'Se devolvieron {booking.sparks} Sparks a tu cuenta.')
     audit(user, 'cancel', booking)
+
+
+def cancel_schedule(user, schedule, reason):
+    centers = schedule_cancellation_centers(user)
+    if not centers.filter(pk=schedule.activity.organization_id).exists():
+        raise PermissionDenied
+    reason = reason.strip()
+    if not reason or len(reason) > 500:
+        raise ValidationError('Escribe un motivo de hasta 500 caracteres.')
+
+    now = timezone.now()
+    with transaction.atomic():
+        # Update the same slot that reserve() locks before debiting the client.
+        eligible = Schedule.objects.filter(
+            pk=schedule.pk, active=True, cancelled_at__isnull=True,
+            starts_at__gte=schedule_cancellation_cutoff(now), activity__organization__in=centers,
+        )
+        if not eligible.update(active=False, cancelled_at=now, cancellation_reason=reason):
+            raise ValidationError('Solo puedes cancelar un horario activo con al menos 48 horas de anticipación.')
+        bookings = Booking.objects.filter(
+            schedule=schedule, status=Booking.Status.RESERVED, attendance_recorded=False,
+        ).select_related('schedule__activity')
+        for booking in bookings:
+            _refund_booking(booking)
+            notify_booking(
+                booking, Notification.Kind.SCHEDULE_CANCELLED,
+                f'Motivo: {reason}\nSe devolvieron {booking.sparks} Sparks a tu cuenta.',
+            )
+        audit(user, 'cancel_schedule', schedule)
 
 
 @transaction.atomic
 def complete(user, booking):
     current = Booking.objects.filter(pk=booking.pk)
-    if not current.filter(status=Booking.Status.CONFIRMED).update(status=Booking.Status.COMPLETED):
-        raise ValidationError('Solo puedes completar reservas confirmadas.')
+    if not current.filter(status=Booking.Status.RESERVED, attendance_recorded=False).update(attendance_recorded=True):
+        raise ValidationError('Solo puedes registrar asistencia una vez en una reserva vigente.')
     Settlement.objects.create(booking=booking, organization=booking.schedule.activity.organization, amount=booking.amount)
     if current.filter(points_awarded=False).update(points_awarded=True):
         User.objects.filter(pk=booking.user_id).update(points=F('points') + 50)

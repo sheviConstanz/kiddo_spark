@@ -4,11 +4,7 @@
 <section class="portal-shell section-space">
   <div class="section-heading">
     <div>
-      <h1>{% if user.is_staff %}Reservas y órdenes{% else %}Mis reservas{% endif %}</h1>
-      {% if can_approve_bookings %}
-        <p class="muted">Revisa las solicitudes pendientes de tus centros antes del horario de la actividad.</p>
-        <a class="inline-link" href="{% url 'bookings' %}?status=pending">Ver pendientes por aprobar</a>
-      {% endif %}
+      <h1>{% if user.role == 'admin' %}Reservas de la plataforma{% elif user.is_staff %}Reservas y órdenes{% else %}Mis reservas{% endif %}</h1>
     </div>
     <a class="btn btn-outline" href="{% url 'export_bookings' %}{% querystring %}">Exportar CSV</a>
   </div>
@@ -22,6 +18,18 @@
         {% endfor %}
       </select>
     </label>
+    {% if booking_centers %}
+      <label>Centro
+        <select name="center">
+          <option value="">Todos los centros</option>
+          {% for center in booking_centers %}
+            <option value="{{ center.pk }}"{% if request.GET.center == center.pk|stringformat:'s' %} selected{% endif %}>{{ center.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Desde <input type="date" name="from" value="{{ request.GET.from }}"></label>
+      <label>Hasta <input type="date" name="to" value="{{ request.GET.to }}"></label>
+    {% endif %}
     <button class="btn btn-outline">Filtrar</button>
   </form>
   <div class="table-wrap">
@@ -30,29 +38,28 @@
       <tbody>
         {% for booking in bookings %}
           {% with activity=booking.schedule.activity starts=booking.schedule.starts_at status=booking.status %}
-            <tr>
+            <tr id="reserva-{{ booking.pk }}" tabindex="-1">
               <td>KS-{{ booking.pk }}</td>
               <td><b>{{ activity.name }}</b><small>{{ starts|date:'d/m/Y H:i' }} · {{ activity.organization }}</small></td>
               <td>{{ booking.user.username }}</td>
               <td>{{ booking.sparks }}</td>
-              <td><span class="status-pill ks-booking-status is-{{ status }}">{{ booking.get_status_display }}</span></td>
+              <td>
+                <span class="status-pill ks-booking-status is-{{ status }}">{{ booking.get_status_display }}</span>
+                {% if booking.attendance_recorded %}<small>Asistencia registrada</small>{% endif %}
+              </td>
               <td>
                 <div class="table-actions ks-booking-actions">
-                  {% if status != 'pending' %}<a href="{% url 'document' booking.pk %}">Comprobante demo</a>{% endif %}
-                  {% if booking.user_id == user.pk and status in active_statuses %}
-                    <form method="post" action="{% url 'booking_action' booking.pk 'cancel' %}" data-confirm="¿Cancelar la reserva y devolver sus Sparks?">
+                  <a href="{% url 'document' booking.pk %}">Comprobante demo</a>
+                  {% if user.role != 'admin' and booking.user_id == user.pk and status == 'reserved' and not booking.attendance_recorded %}
+                    <form method="post" action="{% url 'booking_action' booking.pk 'cancel' %}" data-confirm-title="Cancelar reserva" data-confirm-label="Cancelar reserva" data-confirm-tone="danger" data-confirm="El cupo quedará disponible y recuperas los Sparks de esta reserva.">
                       {% csrf_token %}<button>Cancelar</button>
                     </form>
                   {% endif %}
-                  {% if status == 'pending' and booking.can_approve %}
-                    <form method="post" action="{% url 'booking_action' booking.pk 'confirm' %}">
-                      {% csrf_token %}<button class="btn btn-primary">Confirmar reserva</button>
-                    </form>
-                  {% elif status == 'confirmed' and activity.organization_id in managed_centers %}
-                    <form method="post" action="{% url 'booking_action' booking.pk 'complete' %}" data-confirm="¿Registrar esta experiencia como completada?">
+                  {% if status == 'reserved' and not booking.attendance_recorded and activity.organization_id in managed_centers %}
+                    <form method="post" action="{% url 'booking_action' booking.pk 'complete' %}" data-confirm-title="Registrar asistencia" data-confirm-label="Registrar asistencia" data-confirm="La asistencia quedará registrada para esta reserva.">
                       {% csrf_token %}<button>Validar asistencia</button>
                     </form>
-                  {% elif status == 'completed' and booking.user_id == user.pk %}
+                  {% elif user.role != 'admin' and booking.attendance_recorded and booking.user_id == user.pk %}
                     <a href="{% url 'review' booking.pk %}">Valorar</a>
                   {% endif %}
                 </div>

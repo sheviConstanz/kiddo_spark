@@ -1,0 +1,22 @@
+{% extends 'portal/base.html' %}
+{% block title %}Cancelar horario · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space">
+  <div class="form-panel">
+    <h1>Cancelar horario</h1>
+    <p><strong>{{ schedule.activity.name }}</strong> · {{ schedule.starts_at|date:'d/m/Y H:i' }}</p>
+    {% if eligible %}
+      <p class="muted">Este horario saldrá del catálogo. Los clientes con una reserva vigente recibirán el motivo y recuperarán sus Sparks.</p>
+      <form class="portal-form" method="post" data-confirm-title="Cancelar horario" data-confirm-label="Cancelar y avisar" data-confirm-tone="danger" data-confirm="Se retirará el horario, se devolverán los Sparks y se enviará el motivo a quienes tengan una reserva vigente.">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn btn-primary" type="submit">Cancelar horario y enviar aviso</button>
+      </form>
+    {% else %}
+      {% if form.non_field_errors %}{{ form.non_field_errors }}
+      {% else %}<p class="notice">Solo puedes cancelar un horario activo con al menos 48 horas de anticipación.</p>{% endif %}
+    {% endif %}
+    <p><a class="inline-link" href="{% url 'management' 'schedules' %}">Volver a Horarios y cupos</a></p>
+  </div>
+</section>
+{% endblock %}

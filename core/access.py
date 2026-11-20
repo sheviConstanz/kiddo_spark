@@ -35,6 +35,19 @@ def activities(user):
     return Activity.objects.filter(organization__in=organizations(user))
 
 
+def may_reserve(user):
+    return user.is_authenticated and user.role not in {'provider', 'applicant', 'admin'}
+
+
+def require_service_profile(user):
+    if user.is_authenticated and user.role == 'admin':
+        raise PermissionDenied('Esta vista corresponde a clientes o proveedores.')
+
+
+def may_edit_provider_records(user):
+    return user.role == 'admin' and user.has_perm('core.view_organization')
+
+
 def bookings(user):
     qs = Booking.objects.all()
     if user.is_superuser:
@@ -46,8 +59,10 @@ def bookings(user):
     return qs.filter(user=user)
 
 
-def booking_approval_centers(user):
-    if user.role == 'provider' and user.has_perm('core.change_booking'):
+def schedule_cancellation_centers(user):
+    if user.is_superuser:
+        return Organization.objects.filter(kind='provider')
+    if user.role == 'provider' and user.has_perm('core.change_schedule'):
         return user.organizations.filter(kind='provider')
     return Organization.objects.none()
 

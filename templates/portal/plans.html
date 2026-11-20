@@ -1,1 +1,52 @@
-{% extends 'portal/base.html' %}{% block content %}<section class="portal-shell section-space"><div class="eyebrow">UNA FAMILIA, MUCHAS POSIBILIDADES</div><h1>Planes disponibles</h1><p class="muted">Los Sparks permiten probar el recorrido de reservas. Cada activación añade Sparks; no reemplaza tu saldo ni realiza cobros.</p><div class="cards three">{% for plan in plans %}<article class="portal-card plan-card"><h2>{{ plan.name }}</h2><div class="plan-value">{{ plan.sparks }} <small>Sparks</small></div><p>{{ plan.description }}</p><p class="muted">Valor referencial: ${{ plan.price }} CLP · Simulado</p>{% if user.is_authenticated %}<form method="post" action="{% url 'activate_plan' plan.pk %}" data-confirm="¿Añadir {{ plan.sparks }} Sparks demo a tu cuenta? No habrá cobro real.">{% csrf_token %}<button class="btn btn-primary">Activar plan demo</button></form>{% else %}<a class="btn btn-primary" href="{% url 'login' %}?next={% url 'plans' %}">Ingresar para activar</a>{% endif %}</article>{% empty %}<p>Aún no hay planes habilitados.</p>{% endfor %}</div><article class="portal-card calculator"><h2>Calculadora de Sparks</h2><p>Arma una combinación antes de elegir tu plan. Esto no crea reservas.</p><div class="cards three">{% for a in calc_activities %}<label class="calc-choice"><input type="checkbox" data-sparks="{{ a.sparks }}"> {{ a.name }} · {{ a.sparks }} Sparks</label>{% endfor %}</div><p class="calc-result" aria-live="polite">Total: <strong id="calc-total">0</strong> Sparks</p></article></section>{% endblock %}
+{% extends 'portal/base.html' %}
+{% block title %}Planes y Sparks · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space" aria-labelledby="plans-title">
+  <header class="ks-plans-intro">
+    <h1 id="plans-title">Planes disponibles</h1>
+    <p class="muted">Elige cuántos Sparks necesitas para tus actividades. Los precios{% if show_reference_note %} y beneficios del catálogo original{% endif %} son referenciales. En la demo, cada activación añade Sparks a tu saldo y es gratuita.</p>
+  </header>
+  <div class="ks-plans-grid">
+    {% for card in cards %}
+      {% with plan=card.plan %}
+        <article class="ks-plan{% if card.recommended %} ks-plan-recommended{% endif %}" aria-labelledby="plan-{{ plan.pk }}">
+          {% if card.recommended %}<span class="ks-plan-badge">Recomendado</span>{% endif %}
+          <h2 id="plan-{{ plan.pk }}">{{ card.name }}</h2>
+          {% if plan.description %}<p class="ks-plan-description muted">{{ plan.description }}</p>{% endif %}
+          <p class="ks-plan-sparks">{{ plan.sparks }} Sparks</p>
+          <div class="ks-plan-details">
+            <p class="ks-plan-price">${{ card.price }} CLP <span>/mes</span></p>
+            {% if card.benefits %}
+              <ul class="ks-plan-benefits">
+                {% for benefit in card.benefits %}<li>{{ benefit }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+          {% if user.is_authenticated %}
+            <form class="ks-plan-action" method="post" action="{% url 'activate_plan' plan.pk %}"
+                  data-confirm-title="Activar plan demo" data-confirm-label="Activar plan demo"
+                  data-confirm="¿Añadir {{ plan.sparks }} Sparks demo a tu cuenta? No habrá cobro real.">
+              {% csrf_token %}
+              <button class="btn {% if card.recommended %}btn-primary{% else %}btn-outline{% endif %}" type="submit" aria-describedby="plan-{{ plan.pk }}">Elegir plan</button>
+            </form>
+          {% else %}
+            <a class="ks-plan-action btn {% if card.recommended %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'login' %}?next={% url 'plans' %}" aria-describedby="plan-{{ plan.pk }}">Elegir plan</a>
+          {% endif %}
+        </article>
+      {% endwith %}
+    {% empty %}
+      <p>Aún no hay planes habilitados.</p>
+    {% endfor %}
+  </div>
+  <article class="portal-card calculator">
+    <h2>Calculadora de Sparks</h2>
+    <p>Arma una combinación antes de elegir tu plan. Esto no crea reservas.</p>
+    <div class="cards three">
+      {% for activity in calc_activities %}
+        <label class="calc-choice"><input type="checkbox" data-sparks="{{ activity.sparks }}"> {{ activity.name }} · {{ activity.sparks }} Sparks</label>
+      {% endfor %}
+    </div>
+    <p class="calc-result" aria-live="polite">Total: <strong id="calc-total">0</strong> Sparks</p>
+  </article>
+</section>
+{% endblock %}

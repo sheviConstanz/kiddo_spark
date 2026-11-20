@@ -1,5 +1,82 @@
 # Historial de cambios
 
+## 2026-11-20 — Portada pública animada
+
+- La apertura destaca el catálogo familiar y la incorporación de centros con
+  una escena ilustrativa de robótica y accesos directos por disciplina.
+- Las transiciones de entrada, al desplazarse y al enfocar tarjetas respetan
+  la preferencia de movimiento reducido. Se conservan las cifras del piloto
+  y el panel ilustrativo de convenios.
+
+## 2026-11-20 — Navegación de administración
+
+- El lateral reúne Estadísticas, Reservas y Solicitudes en Operación.
+  Los grupos del menú se pueden plegar por separado.
+- La barra superior de administración muestra Actividades, Alivios B2B y
+  la campanita de Notificaciones. El directorio de Alivios B2B se puede
+  consultar y filtrar desde este perfil.
+
+## 2026-11-20 — Tarjetas de Planes y Sparks
+
+- Los planes habilitados se muestran en tarjetas con Sparks, precio mensual
+  referencial en pesos chilenos y el botón **Elegir plan**. Integral lleva el
+  sello **Recomendado**.
+- Los planes agregados desde gestión se ubican automáticamente por precio
+  ascendente. La activación continúa siendo demostrativa.
+
+## 2026-11-20 — Menú lateral de gestión
+
+- El menú lateral plegable acompaña los tableros, las tablas y los formularios
+  de gestión. El navegador recuerda su estado para cada perfil.
+- Administración mantiene cuatro enlaces en la barra superior. Sus módulos,
+  notificaciones, configuración y salida pasan al menú lateral.
+
+## 2026-11-20 — Configuración de perfil y confirmaciones del portal
+
+- **Cambiar contraseña** está en **Configuración de perfil → Seguridad de
+  la cuenta**. Al guardar, la cuenta conserva la sesión.
+- Las acciones con confirmación usan un cuadro del portal con título y
+  botón específicos. Los avisos en página distinguen el tipo de mensaje.
+
+## 2026-11-20 — Tableros ejecutivos y acceso directo a tablas
+
+- Administración y Seller Center agrupan navegación lateral, indicadores,
+  gráfico de evolución y seguimiento operativo.
+- **Gestión operativa** abre directamente la tabla de proveedores. El
+  administrador puede consultar **Actividades** y sus fichas en modo lectura.
+
+## 2026-11-20 — Gestión operativa de administración
+
+- **Gestión operativa** abre los módulos de proveedores, catálogo y horarios.
+- **Reservas** permite consulta global, filtros por centro, estado y fecha,
+  y exportación CSV. Los accesos de compra, reputación y alta como proveedor
+  se restringen para la cuenta de administración.
+
+## 2026-11-20 — Indicadores por centro y avisos de reserva
+
+- El proveedor recibe avisos de nuevas reservas en sus centros asignados.
+  Las cuentas de proveedor tienen restringida la creación de reservas.
+- Seller Center añade filtros, mapa por día y hora, ocupación, cancelaciones,
+  recurrencia, valoraciones y resultados por taller.
+- Estadísticas incorpora demanda por categoría, Sparks, revisión de fichas
+  y una vista por centro con los mismos indicadores del Seller Center.
+- Cada acceso de **Mi panel** incluye un icono descriptivo.
+
+## 2026-11-20 — Desplegable Mi panel
+
+- Los accesos de cuenta quedan en un desplegable de la barra superior.
+- **Perfil** abre el resumen de la cuenta y **Configuración de perfil** abre
+  la edición de datos.
+
+## 2026-11-20 — Reserva automática y notificaciones
+
+- Los horarios con cupos se reservan de inmediato. Las reservas muestran
+  **Reservado** o **Cancelado**, con la asistencia registrada por separado.
+- El proveedor puede cancelar un horario con al menos 48 horas de aviso y
+  un motivo. El sistema retira el horario y devuelve los Sparks.
+- La campanita guarda avisos privados de reservas y cancelaciones e indica
+  cuántos están sin leer.
+
 ## 2026-11-20 — Aprobación de reservas por el proveedor
 
 - Las reservas nuevas quedan **Pendiente de aprobar**, con el cupo y los

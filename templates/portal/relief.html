@@ -2,17 +2,18 @@
 {% block title %}Alivios B2B · Kiddo Spark{% endblock %}
 {% block content %}
 <section class="provider-hero">
-  <div class="portal-shell provider-layout">
+  <div class="portal-shell{% if can_request_relief %} provider-layout{% endif %}">
     <div>
       <p class="provider-kicker">{% include 'portal/icon.html' with name='briefcase' %} Alivios B2B · Para academias, talleres y clubes</p>
       <h1>Aliados para resolver tu operación</h1>
-      <p class="provider-lead">Encuentra apoyo para la gestión diaria de tu centro y dedica más tiempo a enseñar. Reúne contabilidad, legal, mantención, seguros y marketing en un solo lugar.</p>
+      <p class="provider-lead">{% if can_request_relief %}Encuentra apoyo para la gestión diaria de tu centro y dedica más tiempo a enseñar. Reúne contabilidad, legal, mantención, seguros y marketing en un solo lugar.{% else %}Consulta los aliados publicados en contabilidad, asuntos legales, mantención, seguros y marketing.{% endif %}</p>
       <div class="cta-row">
         <a class="btn ks-coral" href="#directorio">Explorar soluciones {% include 'portal/icon.html' with name='arrow' %}</a>
-        <a class="btn btn-outline" href="{% url 'relief_diagnosis' %}">Necesito ayuda para definir mi problema</a>
+        {% if can_request_relief %}<a class="btn btn-outline" href="{% url 'relief_diagnosis' %}">Necesito ayuda para definir mi problema</a>{% endif %}
       </div>
       <p class="provider-territory">Kiddo Spark facilita la conexión. El servicio profesional corresponde al aliado externo.</p>
     </div>
+    {% if can_request_relief %}
     <section class="ks-relief-diagnostic" id="diagnostico" aria-labelledby="diagnostic-title">
       <p class="ks-kicker">Tu centro hoy</p>
       <h2 id="diagnostic-title">Diagnóstico rápido</h2>
@@ -38,6 +39,7 @@
         </div>
       {% endif %}
     </section>
+    {% endif %}
   </div>
 </section>
 
@@ -58,7 +60,7 @@
   <div class="portal-shell">
     <div class="section-heading">
       <div><p class="ks-kicker">Directorio de demostración</p><h2 id="relief-directory-title">Aliados para resolver tu operación</h2>
-      <p class="muted">Filtra por necesidad, revisa el alcance y guarda una solicitud de asesoría o cotización.</p></div>
+      <p class="muted">Filtra por necesidad y revisa los servicios de cada aliado.{% if can_request_relief %} Puedes solicitar asesoría o una cotización.{% endif %}</p></div>
     </div>
     <nav class="module-nav ks-relief-filters" aria-label="Filtrar aliados por área">
       <a href="{% url 'relief_home' %}#directorio"{% if not selected_area %} aria-current="true"{% endif %}>Todos</a>
@@ -81,10 +83,10 @@
               {% for topic in org.relief_topic_list %}<li>{{ topic }}</li>{% endfor %}
             </ul>
           {% endif %}
-          <div class="cta-row ks-relief-actions">
+          {% if can_request_relief %}<div class="cta-row ks-relief-actions">
             <a class="btn btn-outline" href="{% url 'relief_advice' org.pk %}" aria-label="Solicitar asesoría a {{ org.name }}">Solicitar asesoría</a>
             <a class="btn btn-primary" href="{% url 'relief_quote' org.pk %}" aria-label="Cotizar con {{ org.name }}">Cotizar</a>
-          </div>
+          </div>{% endif %}
         </article>
         {% endwith %}
       {% empty %}
@@ -94,6 +96,7 @@
   </div>
 </section>
 
+{% if can_request_relief %}
 <section class="portal-shell section-space ks-relief-anchor" id="mis-solicitudes" aria-labelledby="relief-requests-title">
   <div class="section-heading">
     <div><h2 id="relief-requests-title">Mis solicitudes</h2><p class="muted">Consulta el estado de tus asesorías, cotizaciones y solicitudes de orientación.</p></div>
@@ -124,4 +127,5 @@
     <p class="notice"><a class="inline-link" href="{% url 'login' %}?next={% url 'relief_home' %}">Ingresa</a> para ver tus solicitudes.</p>
   {% endif %}
 </section>
+{% endif %}
 {% endblock %}

@@ -1,0 +1,14 @@
+<dialog class="ks-confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
+  <div class="ks-confirm-content">
+    <span class="ks-confirm-icon" aria-hidden="true">
+      <span class="ks-confirm-info">{% include 'portal/icon.html' with name='info' %}</span>
+      <span class="ks-confirm-warning">{% include 'portal/icon.html' with name='alert' %}</span>
+    </span>
+    <h2 id="confirm-dialog-title">Confirmar acción</h2>
+    <p id="confirm-dialog-message"></p>
+    <form method="dialog" class="ks-confirm-actions">
+      <button class="btn btn-outline" type="submit" value="back" autofocus>Volver</button>
+      <button class="btn btn-primary" type="submit" value="confirm">Confirmar</button>
+    </form>
+  </div>
+</dialog>

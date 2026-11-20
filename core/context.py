@@ -1,20 +1,32 @@
 from .access import account_start
 
 
-PANEL_ROUTES = frozenset({
-    'dashboard', 'platform_statistics', 'profile', 'password_change', 'wallet',
-    'bookings', 'review', 'reply_review', 'reputation', 'requests', 'request_detail',
-    'management', 'create_record', 'edit_record', 'finance', 'withdrawal', 'bank',
-    'organization_register', 'provider_submissions', 'provider_submission', 'provider_review_queue', 'provider_review',
-})
+MANAGEMENT_ROUTES = frozenset({'management', 'create_record', 'edit_record', 'cancel_schedule'})
+WORKSPACE_GROUP_ROUTES = {
+    'data': MANAGEMENT_ROUTES,
+    'performance': {'reputation', 'reply_review', 'finance', 'withdrawal', 'bank'},
+    'account': {'profile', 'password_change'},
+}
+PROVIDER_WORKSPACE_ROUTES = MANAGEMENT_ROUTES | WORKSPACE_GROUP_ROUTES['performance'] | WORKSPACE_GROUP_ROUTES['account'] | {
+    'dashboard', 'bookings', 'requests', 'request_create', 'request_detail',
+    'notifications',
+}
 
 
 def portal(request):
     match = request.resolver_match
     route = match.url_name if match else None
-    in_panel = route in PANEL_ROUTES or (route == 'explore' and bool(request.GET.get('favorites')))
+    role = request.user.role if request.user.is_authenticated else None
     return {
         'academic_demo': True,
-        'show_account_navigation': request.user.is_authenticated and in_panel,
-        'account_start': account_start(request.user) if request.user.is_authenticated else None,
+        'account_start': account_start(request.user) if role else None,
+        'workspace_navigation': (
+            role == 'admin'
+            or (role == 'provider' and route in PROVIDER_WORKSPACE_ROUTES)
+            or (role == 'superadmin' and (route in MANAGEMENT_ROUTES or route == 'platform_statistics'))
+        ),
+        'workspace_group': next((group for group, routes in WORKSPACE_GROUP_ROUTES.items() if route in routes), 'operations'),
+        'workspace_kind': 'schedules' if route == 'cancel_schedule' else match.kwargs.get('kind') if match else None,
+        'unread_notification_count': request.user.notifications.filter(read_at__isnull=True).count()
+        if role else 0,
     }

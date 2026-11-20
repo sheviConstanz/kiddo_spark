@@ -1,0 +1,8 @@
+{% extends 'portal/form.html' %}
+{% block submit_label %}Guardar cambios{% endblock %}
+{% block form_footer %}
+  <section class="ks-profile-security" aria-labelledby="profile-security-title">
+    <h2 id="profile-security-title">{% include 'portal/icon.html' with name='shield' %} Seguridad de la cuenta</h2>
+    <a class="btn btn-outline" href="{% url 'password_change' %}">Cambiar contraseña</a>
+  </section>
+{% endblock %}

@@ -36,12 +36,15 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
   los titulares de fichas anteriores y conserva sus credenciales.
 - Saldo y cupos se actualizan dentro de una transacción y con escrituras
   condicionales para impedir saldo negativo y reservas por encima de la capacidad.
-- La restricción de unicidad cubre reservas pendientes y confirmadas del mismo
-  cliente y horario. El proveedor asignado confirma en un horario vigente.
-  Confirmar conserva la retención original. La cancelación libera Sparks y cupo
-  una vez. Solo una reserva confirmada puede pasar a completada y generar puntos.
-- La migración 0009 conserva estados y reconoce los puntos de las reservas
-  históricas con un débito registrado. La síntesis de los diagramas está en
+- La reserva toma el cupo y descuenta Sparks en la misma transacción. El
+  identificador del cliente y del horario es único entre reservas vigentes
+  con asistencia pendiente. Registrar asistencia acredita los puntos por separado.
+- La cancelación del horario toma el mismo registro, valida el permiso y un
+  mínimo de 48 horas, y guarda el motivo. Devoluciones y notificaciones se
+  confirman en la misma transacción. Las notificaciones se filtran por la cuenta
+  que las recibe y se marcan como leídas por POST.
+- La migración 0010 sustituye la aprobación manual y conserva la asistencia
+  histórica y los movimientos. La síntesis de los diagramas está en
   [Flujos Bizagi](FLOWS-BIZAGI.md).
 - Se protege el historial mediante desactivación y relaciones protegidas.
 - Los planes son activaciones académicas sin pasarela de pago.

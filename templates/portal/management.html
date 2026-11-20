@@ -7,22 +7,6 @@
     <h1>{{ title }}</h1>
     {% if can_add %}<a class="btn btn-primary" href="{% url 'create_record' kind %}">Crear registro</a>{% endif %}
   </div>
-  <nav class="module-nav" aria-label="Mantenedores">
-    {% if perms.core.view_activity %}<a href="{% url 'management' 'activities' %}">Actividades</a>{% endif %}
-    {% if perms.core.view_schedule %}<a href="{% url 'management' 'schedules' %}">Horarios y cupos</a>{% endif %}
-    {% if perms.core.view_organization %}<a href="{% url 'management' 'organizations' %}">Organizaciones</a>{% endif %}
-    {% if perms.core.view_campaign %}<a href="{% url 'management' 'campaigns' %}">Campañas demo</a>{% endif %}
-    {% if perms.core.operate_platform %}
-      {% if perms.core.view_category %}<a href="{% url 'management' 'categories' %}">Categorías</a>{% endif %}
-      {% if perms.core.view_city %}<a href="{% url 'management' 'cities' %}">Comunas</a>{% endif %}
-      {% if perms.core.view_plan %}<a href="{% url 'management' 'plans' %}">Planes</a>{% endif %}
-    {% endif %}
-    {% if user.is_superuser %}
-      <a href="{% url 'superadmin:core_user_changelist' %}">Usuarios y roles</a>
-      <a href="{% url 'superadmin:core_organization_changelist' %}">Asignar administradores</a>
-      <a href="{% url 'provider_review_queue' %}">Validación de proveedores</a>
-    {% endif %}
-  </nav>
   {% if kind == 'campaigns' %}<div class="notice">Campañas de demostración. El presupuesto y estado se guardan; no se contrata publicidad ni se inventan impresiones, clics o ROAS.</div>{% endif %}
   <div class="table-wrap">
     <table>
@@ -30,19 +14,25 @@
       <tbody>
         {% for row in items %}
           <tr>
-            <td><b>{{ row.name|default:row }}</b></td>
+            <td><b>{% if kind == 'schedules' %}{{ row.activity.name }} · {{ row.starts_at|date:'d/m/Y H:i' }}{% else %}{{ row.name|default:row }}{% endif %}</b></td>
             <td>
               {% if kind == 'activities' %}{{ row.organization }} · {{ row.sparks }} Sparks
-              {% elif kind == 'schedules' %}{{ row.available }} / {{ row.capacity }} cupos disponibles
+              {% elif kind == 'schedules' %}
+                {% if row.cancelled_at %}{{ row.cancellation_reason }}{% else %}{{ row.available }} / {{ row.capacity }} cupos disponibles{% endif %}
               {% elif kind == 'organizations' %}{{ row.get_kind_display }}{% if row.approved %} · Aprobada{% elif row.kind != 'provider' %} · Pendiente de aprobación{% endif %}
               {% elif kind == 'campaigns' %}{{ row.activity }} · ${{ row.daily_budget }}/día demo
               {% elif kind == 'plans' %}{{ row.sparks }} Sparks{% endif %}
             </td>
-            <td>{% if row.active %}Activo{% else %}Inactivo{% endif %}</td>
+            <td>{% if kind == 'schedules' and row.cancelled_at %}<span class="status-pill ks-booking-status is-cancelled">Cancelado</span>{% elif row.active %}Activo{% else %}Inactivo{% endif %}</td>
             <td><div class="table-actions">
-              {% if can_edit %}<a href="{% url 'edit_record' kind row.pk %}">Editar</a>{% endif %}
-              {% if can_deactivate and row.active %}
-                <form method="post" action="{% url 'deactivate' kind row.pk %}" data-confirm="¿Desactivar este registro? Se conservará el historial.">
+              {% if can_edit and not row.cancelled_at %}<a href="{% url 'edit_record' kind row.pk %}">Editar</a>{% endif %}
+              {% if kind == 'schedules' %}
+                {% if row.active and row.can_cancel %}
+                  {% if row.starts_at >= cancellation_cutoff %}<a href="{% url 'cancel_schedule' row.pk %}">Cancelar horario</a>
+                  {% else %}<span class="muted">Fuera del plazo de 48 horas</span>{% endif %}
+                {% endif %}
+              {% elif can_deactivate and row.active %}
+                <form method="post" action="{% url 'deactivate' kind row.pk %}" data-confirm-title="Desactivar registro" data-confirm-label="Desactivar" data-confirm-tone="danger" data-confirm="El registro quedará inactivo y su historial se conservará.">
                   {% csrf_token %}<button type="submit">Desactivar</button>
                 </form>
               {% endif %}
@@ -59,6 +49,10 @@
       </tbody>
     </table>
   </div>
-  {% if can_deactivate %}<p class="muted">La eliminación se implementa como desactivación para conservar reservas e historial. Edita el registro para reactivarlo.</p>{% endif %}
+  {% if kind == 'schedules' and can_cancel_schedules %}
+    <p class="muted">Puedes cancelar un horario activo con al menos 48 horas de anticipación. Los clientes con reserva recibirán el motivo en sus notificaciones.</p>
+  {% elif kind != 'schedules' and can_deactivate %}
+    <p class="muted">La eliminación se implementa como desactivación para conservar reservas e historial. Edita el registro para reactivarlo.</p>
+  {% endif %}
 </section>
 {% endblock %}

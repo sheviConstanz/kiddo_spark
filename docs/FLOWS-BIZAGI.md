@@ -11,14 +11,14 @@ la plataforma y el aliado que entrega el servicio.
 | --- | --- |
 | Ingreso, cuenta, perfil del niño, consentimiento y preferencias | Registro de cliente y catálogo con filtros. Quedan por definir los datos mínimos, el consentimiento y las preferencias persistentes antes de implementar recomendaciones. Para la demo se usan datos ficticios. |
 | Selección, disponibilidad, alternativas y recarga | Se pueden consultar horarios y cupos, buscar otra actividad y activar un plan de prueba. Las alternativas se buscan en el catálogo. |
-| Descuento y confirmación | Bizagi ubica la confirmación en el carril del adulto responsable. En la demo, ese paso corresponde a **Solicitar reserva**, que aparta un cupo y descuenta Sparks. El requisito del equipo añade la aprobación posterior del proveedor. Solo un operador habilitado del centro puede confirmar antes del horario. |
-| Continuar, cancelar o cambiar la búsqueda | El titular puede cancelar una reserva pendiente o confirmada. La demo devuelve cupo y Sparks una vez. Quedan pendientes la encuesta de cancelación, la política de rechazo y un plazo de aprobación o liberación automática. |
-| Ubicación u enlace, realización y cierre | La ficha y la reserva muestran horario y centro. Quedan pendientes las instrucciones de asistencia presencial o virtual y el tratamiento de inasistencias. El centro puede registrar la asistencia de una reserva confirmada. |
+| Descuento y confirmación | Bizagi ubica la confirmación en el carril del adulto responsable. La regla acordada confirma por sistema al reservar un horario con cupo, descuenta los Sparks y deja un aviso. |
+| Continuar, cancelar o cambiar la búsqueda | El titular puede cancelar y recuperar los Sparks. El proveedor puede cancelar un horario específico con al menos 48 horas de anticipación y debe indicar el motivo. El sistema retira el horario y devuelve los Sparks a las personas con reserva. Cada una recibe el motivo en su campanita. Queda pendiente la encuesta de cancelación del cliente. |
+| Ubicación u enlace, realización y cierre | La ficha y la reserva muestran horario y centro. La asistencia se registra aparte. Quedan pendientes las instrucciones de asistencia presencial o virtual y el tratamiento de inasistencias. |
 | Puntos, opinión y recomendaciones | Las nuevas reservas suman 50 puntos al completarse, una sola vez. El cliente puede dejar una opinión. Quedan pendientes los tokens, las insignias y el uso de opiniones para recomendaciones. |
 
-La migración 0009 conserva los estados de las reservas anteriores. Si una
-reserva anterior ya generó puntos, completarla conserva ese saldo. Cancelarla
-revierte los puntos que había generado.
+La migración 0010 convierte pendientes y confirmadas en **Reservado**,
+conserva **Cancelado** y transfiere las completadas a **Reservado** con
+asistencia registrada. Conserva los movimientos y saldos existentes.
 
 ## B2B · Desde una necesidad del proveedor hasta evaluar el apoyo
 

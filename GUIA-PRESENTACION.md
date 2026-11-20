@@ -24,16 +24,27 @@ tiempo para comparar alternativas son objetivos para evaluar en un piloto.
 | **Visitante** | Explorar el mapa referencial de las cuatro comunas piloto o buscar en el listado. Puede combinar filtros de comuna, categoría, edad, franja horaria, Sparks y cupos, y consultar el próximo horario disponible. |
 | **Cliente (familia)** | Tras ingresar ve sus próximas reservas, favoritos, saldo de **Sparks** y actividades. Puede activar un plan de prueba, reservar, descargar un comprobante demo, cancelar y dejar una opinión tras asistir. En Solicitudes puede revisar su historial. |
 | **Proveedor que quiere incorporarse** | Desde **Incorporar mi centro** abre su registro y envía una ficha. Al volver a ingresar, llega a **Mis fichas**, donde puede consultar la decisión y corregir datos si recibe observaciones. |
-| **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede crear, editar o desactivar publicaciones, administrar horarios y cupos, confirmar reservas vigentes de su centro, registrar asistencia y responder opiniones. |
-| **Equipo de Kiddo Spark** | El administrador entra primero a los gráficos de **Estadísticas** y desde ahí abre **Gestión operativa**. El superadministrador entra directo al panel de cuentas y permisos. Puede pulsar **Ver sitio** para revisar fichas de proveedores desde el portal. |
+| **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede administrar publicaciones, horarios y cupos, cancelar un horario con al menos 48 horas de aviso, registrar asistencia y responder opiniones. |
+| **Equipo de Kiddo Spark** | El administrador entra a **Estadísticas**. En el menú lateral, **Gestión de datos** reúne las fichas de proveedores y las tablas del catálogo. Desde **Operación → Reservas** puede consultar, filtrar y exportar las reservas de la plataforma. El superadministrador se encarga de validar proveedores, asignar operadores y administrar permisos. |
 | **Empresa, colegio o centro que busca apoyo** | Desde la portada pública se puede iniciar una solicitud de convenio. Los perfiles habilitados pueden pedir una demostración corporativa. En **Alivios B2B**, un proveedor puede pedir orientación, asesoría o una cotización. |
 
-Para mostrar cómo se conectan los roles, soliciten una reserva como cliente
-y muestren **Pendiente de aprobar** en gris. Cambien a la cuenta del centro,
-abran **Reservas** y pulsen **Confirmar reserva**. Vuelvan a la cuenta de
-cliente para ver **Confirmada** en verde. Pueden mostrar con otra solicitud
-cómo **Cancelada** aparece en rojo y devuelve los Sparks. Al validar la
-asistencia se acreditan los puntos y se habilita la opinión.
+Para mostrar cómo se conectan los roles, hagan una reserva como cliente y
+muestren **Reservado** y la campanita. Cambien a la cuenta del proveedor,
+abran **Horarios y cupos** y cancelen ese horario indicando un motivo.
+Preparen un horario con más de 48 horas de anticipación para esta parte.
+Vuelvan a la cuenta de cliente para mostrar **Cancelado**, el aviso con el
+motivo y la devolución de Sparks. Con otra reserva pueden mostrar cómo la
+asistencia acredita puntos y habilita una opinión.
+
+Antes de cancelar, abran la campanita del proveedor para mostrar **Nueva
+reserva en tu centro**. Luego entren al Seller Center y elijan un taller.
+El mapa de calor muestra cuándo se concentran las reservas y las tarjetas
+resumen ocupación, asistencia y opiniones. Con `admin`, elijan el mismo
+centro desde **Estadísticas** para ver el mismo resumen.
+El gráfico de evolución usa los registros de la demo. Pueden abrir
+**Ver datos del gráfico** para consultar las cantidades exactas. En
+**Gestión de datos → Proveedores** pueden mostrar las fichas y cambiar de
+tabla desde el mismo menú lateral.
 
 **Qué se simula.** Los Sparks sirven para probar reservas y cancelaciones
 sin dinero real. Los comprobantes son ilustrativos. El Seller Center permite
@@ -92,14 +103,14 @@ la pantalla de la demo local.
 
 | Tiempo | Qué mostrar | Qué decir |
 | --- | --- | --- |
-| 1 min | Portada, comunas y cifras del piloto. | «Esta es la propuesta de servicio. La encuesta mide interés declarado y las otras cifras orientan qué queremos evaluar». |
-| 2 min | **Explorar actividades**. Seleccionen una comuna, filtren y abran una ficha con cupos. Con la cuenta de cliente soliciten un horario y muestren el estado pendiente. | «La demo aparta el cupo y los Sparks mientras el centro responde». |
-| 2 min | Con la cuenta de proveedor, abran **Reservas** en el Seller Center y confirmen la solicitud. Muestren dónde administra sus horarios y cupos. | «El centro confirma las reservas de sus propios horarios. La familia puede consultar el estado desde su cuenta». |
+| 1 min | Abran la portada pública. Muestren los accesos por disciplina junto a la escena ilustrativa de robótica. Desplácense hasta las comunas y las cifras del piloto. | «Esta es la propuesta de servicio. La encuesta mide interés declarado y las otras cifras orientan qué queremos evaluar». |
+| 2 min | **Explorar actividades**. Seleccionen una comuna y abran una ficha con cupos. Reserven con la cuenta de cliente y muestren la campanita. | «Cuando hay cupo, la reserva queda lista en el momento. La familia recibe un aviso dentro del portal». |
+| 2 min | Desde **Horarios y cupos**, cambien a la cuenta del proveedor y cancelen un horario con al menos 48 horas de anticipación. Muestren el aviso y el saldo del cliente. | «El centro indica el motivo. Cada familia afectada recibe el aviso y recupera sus Sparks». |
 | 1 min | **Empresas y colegios** en la portada. Muestren la propuesta de convenio y el panel ilustrativo. | «Los convenios exploran un beneficio extracurricular para comunidades. El panel ilustra cómo ver participación agregada». |
 | 1 min | Cierre y conversación con jefatura. | «Queremos comentarios sobre el proceso y el valor para familias y centros, para definir qué mediríamos en un piloto». |
 
 Para mostrar cómo se seguiría el piloto, entren como `admin`. El ingreso lleva
-directamente a **Estadísticas**. Seleccionen **Últimos 7 días** o el período en
+directamente a **Estadísticas**. Seleccionen **7 días** o el período en
 que hicieron las pruebas. Muestren qué comunas concentraron más reservas,
 cuántas reservas se completaron y cuántas solicitudes quedan pendientes o
 en revisión. Luego abran **Catálogo y próximos cupos** para mostrar cuántos
@@ -109,9 +120,13 @@ fechas arriba. Pueden decir «Estas cifras se actualizan según lo que hacemos
 en la demo. En un piloto podríamos usar la misma vista para seguir la
 demanda y decidir dónde necesitamos más horarios».
 
-El menú principal queda visible en el teléfono y en el computador.
-Cuando entren a **Mi panel** aparecerán los accesos de la cuenta. Al volver
-a **Explorar actividades** u otra sección pública se ocultan.
+El menú principal queda visible en el teléfono y en el computador. En la
+cuenta de administración, arriba están **Actividades**, **Alivios B2B** y
+la campanita de avisos. El lateral agrupa **Operación**, **Gestión de datos**
+y **Cuenta**. Pulsen el nombre de un grupo para abrirlo o plegarlo. Para
+cliente o proveedor, **Mi panel** abre **Configuración de perfil**, donde
+se pueden editar los datos y cambiar la contraseña desde **Seguridad de
+la cuenta**.
 
 Si van a mostrar una aprobación, practiquen antes con una ficha ficticia. La
 aprobación y la asignación del operador son pasos separados.

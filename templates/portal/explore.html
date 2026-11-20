@@ -39,7 +39,7 @@
       <datalist id="spark-options"><option value="4"><option value="6"><option value="8"></datalist>
     </label>
     <label class="ks-catalog-check"><input type="checkbox" name="available" value="1"{% if request.GET.available == '1' %} checked{% endif %}> Solo con cupos</label>
-    {% if user.is_authenticated %}
+    {% if favorite_access %}
       <label class="ks-catalog-check"><input type="checkbox" name="favorites" value="1"{% if favorites_only %} checked{% endif %}> Mis favoritos</label>
     {% endif %}
     <div class="ks-filter-actions">

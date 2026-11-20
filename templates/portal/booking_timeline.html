@@ -1,0 +1,44 @@
+<div class="portal-card ks-stats-card ks-exec-chart">
+  <h3>Evolución de reservas</h3>
+  <p>Hasta 12 fechas con reservas vigentes o realizadas, agrupadas por fecha de creación.</p>
+  {% if chart %}
+    <figure class="ks-line-figure">
+      <svg viewBox="0 0 650 185" role="img" aria-label="Reservas y asistencias registradas por fecha de creación">
+        <defs>
+          <linearGradient id="booking-chart-fill" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#6855df" stop-opacity=".26"/>
+            <stop offset="100%" stop-color="#6855df" stop-opacity=".03"/>
+          </linearGradient>
+        </defs>
+        <path class="ks-line-grid" d="M36 30h578M36 70h578M36 110h578M36 150h578"/>
+        <text x="28" y="34" class="ks-line-scale" text-anchor="end">{{ chart.peak }}</text>
+        <text x="28" y="154" class="ks-line-scale" text-anchor="end">0</text>
+        <polygon points="{{ chart.fill }}" fill="url(#booking-chart-fill)"/>
+        <polyline class="ks-line-reserved" points="{{ chart.line }}"/>
+        <polyline class="ks-line-attended" points="{{ chart.attendance }}"/>
+        {% for row in chart.days %}
+          <circle class="ks-line-dot" cx="{{ row.x }}" cy="{{ row.y }}" r="4"/>
+          <circle class="ks-line-attendance-dot" cx="{{ row.x }}" cy="{{ row.attendance_y }}" r="2.5"/>
+          {% if row.tick %}<text class="ks-line-scale" x="{{ row.x }}" y="173" text-anchor="middle">{{ row.day|date:'d/m' }}</text>{% endif %}
+        {% endfor %}
+      </svg>
+      <figcaption class="ks-line-legend">
+        <span class="ks-legend-reserved">Reservas</span>
+        <span class="ks-legend-attended">Asistencias registradas</span>
+      </figcaption>
+    </figure>
+    <details class="ks-chart-values">
+      <summary>Ver datos del gráfico</summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Fecha</th><th scope="col">Reservas</th><th scope="col">Asistencias</th></tr></thead>
+          <tbody>
+            {% for row in chart.days %}<tr><th scope="row">{{ row.day|date:'d/m/Y' }}</th><td>{{ row.count }}</td><td>{{ row.attended }}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  {% else %}
+    <p class="ks-exec-empty">Sin reservas vigentes o realizadas para graficar en este período.</p>
+  {% endif %}
+</div>

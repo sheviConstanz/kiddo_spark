@@ -1,0 +1,46 @@
+{% extends 'portal/base.html' %}
+{% block title %}Notificaciones · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space ks-notifications" aria-labelledby="notifications-title">
+  <header class="section-heading">
+    <div>
+      <h1 id="notifications-title">Notificaciones</h1>
+      <p class="muted">{% if unread_notification_count %}{{ unread_notification_count }} sin leer{% else %}Estás al día{% endif %}</p>
+    </div>
+    {% if unread_notification_count %}
+      <form method="post" action="{% url 'read_all_notifications' %}">
+        {% csrf_token %}<button class="btn btn-outline" type="submit">Marcar todas como leídas</button>
+      </form>
+    {% endif %}
+  </header>
+  <ul class="ks-notification-list">
+    {% for notice in notices %}
+      <li class="portal-card ks-notification{% if not notice.read_at %} is-unread{% endif %}">
+        <span class="ks-icon-tile {% if notice.kind == 'reserved' or notice.kind == 'booking_received' %}ks-mint{% else %}ks-peach{% endif %}">{% include 'portal/icon.html' with name='bell' %}</span>
+        <div>
+          <h2>{{ notice.get_kind_display }}</h2>
+          <time class="muted" datetime="{{ notice.created_at|date:'c' }}">{{ notice.created_at|date:'d/m/Y H:i' }}</time>
+          <p>{{ notice.message }}</p>
+          {% if notice.booking_id %}
+            <a class="inline-link" href="{% url 'bookings' %}#reserva-{{ notice.booking_id }}">Ver reserva KS-{{ notice.booking_id }}</a>
+          {% endif %}
+        </div>
+        {% if not notice.read_at %}
+          <form method="post" action="{% url 'read_notification' notice.pk %}">
+            {% csrf_token %}<button class="btn btn-outline" type="submit">Marcar como leída</button>
+          </form>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li class="empty-state">Todavía no tienes notificaciones.</li>
+    {% endfor %}
+  </ul>
+  {% if notices.has_other_pages %}
+    <nav class="pager" aria-label="Páginas de notificaciones">
+      {% if notices.has_previous %}<a class="btn btn-outline" href="?page={{ notices.previous_page_number }}">Anterior</a>{% endif %}
+      <span>Página {{ notices.number }} de {{ notices.paginator.num_pages }}</span>
+      {% if notices.has_next %}<a class="btn btn-outline" href="?page={{ notices.next_page_number }}">Siguiente</a>{% endif %}
+    </nav>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,7 +1,7 @@
 <div class="cards two">
   <article class="portal-card">
     <h3>Evolución de reservas</h3>
-    <p>Reservas confirmadas o completadas por fecha de creación.</p>
+    <p>Reservas vigentes y realizadas por fecha de creación.</p>
     {% for row in series %}
       <div class="chart-row"><span>{{ row.day|date:'d/m/Y' }}</span><div class="chart-track" aria-hidden="true"><span style="width:{{ row.width }}%"></span></div><b>{{ row.count }}</b></div>
     {% empty %}

@@ -205,15 +205,14 @@ cuentas que falten. El instalador no pide crearlas.
 | Perfil | Usuario | Contraseña | Correo | Qué puede hacer |
 | --- | --- | --- | --- | --- |
 | Superadministrador | `superadmin` | `superadmin` | `correo@superadmin.cl` | Entra a **Superadministración**. Puede gestionar usuarios y permisos, revisar proveedores y asignar operadores. Usa **Ver sitio** para volver al panel operativo. |
-| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Entra a **Estadísticas**. En **Gestión operativa** puede trabajar con catálogo, horarios, categorías, comunas, planes, reservas y solicitudes. Usuarios, grupos, permisos, validación de proveedores, datos bancarios y retiros siguen reservados a superadministración. |
+| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Entra a **Estadísticas**. Desde **Gestión de datos** en el lateral edita fichas de proveedores y gestiona publicaciones, actividades, horarios, categorías, comunas y planes. Puede tramitar solicitudes y consultar, filtrar y exportar todas las reservas. Usuarios, permisos, validación y habilitación de proveedores siguen a cargo de superadministración. |
 | Cliente | `usuario` | `usuario` | `usuario@demo.example.invalid` | Entra a su inicio con próximas reservas, favoritos, Sparks y catálogo. En **Solicitudes** puede consultar su historial. |
 | Proveedor | `proveedor` | `proveedor` | `proveedor@demo.example.invalid` | Entra al **Seller Center** del **Centro Kiddo Spark Demo**. Gestiona publicaciones, horarios y reservas del centro asignado. |
 
-Para probar la aprobación, entra como `usuario`, activa un plan de prueba en
-**Planes y Sparks** y solicita **Taller de movimiento demo**. Luego entra
-como `proveedor`, abre **Reservas → Ver pendientes por aprobar** y pulsa
-**Confirmar reserva**. Si el horario ya venció, crea uno futuro en **Horarios
-y cupos** antes de solicitarlo.
+Para probar una reserva, entra como `usuario`, activa un plan de prueba en
+**Planes y Sparks** y reserva **Taller de movimiento demo**. El estado
+**Reservado** aparece de inmediato. Si el horario está lleno o vencido,
+crea otro desde **Horarios y cupos** con la cuenta de proveedor.
 
 Estos datos son de una instalación nueva. Si ya existe una cuenta con el
 mismo nombre o correo, se conserva con su contraseña y permisos. Las
@@ -258,6 +257,8 @@ La membresía de $35.000 CLP netos al mes es un supuesto del modelo para
 proveedores pagadores. El flujo académico no activa membresías ni cobros.
 Al actualizar, apaga la demo y abre **Abrir Kiddo Spark** desde la carpeta
 actualizada. La migración 0008 conserva las fichas y contraseñas existentes.
+La migración 0010 actualiza las reservas anteriores y conserva sus saldos e
+historial de asistencia.
 
 ## Probar Alivios B2B
 
@@ -290,16 +291,18 @@ horarios anteriores. Para demostrar otra franja, crea un horario en
 **Horarios y cupos**.
 
 1. Crea una cuenta ficticia desde **Crear cuenta**.
-2. En **Planes y Sparks**, activa un plan demo. Cada activación añade Sparks;
-   repetirla añade otra recarga registrada. Una cuenta nueva empieza sin saldo.
-   No hay cobro ni renovación mensual automática.
-3. En **Explorar**, filtra, abre una actividad y pulsa **Solicitar reserva**.
-   Se apartan el cupo y los Sparks. La reserva queda **Pendiente de aprobar**.
-4. Entra como proveedor del centro y pulsa **Confirmar reserva** en
-   **Reservas**. El cliente verá el estado **Confirmada** y podrá descargar el
-   comprobante demo. Si cancela mientras está pendiente o confirmada, la demo
-   devuelve el cupo y los Sparks una sola vez.
-5. Con el proveedor, pulsa **Validar asistencia** en la reserva confirmada.
+2. En **Planes y Sparks** verás los planes habilitados del menor al mayor precio
+   mensual referencial. Pulsa **Elegir plan** y confirma la activación demo.
+   Cada activación añade Sparks. Una cuenta nueva empieza sin saldo.
+   La activación es gratuita y manual.
+3. En **Explorar**, abre una actividad y pulsa **Reservar** en un horario
+   con cupo. La demo confirma automáticamente, descuenta los Sparks y deja
+   un aviso en la campanita.
+4. Para probar una cancelación del centro, entra como proveedor y abre
+   **Horarios y cupos → Cancelar horario**. Elige un horario con al menos
+   48 horas de anticipación y escribe el motivo. El horario se retira del
+   catálogo y cada cliente con una reserva vigente recibe un aviso y la devolución.
+5. Para probar la asistencia, usa otra reserva y pulsa **Validar asistencia**.
    Las nuevas reservas suman 50 puntos al completarse. El cliente puede dejar
    una opinión y el centro puede responder desde **Reputación**.
 6. Solicita un convenio desde **Empresas y colegios** en la portada pública.
@@ -308,11 +311,13 @@ horarios anteriores. Para demostrar otra franja, crea un horario en
 7. Con el administrador correspondiente, avanza el seguimiento: pendiente →
    en revisión → aprobada → completada. Puede rechazarse antes de aprobar.
 8. Crea y edita actividades, horarios y campañas en **Mantenedores**.
-   Desactivar conserva el historial; editar permite reactivar.
+   Un horario cancelado queda en el historial. Para ofrecer otra fecha, crea
+   un horario nuevo.
 9. En **Finanzas demo**, consulta montos referenciales de experiencias completadas
    y solicita un retiro ficticio. El superadministrador puede completar la
    simulación o rechazarla para liberar saldo. No hay conexión bancaria.
-10. Ingresa como `admin` o `superadmin` y abre **Estadísticas** en **Mi panel**.
+10. Ingresa como `admin` para abrir **Estadísticas**. Si usas la cuenta de
+    superadministración, abre esa vista desde **Mi panel** en el portal.
     El proveedor conserva el resumen de su centro.
 
 Los nombres de centros proceden del material original y no acreditan convenios
@@ -326,24 +331,56 @@ ni generan impresiones, clics o ROAS inventados.
 Los [flujos B2C y B2B de Bizagi](docs/FLOWS-BIZAGI.md) detallan qué partes
 de los diagramas se pueden demostrar y qué decisiones siguen pendientes.
 
+### Notificaciones
+
+La campanita muestra el número de avisos sin leer. En **Notificaciones**
+puedes abrir la reserva y marcar un aviso o todos como leídos. La demo guarda
+avisos por reservas registradas, cancelaciones del cliente y cancelaciones
+del centro. Cuando alguien reserva, los operadores asignados con acceso a
+las reservas del centro reciben su propio aviso. Las cuentas de proveedor
+gestionan reservas y no pueden reservar actividades.
+
 ## Navegación y estadísticas
 
 El menú principal deja visibles todos los enlaces de tu perfil. La portada
 pública incluye **Proveedores**, **Empresas y colegios**, **Alivios B2B** y
-**Propuesta original**. El cliente ve **Explorar actividades** y **Planes y
-Sparks**. En el teléfono los enlaces se ordenan en filas según el espacio.
-Pulsa **Mi panel** para ver los accesos de tu cuenta. Al volver a una sección
-pública se oculta el menú de cuenta.
+**Propuesta original**. La portada presenta accesos al catálogo por
+disciplina y anima sus secciones al recorrerlas. Sus imágenes se cargan
+desde la demo local y las transiciones respetan la preferencia de
+movimiento reducido del dispositivo. El cliente ve **Explorar actividades**
+y **Planes y Sparks**. En el teléfono los enlaces se ordenan en filas
+según el espacio.
+Para clientes y proveedores, **Mi panel** despliega los accesos de cuenta.
+**Perfil** abre el resumen. Desde **Configuración de perfil → Seguridad de
+la cuenta** puedes cambiar tu contraseña y volver con la sesión activa.
 
-En **Mi panel → Estadísticas**, usa **Últimos 7 días**, **Últimos 30 días**,
-**Todo el historial** o selecciona fechas específicas. El período se aplica
+En administración, arriba puedes consultar **Actividades** y **Alivios
+B2B**. A la derecha está la campanita de **Notificaciones**. En
+**Alivios B2B** puedes consultar y filtrar el directorio de aliados.
+
+En el lateral, abre **Operación** para entrar a **Estadísticas**,
+**Reservas** o **Solicitudes**. **Gestión de datos** reúne las tablas y
+**Cuenta** contiene la configuración de perfil y la opción de salir. Cada
+grupo se puede plegar y se abre automáticamente al entrar a una de sus
+pantallas. El botón del lateral permite plegar todo el menú y el navegador
+recuerda esa preferencia.
+
+En **Reservas** puedes filtrar por centro, estado y fechas o buscar por
+titular o actividad. El CSV conserva esos filtros.
+
+Las acciones que requieren confirmación abren un cuadro del portal con
+el efecto de la acción y un botón para volver. Los avisos de éxito,
+información, advertencia y error se muestran en la misma página.
+
+En **Estadísticas**, usa los atajos de período o abre **Filtros
+de centro y fecha** para seleccionar fechas específicas. El período se aplica
 a la fecha en que se creó cada reserva o solicitud e incluye ambos extremos.
 
-- Las barras muestran reservas por día, por comuna y por estado, además de
-  solicitudes por estado. La tendencia muestra hasta siete fechas con
-  reservas. La tendencia y los rankings cuentan las confirmadas y completadas.
-- La tasa de finalización divide las reservas completadas por todas las
-  reservas del período, incluidas las canceladas. Las solicitudes abiertas
+- El gráfico de líneas muestra hasta 12 fechas con reservas y sus
+  asistencias. Las barras muestran la distribución por comuna, categoría
+  y estado. La tendencia y los rankings cuentan las reservas vigentes y realizadas.
+- El porcentaje de asistencia divide las reservas con asistencia registrada por
+  todas las reservas del período, incluidas las canceladas. Las solicitudes abiertas
   son las pendientes y las que están en revisión.
 - **Catálogo y próximos cupos** muestra las actividades publicadas, los
   centros habilitados y los horarios futuros activos de esas actividades.
@@ -356,6 +393,15 @@ y vuelve al panel. Si no hay horarios futuros, el proveedor puede agregar uno
 en **Mi panel → Horarios y cupos** para mostrar el gráfico de ocupación.
 La vista muestra datos agrupados de la demo.
 
+El **Seller Center** incluye ocupación, asistencias, cancelaciones, familias
+recurrentes, valoraciones y rendimiento por taller. Prueba el mapa por día
+y hora y cambia el período o el taller desde los filtros. En **Estadísticas**,
+el administrador puede elegir un centro para abrir los mismos indicadores.
+Ambos tableros incluyen navegación lateral, indicadores principales y un
+gráfico de reservas y asistencias con una tabla de valores consultable.
+Consulta las definiciones y las fuentes pendientes en la
+[guía de métricas](docs/METRICAS.md).
+
 ## Problemas frecuentes
 
 | Situación | Qué revisar |
@@ -364,8 +410,8 @@ La vista muestra datos agrupados de la demo.
 | Faltan tablas | Cierra la demo y vuelve a ejecutar **iniciar_local.ps1**. |
 | Catálogo vacío | Comprueba que los centros estén aprobados. Si faltan los datos iniciales, apaga la demo, ejecuta **instalar_local.ps1** y vuelve a iniciarla. |
 | No hay horarios | Crea un horario futuro y habilitado. |
-| No puedo reservar | Comprueba saldo, cupos y que no tengas ya una reserva pendiente o confirmada para ese horario. |
-| No aparece «Confirmar reserva» | Entra como proveedor del centro asignado. El horario debe seguir vigente y la reserva debe estar pendiente. |
+| No puedo reservar | Comprueba saldo, cupos y que no tengas ya una reserva para ese horario. |
+| No aparece «Cancelar horario» | Entra como proveedor del centro asignado. El horario debe estar activo y faltarle al menos 48 horas para comenzar. |
 | Administrador sin registros | Comprueba grupo, estado de personal y organización asignada. |
 | Contraseña olvidada | El superadministrador puede cambiarla desde usuarios; para su propia cuenta usa `manage.py changepassword nombre_usuario`. |
 

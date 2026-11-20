@@ -20,7 +20,7 @@
       <a class="inline-link" href="{% url 'activity' activity.pk %}" aria-label="Ver horarios de {{ activity.name }}">Ver horarios {% include 'portal/icon.html' with name='arrow' %}</a>
     </div>
   </div>
-  {% if catalog and user.is_authenticated %}
+  {% if catalog and favorite_access %}
     <form class="ks-catalog-favorite" method="post" action="{% url 'favorite' activity.pk %}?{{ request.GET.urlencode }}">
       {% csrf_token %}
       <input type="hidden" name="from_catalog" value="1">

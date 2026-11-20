@@ -22,7 +22,7 @@
             <div><span class="status-pill ks-booking-status is-{{ booking.status }}">{{ booking.get_status_display }}</span></div>
           </li>
         {% empty %}
-          <li>Tus próximas solicitudes y reservas confirmadas aparecerán aquí.</li>
+          <li>Tus próximas reservas aparecerán aquí.</li>
         {% endfor %}
       </ul>
       <a class="inline-link" href="{% url 'bookings' %}">Ver mis reservas {% include 'portal/icon.html' with name='arrow' %}</a>

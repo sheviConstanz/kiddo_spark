@@ -120,19 +120,16 @@ class DemoAccountTests(TestCase):
         slot = self.activity.schedules.get()
         self.assertRedirects(self.client.post(reverse('reserve', args=[slot.pk])), reverse('bookings'))
         booking = self.family.bookings.get(schedule=slot)
-        self.assertEqual(booking.status, m.Booking.Status.PENDING)
-        confirm = reverse('booking_action', args=[booking.pk, 'confirm'])
-        self.assertEqual(self.client.post(confirm).status_code, 403)
-        self.assertContains(self.client.get(reverse('bookings')), 'Pendiente de aprobar')
-        self.assertEqual(self.client.get(reverse('document', args=[booking.pk])).status_code, 404)
+        self.assertEqual(booking.status, m.Booking.Status.RESERVED)
+        self.assertContains(self.client.get(reverse('bookings')), 'Reservado')
+        self.assertContains(self.client.get(reverse('document', args=[booking.pk])), 'Reservado')
+        self.assertContains(self.client.get(reverse('notifications')), 'Reserva registrada')
 
         self.client.logout()
         self.login_profile('admin')
-        self.assertEqual(self.client.post(confirm).status_code, 403)
-        self.assertNotContains(self.client.get(reverse('bookings')), f'action="{confirm}"')
         stats = self.client.get(reverse('platform_statistics')).context
-        self.assertEqual(dict(stats['bookings_by_status'])['Pendiente de aprobar'], 1)
-        self.assertFalse(stats['recent_days'])
+        self.assertEqual(dict(stats['bookings_by_status'])['Reservado'], 1)
+        self.assertTrue(stats['timeline']['days'])
 
         self.client.logout()
         self.login_profile('proveedor')
@@ -143,29 +140,81 @@ class DemoAccountTests(TestCase):
         self.assertEqual(self.client.post(foreign_edit, {'name': 'Cambio indebido'}).status_code, 404)
         self.assertEqual(self.client.get(reverse('management', args=['categories'])).status_code, 403)
         self.assertContains(self.client.get(reverse('bookings')), f'KS-{booking.pk}')
-        self.assertContains(self.client.get(reverse('bookings'), {'status': 'pending'}), f'action="{confirm}"')
-        self.assertEqual(self.client.get(confirm).status_code, 405)
-        browser = Client(enforce_csrf_checks=True)
-        browser.force_login(m.User.objects.get(username='proveedor'))
-        self.assertEqual(browser.post(confirm).status_code, 403)
-        receipt = reverse('document', args=[booking.pk])
         complete = reverse('booking_action', args=[booking.pk, 'complete'])
-        self.assertRedirects(self.client.post(complete), reverse('bookings'))
-        booking.refresh_from_db()
-        self.assertEqual(booking.status, m.Booking.Status.PENDING)
-        self.assertRedirects(self.client.post(confirm), reverse('bookings'))
-        booking.refresh_from_db()
-        self.assertEqual(booking.status, m.Booking.Status.CONFIRMED)
-        self.assertContains(self.client.get(receipt), 'Confirmada')
         self.assertEqual(m.Movement.objects.filter(booking=booking).count(), 1)
         self.assertRedirects(self.client.post(complete), reverse('bookings'))
         booking.refresh_from_db()
-        self.assertEqual(booking.status, 'completed')
+        self.assertEqual(booking.status, m.Booking.Status.RESERVED)
+        self.assertTrue(booking.attendance_recorded)
 
         self.client.logout()
         self.login_profile('superadmin')
         self.assertEqual(self.client.get(reverse('superadmin:core_user_changelist')).status_code, 200)
         self.assertEqual(self.client.get(reverse('bank', args=[self.center.pk])).status_code, 200)
+
+    def test_admin_uses_operations_and_cannot_take_part_in_service_flows(self):
+        self.login_profile('admin')
+        operations = reverse('platform_operations')
+        providers = reverse('management', args=['organizations'])
+        self.assertRedirects(self.client.get(reverse('dashboard')), operations, fetch_redirect_response=False)
+        self.assertRedirects(self.client.get(operations), providers)
+        response = self.client.get(providers)
+        self.assertContains(response, '<h1>Proveedores</h1>', html=True)
+        self.assertContains(response, '<table>')
+        self.assertNotContains(response, 'class="module-nav"')
+        self.assertContains(response, 'id="workspace-links"')
+        self.assertNotContains(response, 'Actividad de la cuenta')
+        for module in ('organizations', 'activities', 'schedules'):
+            self.assertContains(response, reverse('management', args=[module]))
+        slot = self.activity.schedules.get()
+        for route, args in (('providers', []), ('register_provider', []),
+                            ('organization_register', []), ('plans', []), ('reputation', [])):
+            self.assertEqual(self.client.get(reverse(route, args=args)).status_code, 403)
+        self.assertContains(self.client.get(reverse('explore')), self.activity.name)
+        detail = self.client.get(reverse('activity', args=[self.activity.pk]))
+        self.assertContains(detail, self.activity.name)
+        self.assertNotContains(detail, f'action="{reverse("reserve", args=[slot.pk])}"')
+        self.assertNotContains(detail, 'Guardar en favoritos')
+        self.assertEqual(self.client.post(reverse('organization_register'), {'name': 'Alta indebida'}).status_code, 403)
+        self.assertEqual(self.client.post(reverse('reserve', args=[slot.pk])).status_code, 403)
+        self.assertFalse(m.Booking.objects.exists())
+
+        other = m.Organization.objects.create(
+            name='Organización fuera de alcance', kind='ally', city=self.center.city, created_by=self.family,
+        )
+        listing = self.client.get(reverse('management', args=['organizations']))
+        self.assertContains(listing, self.center.name)
+        self.assertNotContains(listing, other.name)
+        self.assertEqual(self.client.get(reverse('edit_record', args=['organizations', other.pk])).status_code, 404)
+        edit = reverse('edit_record', args=['organizations', self.center.pk])
+        self.assertRedirects(self.client.post(edit, {
+            'name': 'Centro actualizado por administración', 'city': self.center.city_id,
+            'email': self.center.email, 'kind': 'ally', 'approved': 'false', 'active': '',
+        }), reverse('management', args=['organizations']))
+        self.center.refresh_from_db()
+        self.assertEqual(self.center.name, 'Centro actualizado por administración')
+        self.assertEqual((self.center.kind, self.center.active, self.center.approved), ('provider', True, True))
+
+    def test_admin_lists_filters_and_exports_all_platform_bookings(self):
+        mine = self.activity.schedules.get()
+        foreign = m.Schedule.objects.create(activity=self.other_activity, starts_at=mine.starts_at, capacity=1, available=1)
+        booking = m.Booking.objects.create(user=self.family, schedule=mine, sparks=1, amount=0)
+        another = m.Booking.objects.create(user=self.family, schedule=foreign, sparks=1, amount=0)
+        self.login_profile('admin')
+        path = reverse('bookings')
+        response = self.client.get(path)
+        for item in (booking, another):
+            self.assertContains(response, f'id="reserva-{item.pk}"')
+        filters = {'center': self.other_center.pk, 'status': 'reserved', 'q': self.family.username,
+                   'from': timezone.localdate().isoformat(), 'to': timezone.localdate().isoformat()}
+        filtered = self.client.get(path, filters)
+        self.assertContains(filtered, f'id="reserva-{another.pk}"')
+        self.assertNotContains(filtered, f'id="reserva-{booking.pk}"')
+        self.assertNotContains(filtered, 'Validar asistencia')
+        csv = self.client.get(reverse('export_bookings'), filters)
+        self.assertContains(csv, f'KS-{another.pk},')
+        self.assertNotContains(csv, f'KS-{booking.pk},')
+        self.assertEqual(self.client.post(reverse('booking_action', args=[another.pk, 'complete'])).status_code, 403)
 
     def test_data_migration_leaves_existing_accounts_and_conflicting_emails_intact(self):
         admin = m.User.objects.get(username='admin')
@@ -185,8 +234,39 @@ class DemoAccountTests(TestCase):
         self.assertFalse(m.User.objects.filter(username='usuario').exists())
         self.assertTrue(m.User.objects.filter(username='familia_existente', pk=self.family.pk).exists())
 
+    def test_provider_cannot_reserve_and_only_assigned_operators_get_new_booking_notice(self):
+        operator = m.User.objects.get(username='proveedor')
+        m.User.objects.filter(pk__in=(operator.pk, self.family.pk)).update(credits=25)
+        outside = m.User.objects.create_user('operador_ajeno', email='operador-ajeno@example.invalid', is_staff=True)
+        outside.user_permissions.add(Permission.objects.get(content_type__app_label='core', codename='view_booking'))
+        self.other_center.administrators.add(outside)
+        no_booking_permission = m.User.objects.create_user('contacto_centro', email='contacto-centro@example.invalid', is_staff=True)
+        self.center.administrators.add(no_booking_permission)
+        slot = self.activity.schedules.get()
+        reserve = reverse('reserve', args=[slot.pk])
+        detail = reverse('activity', args=[self.activity.pk])
 
-    def test_main_navigation_stays_visible_and_account_navigation_stays_in_panel(self):
+        self.client.force_login(operator)
+        self.assertNotContains(self.client.get(detail), f'action="{reserve}"')
+        self.assertEqual(self.client.post(reserve).status_code, 403)
+        slot.refresh_from_db()
+        operator.refresh_from_db()
+        self.assertEqual((slot.available, operator.credits), (8, 25))
+        self.assertFalse(m.Booking.objects.exists())
+
+        self.client.force_login(self.family)
+        self.assertRedirects(self.client.post(reserve), reverse('bookings'))
+        notice = operator.notifications.get()
+        self.assertEqual(notice.kind, m.Notification.Kind.BOOKING_RECEIVED)
+        self.assertEqual(notice.booking.user_id, self.family.pk)
+        self.assertFalse(outside.notifications.exists())
+        self.assertFalse(no_booking_permission.notifications.exists())
+        self.client.force_login(operator)
+        self.assertContains(self.client.get(reverse('notifications')), 'Nueva reserva en tu centro')
+        self.assertContains(self.client.get(reverse('bookings')), f'id="reserva-{notice.booking_id}"')
+
+
+    def test_main_navigation_stays_visible_and_account_links_use_header_dropdown(self):
         public_routes = ('home', 'explore', 'providers', 'plans', 'relief_home')
         main_links = (*map(reverse, public_routes[1:]), '/#convenios', reverse('reference'))
         for route in public_routes:
@@ -196,6 +276,7 @@ class DemoAccountTests(TestCase):
                 for link in main_links:
                     self.assertIn(f'href="{link}"', main_nav)
                 self.assertNotContains(response, 'class="account-nav"')
+                self.assertNotContains(response, 'class="account-menu"')
                 self.assertNotContains(response, 'nav-toggle')
                 self.assertNotContains(response, 'nav-more')
         self.client.force_login(self.family)
@@ -206,19 +287,103 @@ class DemoAccountTests(TestCase):
                     path = reverse(business_link, args=['activities'] if business_link == 'management' else [])
                     self.assertNotContains(response, f'href="{path}"')
                 self.assertNotContains(response, 'class="account-nav"')
+                self.assertContains(response, '<details class="account-menu">')
         for route in ('public_landing', 'providers', 'relief_home'):
             self.assertRedirects(self.client.get(reverse(route)), reverse('home'))
         for route in ('dashboard', 'bookings', 'requests', 'profile', 'wallet'):
-            self.assertContains(self.client.get(reverse(route)), 'class="account-nav"')
-        self.assertContains(self.client.get(reverse('explore'), {'favorites': '1'}), 'class="account-nav"')
-        self.assertNotContains(self.client.get(reverse('activity', args=[self.activity.pk])), 'class="account-nav"')
+            response = self.client.get(reverse(route))
+            self.assertContains(response, '<details class="account-menu">')
+            self.assertNotContains(response, 'class="account-nav"')
+        self.assertContains(self.client.get(reverse('activity', args=[self.activity.pk])), '<details class="account-menu">')
 
-    def test_client_home_lists_only_own_future_confirmed_bookings(self):
+    def test_account_dropdown_keeps_each_roles_links_and_profile_labels(self):
+        users = (
+            (self.family, ('Perfil', 'Favoritos', 'Sparks'), ('Estadísticas', 'Usuarios y permisos', 'Publicaciones')),
+            (m.User.objects.get(username='proveedor'), ('Perfil', 'Publicaciones', 'Horarios y cupos'), ('Estadísticas', 'Usuarios y permisos')),
+            (m.User.objects.get(username='superadmin'), ('Perfil', 'Estadísticas', 'Usuarios y permisos', 'Validación de proveedores'), ()),
+            (m.User.objects.create_user('nuevo_proveedor', email='alta@example.invalid', provider_applicant=True),
+             ('Mis fichas',), ('Reservas', 'Estadísticas', 'Publicaciones')),
+        )
+        for user, required, restricted in users:
+            with self.subTest(role=user.role):
+                self.client.force_login(user)
+                content = self.client.get(reverse('explore')).content.decode()
+                menu = content.split('<nav class="account-menu-items"', 1)[1].split('</nav>', 1)[0]
+                self.assertIn('Configuración de perfil', menu)
+                self.assertIn(f'<form method="post" action="{reverse("logout")}">', menu)
+                for label in required:
+                    self.assertIn(f'{label}</a>', menu)
+                for label in restricted:
+                    self.assertNotIn(f'{label}</a>', menu)
+
+    def test_admin_navigation_keeps_catalogs_and_bell_up_top_and_operations_in_sidebar(self):
+        self.login_profile('admin')
+        admin = m.User.objects.get(username='admin')
+        admin.notifications.create(kind=m.Notification.Kind.RESERVED, message='Aviso de prueba')
+        categories = reverse('management', args=['categories'])
+        edit = reverse('edit_record', args=['categories', self.activity.category_id])
+        for url, group, current_link in (
+            (reverse('platform_statistics'), 'Operación', reverse('platform_statistics')),
+            (reverse('bookings'), 'Operación', reverse('bookings')),
+            (categories, 'Gestión de datos', categories),
+            (edit, 'Gestión de datos', categories),
+            (reverse('profile'), 'Cuenta', reverse('profile')),
+            (reverse('notifications'), 'Operación', None),
+        ):
+            with self.subTest(url=url):
+                page = self.client.get(url)
+                self.assertNotContains(page, 'class="account-menu"')
+                self.assertNotContains(page, 'class="module-nav"')
+                self.assertContains(page, 'id="workspace-links"')
+                self.assertContains(page, 'aria-controls="workspace-links"')
+                document = page.content.decode()
+                main = document.split('<nav id="main-nav"', 1)[1].split('</nav>', 1)[0]
+                header_account = document.split('<div class="account-links">', 1)[1].split('</header>', 1)[0]
+                side = document.split('<nav id="workspace-links"', 1)[1].split('</nav>', 1)[0]
+                self.assertEqual(main.count('<a '), 2)
+                for name in ('explore', 'relief_home'):
+                    self.assertIn(f'href="{reverse(name)}"', main)
+                    self.assertNotIn(f'href="{reverse(name)}"', side)
+                for name in ('platform_operations', 'platform_statistics', 'bookings', 'notifications'):
+                    self.assertNotIn(f'href="{reverse(name)}"', main)
+                for kind in ('organizations', 'activities', 'schedules', 'categories', 'cities', 'plans'):
+                    self.assertIn(f'href="{reverse("management", args=[kind])}"', side)
+                for name in ('platform_statistics', 'bookings', 'profile', 'requests'):
+                    self.assertIn(f'href="{reverse(name)}"', side)
+                self.assertNotIn(f'href="{reverse("notifications")}"', side)
+                self.assertIn(f'href="{reverse("notifications")}"', header_account)
+                self.assertIn('aria-label="Notificaciones, 1 sin leer"', header_account)
+                if url == reverse('notifications'):
+                    self.assertIn(f'href="{url}" aria-current="page"', header_account)
+                self.assertIn(f'action="{reverse("logout")}"', side)
+                self.assertNotIn('Reputación', side)
+                self.assertEqual(side.count('<details class="ks-workspace-group"'), 3)
+                self.assertEqual(side.count('<details class="ks-workspace-group" open>'), 1)
+                active_group = side.split('<details class="ks-workspace-group" open>', 1)[1].lstrip()
+                self.assertTrue(active_group.startswith(f'<summary>{group} '))
+                if current_link:
+                    self.assertIn(f'href="{current_link}" aria-current="page"', active_group.split('</details>', 1)[0])
+
+    def test_provider_sidebar_persists_across_dashboard_tables_and_forms(self):
+        self.login_profile('proveedor')
+        schedule_list = reverse('management', args=['schedules'])
+        edit = reverse('edit_record', args=['schedules', self.activity.schedules.get().pk])
+        for url in (reverse('dashboard'), schedule_list, edit):
+            with self.subTest(url=url):
+                page = self.client.get(url)
+                self.assertContains(page, 'id="workspace-links"')
+                self.assertContains(page, 'class="account-menu"')
+                self.assertNotContains(page, 'class="module-nav"')
+                if url != reverse('dashboard'):
+                    self.assertContains(page, f'href="{schedule_list}" aria-current="page"')
+
+    def test_client_home_lists_only_own_future_bookings_without_attendance(self):
         landing = self.client.get(reverse('home'))
         self.assertTemplateUsed(landing, 'portal/home.html')
         self.assertContains(landing, 'Incorporar mi centro')
         slot = self.activity.schedules.get()
-        booking = m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0, status='confirmed')
+        booking = m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0)
+        m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0, attendance_recorded=True)
         m.Booking.objects.create(user=self.family, schedule=slot, sparks=4, amount=0, status='cancelled')
         admin = m.User.objects.get(username='admin')
         m.Booking.objects.create(user=admin, schedule=slot, sparks=4, amount=0)
@@ -234,6 +399,44 @@ class DemoAccountTests(TestCase):
         self.assertRedirects(self.client.get(reverse('home')), reverse('dashboard'))
         self.client.force_login(m.User.objects.get(username='superadmin'))
         self.assertRedirects(self.client.get(reverse('home')), reverse('superadmin:index'))
+
+    def test_password_change_is_available_from_profile_settings_for_each_role(self):
+        settings_url = reverse('profile')
+        password_url = reverse('password_change')
+        for username in ('usuario', 'proveedor', 'admin', 'superadmin'):
+            with self.subTest(username=username):
+                self.client.force_login(m.User.objects.get(username=username))
+                panel = self.client.get(reverse('dashboard'), follow=True)
+                self.assertNotContains(panel, f'href="{password_url}"')
+                settings = self.client.get(settings_url)
+                self.assertContains(settings, 'Configuración de perfil')
+                self.assertContains(settings, f'href="{password_url}"')
+                password = self.client.get(password_url)
+                self.assertContains(password, 'Volver a Configuración de perfil')
+
+        self.client.logout()
+        self.login_profile('usuario')
+        new_password = 'Prueba-Unica-De-Clave!508'
+        response = self.client.post(password_url, {
+            'old_password': 'usuario', 'new_password1': new_password, 'new_password2': new_password,
+        }, follow=True)
+        self.assertRedirects(response, settings_url)
+        self.assertContains(response, 'class="ks-feedback is-success" role="status"')
+        self.assertContains(response, 'Tu contraseña se actualizó.')
+        self.family.refresh_from_db()
+        self.assertTrue(self.family.check_password(new_password))
+        self.assertEqual(self.client.get(settings_url).status_code, 200)
+
+    def test_reservation_feedback_and_confirmation_are_contextual(self):
+        self.client.force_login(self.family)
+        slot = self.activity.schedules.get()
+        activity = self.client.get(reverse('activity', args=[self.activity.pk]))
+        self.assertContains(activity, 'data-confirm-title="Confirmar reserva"')
+        self.assertContains(activity, 'aria-labelledby="confirm-dialog-title"')
+        failed = self.client.post(reverse('reserve', args=[slot.pk]), follow=True)
+        self.assertContains(failed, 'class="ks-feedback is-error" role="alert"')
+        self.assertContains(failed, 'No tienes suficientes Sparks')
+        self.assertFalse(self.family.bookings.exists())
 
     def test_client_cannot_submit_business_requests_or_register_an_organization(self):
         ally = m.Organization.objects.create(
@@ -277,7 +480,7 @@ class DemoAccountTests(TestCase):
         for username, can_view in [('admin', True), ('superadmin', True), ('usuario', False), ('proveedor', False)]:
             with self.subTest(username=username):
                 self.client.force_login(m.User.objects.get(username=username))
-                dashboard = self.client.get(reverse('dashboard'))
+                dashboard = self.client.get(reverse('dashboard'), follow=True)
                 response = self.client.get(endpoint)
                 if can_view:
                     self.assertContains(dashboard, f'href="{endpoint}"')
@@ -291,9 +494,9 @@ class DemoAccountTests(TestCase):
         slot = self.activity.schedules.get()
         include = [m.Booking.objects.create(
             user=self.family, schedule=slot, sparks=4, amount=0, status=status,
-        ) for status in ('confirmed', 'cancelled')]
+        ) for status in ('reserved', 'cancelled')]
         outside = m.Booking.objects.create(
-            user=self.family, schedule=slot, sparks=4, amount=0, status='completed',
+            user=self.family, schedule=slot, sparks=4, amount=0, attendance_recorded=True,
         )
         day = timezone.localdate()
         noon = timezone.make_aware(datetime.combine(day, datetime.min.time()).replace(hour=12))
@@ -320,12 +523,12 @@ class DemoAccountTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['booking_count'], 2)
         self.assertEqual(dict(response.context['bookings_by_status']),
-                         {'Pendiente de aprobar': 0, 'Confirmada': 1, 'Completada': 0, 'Cancelada': 1})
+                         {'Reservado': 1, 'Cancelado': 1})
         self.assertEqual(dict(response.context['requests_by_status'])['En revisión'], 1)
         self.assertEqual(response.context['published_count'], 2)
         self.assertEqual(response.context['provider_count'], 2)
         self.assertEqual(response.context['open_request_count'], 1)
-        self.assertEqual([row['count'] for row in response.context['recent_days']], [1])
+        self.assertEqual([row['count'] for row in response.context['timeline']['days']], [1])
         self.assertEqual(response.context['cities'], [(self.center.city.name, 1)])
         self.assertEqual(response.context['capacity'], {'slots': 2, 'seats': 16, 'available': 12, 'used': 4})
         self.assertContains(response, '<strong>25%</strong>', html=True)
@@ -415,9 +618,28 @@ class ReliefTests(TestCase):
         self.assertRedirects(self.client.get(reverse('relief_home')), reverse('home'))
         self.client.force_login(self.admin)
         self.assertRedirects(self.client.post(detail, {'status': 'reviewing', 'note': 'Recibida para revisión'}), detail)
-        self.assertNotContains(self.client.get(reverse('relief_home')), f'SOL-{order.pk}')
+        self.assertContains(self.client.get(reverse('relief_home')), self.ally.name)
         self.client.force_login(self.requester)
         self.assertContains(self.client.get(detail), 'Recibida para revisión')
+
+    def test_platform_admin_can_browse_and_filter_relief_but_cannot_submit(self):
+        self.client.force_login(self.admin)
+        home = reverse('relief_home')
+        directory = self.client.get(home)
+        self.assertContains(directory, self.ally.name)
+        self.assertContains(directory, f'href="{home}" aria-current="page">Alivios B2B')
+        for label in ('Diagnóstico rápido', 'Solicitar asesoría', 'Cotizar con', 'Mis solicitudes'):
+            self.assertNotContains(directory, label)
+        filtered = self.client.get(home, {'area': 'insurance'})
+        self.assertContains(filtered, 'Previene Kids')
+        self.assertNotContains(filtered, self.ally.name)
+
+        for route, args in (('relief_diagnosis', []), ('relief_quote', [self.ally.pk]), ('relief_advice', [self.ally.pk])):
+            with self.subTest(route=route):
+                url = reverse(route, args=args)
+                self.assertEqual(self.client.get(url).status_code, 403)
+                self.assertEqual(self.client.post(url, self.request_data()).status_code, 403)
+        self.assertFalse(m.ServiceRequest.objects.exists())
 
     def test_advice_rejects_invalid_preferences_and_never_routes_to_an_unpublished_ally(self):
         self.client.force_login(self.requester)
@@ -466,9 +688,46 @@ class PortalTests(TestCase):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
 
+    def test_plan_cards_sort_active_plans_by_price_and_keep_integral_recommended(self):
+        self.plan.origin_key = 'plan:Integral'
+        self.plan.save(update_fields=['origin_key'])
+        m.Plan.objects.create(name='Full Spark', origin_key='plan:Full Spark', sparks=34, price=45499)
+        m.Plan.objects.create(name='Explorador', origin_key='plan:Explorador', sparks=15, price=24990)
+        m.Plan.objects.create(name='Plan Complementario', sparks=40, price=27990, description='Nuevo en el catálogo.')
+        m.Plan.objects.create(name='Esencial', sparks=10, price=27990)
+        m.Plan.objects.create(name='Oculto', sparks=5, price=1, active=False)
+
+        response = self.client.get(reverse('plans'))
+
+        self.assertEqual(
+            [card['name'] for card in response.context['cards']],
+            ['Plan Explorador', 'Plan Esencial', 'Plan Complementario', 'Plan Integral', 'Plan Full Spark'],
+        )
+        self.assertContains(response, f'class="ks-plan ks-plan-recommended" aria-labelledby="plan-{self.plan.pk}"')
+        self.assertContains(response, 'class="ks-plan-badge"', count=1)
+        self.assertContains(response, '$34.990 CLP')
+        self.assertContains(response, '350 Spark Points iniciales demo')
+        self.assertContains(response, 'Nuevo en el catálogo.')
+        self.assertNotContains(response, 'Plan Oculto')
+        self.assertContains(response, f'href="{reverse("login")}?next={reverse("plans")}"', count=5)
+
+    def test_plan_choice_preserves_demo_confirmation_and_credits(self):
+        self.auth()
+        plans_page = self.client.get(reverse('plans'))
+        activate = reverse('activate_plan', args=[self.plan.pk])
+        self.assertContains(plans_page, f'method="post" action="{activate}"')
+        self.assertContains(plans_page, 'data-confirm-label="Activar plan demo"')
+        self.assertContains(plans_page, 'Elegir plan')
+
+        self.assertRedirects(self.client.post(activate), reverse('wallet'))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.credits, 52)
+        self.assertEqual(m.Membership.objects.get(user=self.user, plan=self.plan).sparks, 26)
+
     def test_local_visual_resources_resolve(self):
         from django.contrib.staticfiles import finders
-        for path in ['logo.png', 'css/styles.css', 'portal.css', 'portal-theme.css', 'portal-icons.svg', 'catalog-map.svg', 'portal.js', 'admin/css/base.css']:
+        for path in ['logo.png', 'css/styles.css', 'portal.css', 'portal-theme.css', 'portal-icons.svg', 'catalog-map.svg',
+                     'portal.js', 'landing.css', 'landing.js', 'taller-robotica.jpg', 'admin/css/base.css']:
             with self.subTest(path=path):
                 self.assertIsNotNone(finders.find(path))
                 self.assertEqual(self.client.get('/static/' + path).status_code, 200)
@@ -480,6 +739,21 @@ class PortalTests(TestCase):
             self.assertContains(response, phrase)
         self.assertContains(response, f'href="{reverse("request_create")}?kind=agreement"')
         self.assertContains(response, f'href="{reverse("providers")}"')
+
+    def test_landing_keeps_filtered_catalog_links_and_scopes_visual_resources(self):
+        explore = reverse('explore')
+        public_home = self.client.get(reverse('home'))
+        self.assertContains(public_home, 'Escena ilustrativa')
+        self.assertContains(public_home, 'id="convenios"')
+        for query in ('Rob%C3%B3tica', 'Jiu-Jitsu', 'Nataci%C3%B3n', 'Piano'):
+            self.assertContains(public_home, f'href="{explore}?q={query}"')
+
+        self.auth()
+        client_home = self.client.get(reverse('home'))
+        self.assertTemplateUsed(client_home, 'portal/client_home.html')
+        for resource in ('landing.css', 'landing.js', 'taller-robotica.jpg'):
+            self.assertContains(public_home, f'/static/{resource}')
+            self.assertNotContains(client_home, f'/static/{resource}')
 
     def test_catalog_period_availability_and_map_use_the_same_filtered_set(self):
         vina = m.City.objects.create(name='Viña del Mar')
@@ -648,11 +922,10 @@ class PortalTests(TestCase):
         services.cancel(self.user, booking)
         with self.assertRaises(ValidationError):
             services.cancel(self.user, booking)
-        with self.assertRaises(ValidationError):
-            services.confirm(self.manager, booking)
         self.user.refresh_from_db(); self.slot.refresh_from_db()
         self.assertEqual((self.user.credits, self.user.points, self.slot.available), (26, 0, 2))
         self.assertEqual(m.Movement.objects.filter(booking=booking).count(), 2)
+        self.assertEqual(self.user.notifications.filter(booking=booking).count(), 2)
 
     def test_insufficient_balance_rolls_back_cupo(self):
         with self.assertRaises(ValidationError):
@@ -667,12 +940,10 @@ class PortalTests(TestCase):
             services.reserve(self.user, self.slot.pk)
         self.user.refresh_from_db()
         self.assertEqual(self.user.credits, 26)
+        self.assertFalse(self.user.notifications.exists())
 
     def test_duplicate_reservation_rolls_back(self):
-        booking = services.reserve(self.user, self.slot.pk)
-        with self.assertRaises(ValidationError):
-            services.reserve(self.user, self.slot.pk)
-        services.confirm(self.manager, booking)
+        services.reserve(self.user, self.slot.pk)
         with self.assertRaises(ValidationError):
             services.reserve(self.user, self.slot.pk)
         self.slot.refresh_from_db(); self.user.refresh_from_db()
@@ -690,24 +961,24 @@ class PortalTests(TestCase):
         with self.assertRaises(ValidationError):
             services.reserve(self.user, self.slot.pk)
 
-    def test_approval_uses_held_seat_and_cannot_be_repeated_or_confirm_expired_slots(self):
+    def test_last_seat_is_reserved_automatically_and_disappears_from_availability(self):
         self.slot.capacity = self.slot.available = 1
         self.slot.save()
-        booking = services.reserve(self.user, self.slot.pk)
-        services.confirm(self.manager, booking)
-        with self.assertRaises(ValidationError):
-            services.confirm(self.manager, booking)
+        self.auth()
+        reserve_url = reverse('reserve', args=[self.slot.pk])
+        detail_url = reverse('activity', args=[self.activity.pk])
+        self.assertContains(self.client.get(detail_url), f'action="{reserve_url}"')
+        self.assertRedirects(self.client.post(reserve_url), reverse('bookings'))
+        booking = self.user.bookings.get(schedule=self.slot)
+        self.assertEqual(booking.status, m.Booking.Status.RESERVED)
         self.slot.refresh_from_db()
         self.user.refresh_from_db()
         self.assertEqual((self.slot.available, self.user.credits, self.user.points), (0, 22, 0))
+        self.assertNotContains(self.client.get(detail_url), f'action="{reserve_url}"')
+        self.assertNotContains(self.client.get(reverse('explore'), {'available': '1'}), self.activity.name)
+        self.assertRedirects(self.client.post(reserve_url), detail_url)
+        self.assertEqual(self.user.notifications.count(), 1)
         services.cancel(self.user, booking)
-        next_booking = services.reserve(self.user, self.slot.pk)
-        m.Schedule.objects.filter(pk=self.slot.pk).update(starts_at=timezone.now() - timedelta(minutes=1))
-        with self.assertRaises(ValidationError):
-            services.confirm(self.manager, next_booking)
-        next_booking.refresh_from_db()
-        self.assertEqual(next_booking.status, m.Booking.Status.PENDING)
-        services.cancel(self.user, next_booking)
         self.slot.refresh_from_db()
         self.user.refresh_from_db()
         self.assertEqual((self.slot.available, self.user.credits, self.user.points), (1, 26, 0))
@@ -718,9 +989,118 @@ class PortalTests(TestCase):
         self.assertEqual(self.client.post(f'/reservas/{b.pk}/cancel/').status_code, 404)
         self.assertEqual(self.client.get(f'/comprobantes/{b.pk}/').status_code, 404)
 
+    def test_schedule_cancellation_at_48_hours_refunds_and_notifies_each_customer(self):
+        self.other.credits = 10
+        self.other.save(update_fields=['credits'])
+        bookings = [services.reserve(user, self.slot.pk) for user in (self.user, self.other)]
+        soon = timezone.now() + timedelta(days=3)
+        unaffected = m.Schedule.objects.create(activity=self.activity, starts_at=soon, capacity=2, available=2)
+        reason = 'El recinto estará cerrado por mantención.'
+        url = reverse('cancel_schedule', args=[self.slot.pk])
+        self.auth(self.manager)
+        listing = self.client.get(reverse('management', args=['schedules']))
+        self.assertContains(listing, url)
+        self.assertContains(self.client.get(url), 'Motivo de la cancelación')
+        exact_cutoff = self.slot.starts_at - timedelta(hours=48)
+        with patch('core.services.timezone.now', return_value=exact_cutoff):
+            self.assertRedirects(self.client.post(url, {'reason': reason}), reverse('management', args=['schedules']))
+        self.slot.refresh_from_db()
+        unaffected.refresh_from_db()
+        self.assertEqual((self.slot.active, self.slot.cancellation_reason, self.slot.available), (False, reason, 2))
+        self.assertTrue(unaffected.active)
+        self.assertEqual(self.slot.cancelled_at, exact_cutoff)
+        self.assertContains(self.client.post(url, {'reason': 'Reintento'}), 'Solo puedes cancelar')
+        self.assertEqual(self.client.get(reverse('edit_record', args=['schedules', self.slot.pk])).status_code, 403)
+
+        for booking, credits in zip(bookings, (26, 10)):
+            booking.refresh_from_db()
+            self.assertEqual(booking.status, m.Booking.Status.CANCELLED)
+            self.assertEqual(booking.user.credits, credits)
+            self.assertEqual(list(m.Movement.objects.filter(booking=booking).order_by('pk').values_list('delta', flat=True)), [-4, 4])
+            notice = booking.notification_set.get(kind=m.Notification.Kind.SCHEDULE_CANCELLED)
+            self.assertEqual(notice.recipient_id, booking.user_id)
+            self.assertIn(reason, notice.message)
+        with self.assertRaises(ValidationError):
+            services.reserve(self.user, self.slot.pk)
+
+    def test_schedule_cancellation_requires_reason_scope_and_deadline_in_server(self):
+        booking = services.reserve(self.user, self.slot.pk)
+        url = reverse('cancel_schedule', args=[self.slot.pk])
+        self.auth()
+        self.assertEqual(self.client.post(url, {'reason': 'Intento de cliente'}).status_code, 403)
+        self.auth(self.manager)
+        foreign = m.Schedule.objects.create(activity=self.foreign_activity, starts_at=self.slot.starts_at, capacity=1, available=1)
+        self.assertEqual(self.client.post(reverse('cancel_schedule', args=[foreign.pk]), {'reason': 'Otro centro'}).status_code, 404)
+        self.assertContains(self.client.post(url, {'reason': '  '}), 'errorlist')
+        self.assertEqual(self.client.post(reverse('deactivate', args=['schedules', self.slot.pk])).status_code, 403)
+        edit = reverse('edit_record', args=['schedules', self.slot.pk])
+        self.assertRedirects(self.client.post(edit, {
+            'activity': self.activity.pk, 'starts_at': self.slot.starts_at.isoformat(),
+            'capacity': self.slot.capacity,
+        }), reverse('management', args=['schedules']))
+        late = self.slot.starts_at - timedelta(hours=48) + timedelta(seconds=1)
+        with patch('core.services.timezone.now', return_value=late):
+            self.assertContains(self.client.post(url, {'reason': 'Fuera del plazo'}), 'al menos 48 horas')
+        booking.refresh_from_db()
+        self.slot.refresh_from_db()
+        self.assertEqual(booking.status, m.Booking.Status.RESERVED)
+        self.assertTrue(self.slot.active)
+        self.assertIsNone(self.slot.cancelled_at)
+        self.assertEqual(self.user.notifications.count(), 1)
+
+    def test_schedule_cancellation_rolls_back_if_notification_cannot_be_saved(self):
+        booking = services.reserve(self.user, self.slot.pk)
+        with patch('core.services.notify_booking', side_effect=RuntimeError('Fallo de escritura')):
+            with self.assertRaises(RuntimeError):
+                services.cancel_schedule(self.manager, self.slot, 'Mantención.')
+        booking.refresh_from_db()
+        self.slot.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual((self.slot.active, self.slot.available, self.user.credits), (True, 1, 22))
+        self.assertEqual(booking.status, m.Booking.Status.RESERVED)
+        self.assertEqual(self.user.notifications.count(), 1)
+
+    def test_schedule_cancellation_preserves_bookings_that_already_have_attendance(self):
+        booking = services.reserve(self.user, self.slot.pk)
+        services.complete(self.manager, booking)
+        services.cancel_schedule(self.manager, self.slot, 'Cierre del recinto.')
+        booking.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertTrue(booking.attendance_recorded)
+        self.assertEqual((booking.status, self.user.credits, self.user.points), ('reserved', 22, 50))
+        self.assertEqual(self.user.notifications.count(), 1)
+        self.assertTrue(m.Settlement.objects.filter(booking=booking).exists())
+
+    def test_notifications_are_private_and_read_actions_are_explicit(self):
+        booking = services.reserve(self.user, self.slot.pk)
+        mine = self.user.notifications.get()
+        another = m.Notification.objects.create(
+            recipient=self.other, kind=m.Notification.Kind.SCHEDULE_CANCELLED, message='Aviso privado de otro cliente.',
+        )
+        landing = reverse('notifications')
+        read = reverse('read_notification', args=[mine.pk])
+        self.assertRedirects(self.client.get(landing), f"{reverse('login')}?next={landing}")
+        self.auth()
+        response = self.client.get(landing)
+        self.assertContains(response, 'Notificaciones, 1 sin leer')
+        self.assertContains(response, f'/reservas/#reserva-{booking.pk}')
+        self.assertNotContains(response, another.message)
+        self.assertEqual(self.client.get(read).status_code, 405)
+        self.assertEqual(self.client.post(reverse('read_notification', args=[another.pk])).status_code, 404)
+        mine.refresh_from_db()
+        self.assertIsNone(mine.read_at)
+        self.assertRedirects(self.client.post(read), landing)
+        mine.refresh_from_db()
+        self.assertIsNotNone(mine.read_at)
+        services.cancel(self.user, booking)
+        self.assertEqual(self.user.notifications.filter(read_at__isnull=True).count(), 1)
+        self.assertRedirects(self.client.post(reverse('read_all_notifications')), landing)
+        another.refresh_from_db()
+        self.assertIsNone(another.read_at)
+        self.assertNotContains(self.client.get(landing), 'Notificaciones, 1 sin leer')
+
     def test_complete_once_and_financial_balance(self):
         b = services.reserve(self.user, self.slot.pk)
-        services.confirm(self.manager, b)
         self.auth(self.manager)
         self.assertEqual(self.client.post(f'/reservas/{b.pk}/complete/').status_code, 302)
         with self.assertRaises(ValidationError): services.complete(self.manager, b)
@@ -731,7 +1111,6 @@ class PortalTests(TestCase):
 
     def test_withdrawals_reserve_balance_and_reject_releases(self):
         b = services.reserve(self.user, self.slot.pk)
-        services.confirm(self.manager, b)
         services.complete(self.manager, b)
         w = services.withdraw(self.manager, self.org, 20000)
         self.assertEqual(services.available_balance(self.org), 5000)
@@ -789,7 +1168,6 @@ class PortalTests(TestCase):
         b = services.reserve(self.user, self.slot.pk)
         self.auth()
         self.assertEqual(self.client.get(f'/opiniones/{b.pk}/crear/').status_code, 404)
-        services.confirm(self.manager, b)
         services.complete(self.manager, b)
         self.client.post(f'/opiniones/{b.pk}/crear/', {'rating': 5, 'comment': '<script>alert(1)</script>'})
         self.client.post(f'/opiniones/{b.pk}/crear/', {'rating': 1, 'comment': 'Otro'})
@@ -812,19 +1190,67 @@ class PortalTests(TestCase):
         foreign = m.Schedule.objects.create(
             activity=self.foreign_activity, starts_at=self.slot.starts_at, capacity=5, available=4,
         )
-        m.Booking.objects.create(user=self.manager, schedule=foreign, sparks=4, amount=10000, status='confirmed')
+        m.Booking.objects.create(user=self.manager, schedule=foreign, sparks=4, amount=10000)
         self.auth(self.manager)
         response = self.client.get('/panel/')
-        self.assertEqual(response.context['booking_count'], 1)
-        self.assertEqual(response.context['pending_booking_count'], 1)
-        self.assertIsNone(response.context['totals']['amount'])
-        services.confirm(self.manager, b)
-        response = self.client.get('/panel/')
-        self.assertEqual(response.context['totals']['amount'], 25000)
+        self.assertEqual(response.context['summary']['counts']['total'], 1)
+        self.assertEqual(response.context['summary']['counts']['booking_amount'], 25000)
         services.cancel(self.user, b)
         response = self.client.get('/panel/')
-        self.assertEqual(response.context['totals']['amount'], None)
-        self.assertEqual(response.context['booking_count'], 1)
+        self.assertEqual(response.context['summary']['counts']['booking_amount'], 0)
+        self.assertEqual(response.context['summary']['counts']['total'], 1)
+
+    def test_center_dashboard_metrics_match_the_admin_view_and_filter_by_ownership(self):
+        first = services.reserve(self.user, self.slot.pk)
+        services.complete(self.manager, first)
+        m.Review.objects.create(booking=first, rating=5, comment='Muy bien.')
+        another = m.Schedule.objects.create(
+            activity=self.activity, starts_at=self.slot.starts_at + timedelta(days=1), capacity=4, available=4,
+        )
+        services.reserve(self.user, another.pk)
+        to_cancel = m.Schedule.objects.create(
+            activity=self.activity, starts_at=self.slot.starts_at + timedelta(days=2), capacity=2, available=2,
+        )
+        services.reserve(self.user, to_cancel.pk)
+        services.cancel_schedule(self.manager, to_cancel, 'Cierre del recinto.')
+        day = timezone.localdate()
+        past = m.Booking.objects.create(user=self.other, schedule=another, sparks=4, amount=25000)
+        m.Booking.objects.filter(pk=past.pk).update(created_at=timezone.now() - timedelta(days=1))
+        filters = {
+            'center': self.org.pk, 'activity': self.activity.pk, 'from': day.isoformat(), 'to': day.isoformat(),
+        }
+
+        self.auth(self.manager)
+        dashboard = self.client.get(reverse('dashboard'), filters)
+        self.assertContains(dashboard, 'Reservas por día y hora de la actividad')
+        self.assertContains(dashboard, 'Navegación del tablero')
+        self.assertContains(dashboard, 'Ver datos del gráfico')
+        self.assertContains(dashboard, 'Cierre del recinto.')
+        provider = dashboard.context['summary']
+        self.assertEqual(
+            {key: provider['counts'][key] for key in ('total', 'reserved', 'attended', 'center_cancelled', 'booking_amount')},
+            {'total': 3, 'reserved': 2, 'attended': 1, 'center_cancelled': 1, 'booking_amount': 50000},
+        )
+        self.assertEqual((provider['prior_orders'], provider['families'], provider['returning'], provider['rating']), (1, 1, 1, 5))
+        self.assertEqual(provider['heatmap']['peak'], 1)
+        self.assertEqual([(row['count'], row['attended']) for row in provider['timeline']['days']], [(2, 1)])
+        self.assertEqual(provider['timeline']['peak'], 2)
+        self.assertEqual(self.client.get(reverse('dashboard'), {'center': self.foreign_org.pk}).status_code, 404)
+        self.assertEqual(self.client.get(reverse('dashboard'), {'activity': self.foreign_activity.pk}).status_code, 404)
+        self.assertEqual(self.client.get(reverse('platform_statistics'), filters).status_code, 403)
+        exported = {**filters, 'export': 'workshops'}
+        self.activity.name = '=Nombre con fórmula'
+        self.activity.save(update_fields=['name'])
+        provider_csv = self.client.get(reverse('dashboard'), exported)
+        self.assertContains(provider_csv, "'=Nombre con fórmula,2,1,1,50000")
+        self.assertNotContains(provider_csv, self.foreign_activity.name)
+
+        self.auth(m.User.objects.get(username='admin'))
+        mirror = self.client.get(reverse('platform_statistics'), filters)
+        self.assertTemplateUsed(mirror, 'portal/provider_statistics.html')
+        self.assertContains(mirror, 'Ver toda la plataforma')
+        self.assertEqual(mirror.context['summary']['counts'], provider['counts'])
+        self.assertEqual(self.client.get(reverse('platform_statistics'), exported).content, provider_csv.content)
 
     def test_csv_permissions_and_formula_injection(self):
         self.activity.name = '=HYPERLINK("evil")'; self.activity.save()
@@ -879,7 +1305,6 @@ class PortalTests(TestCase):
         self.assertEqual(self.client.post(f'/reservar/{self.slot.pk}/').status_code, 302)
         booking = m.Booking.objects.get(user=self.other)
         self.auth(self.manager)
-        self.client.post(f'/reservas/{booking.pk}/confirm/')
         self.client.post(f'/reservas/{booking.pk}/complete/')
         self.auth(self.other)
         self.client.post(f'/opiniones/{booking.pk}/crear/', {'rating': 4, 'comment': 'Buena experiencia demo'})
@@ -1002,7 +1427,7 @@ class PortalTests(TestCase):
         public_detail = reverse('activity', args=[activity.pk])
         self.assertEqual(self.client.get(public_detail).status_code, 404)
         with self.assertRaises(ValidationError):
-            services.reserve(self.user, slot.pk)
+            services.reserve(self.other, slot.pk)
 
         self.auth(self.root)
         self.assertContains(self.client.get(queue), org.name)
@@ -1077,12 +1502,11 @@ class PortalTests(TestCase):
             self.assertEqual(self.client.post(review, {'status': 'approved'}).status_code, 403)
         self.assertEqual(org.review_events.count(), 1)
 
-    def test_staff_cannot_confirm_or_complete_foreign_booking_even_as_owner(self):
+    def test_staff_cannot_complete_foreign_booking_even_as_owner(self):
         self.manager.credits = 20; self.manager.save()
         slot = m.Schedule.objects.create(activity=self.foreign_activity, starts_at=timezone.now() + timedelta(days=1), capacity=1, available=1)
-        booking = services.reserve(self.manager, slot.pk)
+        booking = m.Booking.objects.create(user=self.manager, schedule=slot, sparks=4, amount=0)
         self.auth(self.manager)
-        self.assertEqual(self.client.post(f'/reservas/{booking.pk}/confirm/').status_code, 403)
         self.assertEqual(self.client.post(f'/reservas/{booking.pk}/complete/').status_code, 403)
 
     def test_database_enforces_email_case_insensitive_uniqueness(self):
@@ -1092,5 +1516,5 @@ class PortalTests(TestCase):
     def test_export_respects_status_filter(self):
         booking = services.reserve(self.user, self.slot.pk)
         self.auth()
-        self.assertNotContains(self.client.get('/reservas/exportar/?status=completed'), f'KS-{booking.pk}')
-        self.assertContains(self.client.get('/reservas/exportar/?status=pending'), 'Pendiente de aprobar')
+        self.assertNotContains(self.client.get('/reservas/exportar/?status=cancelled'), f'KS-{booking.pk}')
+        self.assertContains(self.client.get('/reservas/exportar/?status=reserved'), 'Reservado')
