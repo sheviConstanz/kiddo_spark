@@ -1,0 +1,23 @@
+{% extends 'portal/base.html' %}
+{% block title %}{{ title }} · Alivios B2B{% endblock %}
+{% block content %}
+<section class="portal-shell section-space">
+  <div class="provider-layout provider-intake">
+    <div>
+      <a class="inline-link" href="{% url 'relief_home' %}#directorio">Volver a Alivios B2B</a>
+      <h1>{{ title }}</h1>
+      <p class="provider-lead">Destinatario: <strong>{{ ally|default:'Equipo Kiddo Spark' }}</strong></p>
+      {% if ally %}<p class="muted">{{ ally.relief_focus }}</p>{% endif %}
+      <p class="notice">La fecha, la hora y el canal son preferencias. Guardar esta solicitud no confirma una cita ni envía mensajes externos.</p>
+      <p class="muted">Usa datos ficticios para esta demostración.</p>
+    </div>
+    <div class="portal-card">
+      <form class="portal-form" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn ks-coral" type="submit">Guardar solicitud</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

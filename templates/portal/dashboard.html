@@ -19,6 +19,9 @@
       {% if user.is_staff and perms.core.view_schedule %}<a class="portal-card ks-action-card" href="{% url 'management' 'schedules' %}">{% include 'portal/icon.html' with name='calendar' %} Horarios y cupos</a>{% endif %}
       <a class="portal-card ks-action-card" href="{% url 'bookings' %}">{% include 'portal/icon.html' with name='calendar' %} Reservas y comprobantes</a>
       <a class="portal-card ks-action-card" href="{% url 'requests' %}">{% include 'portal/icon.html' with name='list' %} Seguimiento de solicitudes</a>
+      {% if user.is_superuser or user.is_staff and perms.core.operate_platform %}
+        <a class="portal-card ks-action-card" href="{% url 'platform_statistics' %}">{% include 'portal/icon.html' with name='chart' %} Estadísticas de la plataforma</a>
+      {% endif %}
       {% if user.is_staff %}
         {% if user.is_superuser or not perms.core.operate_platform and perms.core.view_settlement %}<a class="portal-card ks-action-card" href="{% url 'finance' %}">{% include 'portal/icon.html' with name='chart' %} Finanzas demo</a>{% endif %}
       {% else %}
@@ -46,19 +49,7 @@
         {% else %}<span>Sparks disponibles</span><b>{{ user.credits }}</b><small>Saldo actual, fuera del filtro temporal</small>{% endif %}
       </article>
     </div>
-    <div class="cards two">
-      <article class="portal-card">
-        <h3>Evolución de reservas</h3><p>Reservas no canceladas por fecha de creación.</p>
-        {% for row in series %}<div class="chart-row"><span>{{ row.day|date:'d/m/Y' }}</span><div class="chart-track" aria-hidden="true"><span style="width:{{ row.width }}%"></span></div><b>{{ row.count }}</b></div>
-        {% empty %}<p class="muted">El gráfico aparecerá al registrar reservas.</p>{% endfor %}
-      </article>
-      <article class="portal-card">
-        <h3>Actividades más reservadas</h3>
-        {% for row in popular %}<div class="list-row"><span>{{ row.schedule__activity__name }}</span><b>{{ row.count }}</b></div>
-        {% empty %}<p class="muted">No hay reservas en este período.</p>{% endfor %}
-        {% if user.is_superuser %}<p>Usuarios registrados: <b>{{ user_count }}</b></p>{% endif %}
-      </article>
-    </div>
+    {% include 'portal/booking_trends.html' %}
   </section>
   {% if user.is_staff and not perms.core.operate_platform %}
     <section class="ks-panel-section" aria-labelledby="org-title">

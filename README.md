@@ -205,12 +205,12 @@ cuentas que falten. El instalador no pide crearlas.
 | Perfil | Usuario | Contraseña | Correo | Qué puede hacer |
 | --- | --- | --- | --- | --- |
 | Superadministrador | `superadmin` | `superadmin` | `correo@superadmin.cl` | Acceso completo. Puede gestionar usuarios y permisos, revisar proveedores y asignar operadores. |
-| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Edita el catálogo, horarios, categorías, comunas y planes. Gestiona reservas y solicitudes de la plataforma. El acceso a usuarios, grupos, permisos, validación de proveedores, datos bancarios y retiros está reservado. |
+| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Edita el catálogo, horarios, categorías, comunas y planes. Gestiona reservas y solicitudes y consulta las estadísticas generales. El acceso a usuarios, grupos, permisos, validación de proveedores, datos bancarios y retiros está reservado. |
 | Usuario familiar | `usuario` | `usuario` | `usuario@demo.example.invalid` | Guarda favoritos, activa planes demo, reserva, cancela y valora sus propias experiencias. |
 | Proveedor | `proveedor` | `proveedor` | `proveedor@demo.example.invalid` | En **Mi panel**, gestiona las publicaciones, horarios y reservas del **Centro Kiddo Spark Demo**. Solo accede a su centro. |
 
 Para probar una reserva y verla desde el proveedor, entra como `usuario`,
-activa un plan de prueba en **Exploraciones → Planes y Sparks** y reserva
+activa un plan de prueba en **Planes y Sparks** y reserva
 **Taller de movimiento demo**. Si su horario ya venció, entra como
 `proveedor` y crea uno futuro en **Horarios y cupos**.
 
@@ -256,6 +256,22 @@ La membresía de $35.000 CLP netos al mes es un supuesto del modelo para
 proveedores pagadores. El flujo académico no activa membresías ni cobros.
 El script de inicio aplica las actualizaciones de la base local al arrancar.
 
+## Probar Alivios B2B
+
+1. Abre **Alivios B2B** en el menú principal. También puedes
+   entrar desde **Proveedores**.
+2. Usa el **Diagnóstico rápido** o filtra el directorio por contabilidad,
+   legal, mantención, seguros y prevención, o marketing y audiovisual.
+3. Ingresa como `proveedor` y elige **Solicitar asesoría**, **Cotizar** o
+   **Necesito ayuda para definir mi problema**. Puedes indicar una comuna,
+   fecha, hora y canal preferidos.
+4. Revisa el estado en **Mis solicitudes**. Con la cuenta `admin`, abre
+   **Solicitudes** para registrar una actualización y luego mírala de nuevo
+   con la cuenta del proveedor.
+
+Las fichas son de ejemplo. La demo guarda tus solicitudes y preferencias,
+pero no confirma citas, contacta aliados ni envía correos.
+
 ## Recorrido sugerido de presentación
 
 Para una presentación no técnica, ve la [guía para presentar Kiddo Spark a
@@ -280,7 +296,7 @@ horarios anteriores. Para demostrar otra franja, crea un horario en
    tienen canje ni valor monetario.
 5. Con un administrador del centro, valida asistencia. Con el usuario, deja
    una opinión. El centro puede responder desde **Reputación**.
-6. Solicita un convenio en **Empresas y colegios**, o asesoría en **Aliados**.
+6. Solicita un convenio en **Empresas y colegios**, o asesoría en **Alivios B2B**.
    Consulta su historial en **Solicitudes**.
 7. Con el administrador correspondiente, avanza el seguimiento: pendiente →
    en revisión → aprobada → completada. Puede rechazarse antes de aprobar.
@@ -289,7 +305,8 @@ horarios anteriores. Para demostrar otra franja, crea un horario en
 9. En **Finanzas demo**, consulta montos referenciales de experiencias completadas
    y solicita un retiro ficticio. El superadministrador puede completar la
    simulación o rechazarla para liberar saldo. No hay conexión bancaria.
-10. Revisa **Mi panel**: filtros por fecha y estadísticas calculadas desde registros.
+10. Ingresa como `admin` o `superadmin` y abre **Estadísticas** en **Mi panel**.
+    El proveedor conserva el resumen de su centro.
 
 Los nombres de centros proceden del material original y no acreditan convenios
 reales. Cupos y fechas son demostrativos. Los precios identificables se tomaron
@@ -298,6 +315,35 @@ actual refleja el monto referencial completo. El modelo actualizado fija una
 comisión del 10%, pendiente de implementar.
 Las campañas guardan actividad, nombre, presupuesto y estado; no contratan anuncios
 ni generan impresiones, clics o ROAS inventados.
+
+## Navegación y estadísticas
+
+En el portal, el menú principal muestra siempre **Explorar actividades**, **Proveedores**,
+**Empresas y colegios**, **Planes y Sparks**, **Alivios B2B** y **Propuesta
+original**. En el teléfono los enlaces se ordenan en varias filas. Pulsa
+**Mi panel** para ver el menú de tu cuenta y abrir tus reservas, solicitudes
+o perfil. Al volver a una sección pública se oculta el menú de cuenta.
+
+En **Mi panel → Estadísticas**, usa **Últimos 7 días**, **Últimos 30 días**,
+**Todo el historial** o selecciona fechas específicas. El período se aplica
+a la fecha en que se creó cada reserva o solicitud e incluye ambos extremos.
+
+- Las barras muestran reservas por día, por comuna y por estado, además de
+  solicitudes por estado. La tendencia muestra hasta siete fechas con
+  reservas. La tendencia y los rankings cuentan las confirmadas y completadas.
+- La tasa de finalización divide las reservas completadas por todas las
+  reservas del período, incluidas las canceladas. Las solicitudes abiertas
+  son las pendientes y las que están en revisión.
+- **Catálogo y próximos cupos** muestra las actividades publicadas, los
+  centros habilitados y los horarios futuros activos de esas actividades.
+  La ocupación se calcula restando los cupos disponibles a la capacidad
+  total y dividiendo ese resultado por la capacidad total. Esta sección
+  refleja el estado actual y queda fuera del filtro de fechas.
+
+Para ver cómo cambian las cifras, crea una reserva o una solicitud de prueba
+y vuelve al panel. Si no hay horarios futuros, el proveedor puede agregar uno
+en **Mi panel → Horarios y cupos** para mostrar el gráfico de ocupación.
+La vista muestra datos agrupados de la demo.
 
 ## Problemas frecuentes
 

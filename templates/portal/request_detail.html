@@ -1,1 +1,39 @@
-{% extends 'portal/base.html' %}{% block content %}<section class="portal-shell section-space"><a class="inline-link" href="{% url 'requests' %}">← Volver a solicitudes</a><div class="section-heading"><div><div class="eyebrow">SOL-{{ item.pk }} · {{ item.get_kind_display }}</div><h1>{{ item.subject }}</h1></div><span class="status-pill">{{ item.get_status_display }}</span></div><div class="cards two"><article class="portal-card"><h2>Datos de la solicitud</h2><p><b>Solicitante:</b> {{ item.entity_name }} · {{ item.user.username }}</p><p><b>Destino:</b> {{ item.organization|default:'Administración general' }}</p><p><b>Fecha preferida:</b> {{ item.preferred_date|date:'d/m/Y'|default:'Sin preferencia' }}</p><div class="preserve-lines">{{ item.message }}</div></article><article class="portal-card"><h2>Historial de seguimiento</h2>{% for event in events %}<div class="timeline-item"><small>{{ event.created_at|date:'d/m/Y H:i' }}</small><h3>{{ event.get_status_display }}</h3><p>{{ event.note }}</p></div>{% endfor %}</article></div>{% if form %}<div class="form-panel"><h2>Actualizar seguimiento</h2><p class="muted">Pendiente → En revisión → Aprobada → Completada. Puede rechazarse antes de aprobar.</p><form method="post" class="portal-form">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Registrar actualización</button></form></div>{% endif %}</section>{% endblock %}
+{% extends 'portal/base.html' %}
+{% block title %}Solicitud SOL-{{ item.pk }} · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space">
+  <a class="inline-link" href="{% url 'requests' %}">← Volver a solicitudes</a>
+  {% if item.relief_topic %}<p><a class="inline-link" href="{% url 'relief_home' %}#mis-solicitudes">Mis solicitudes de Alivios B2B</a></p>{% endif %}
+  <div class="section-heading">
+    <div><div class="eyebrow">SOL-{{ item.pk }} · {{ item.get_kind_display }}</div><h1>{{ item.subject }}</h1></div>
+    <span class="status-pill">{{ item.get_status_display }}</span>
+  </div>
+  <div class="cards two">
+    <article class="portal-card">
+      <h2>Datos de la solicitud</h2>
+      <p><b>Solicitante:</b> {{ item.entity_name }} · {{ item.user.username }}</p>
+      <p><b>Destino:</b> {{ item.organization|default:'Equipo Kiddo Spark' }}</p>
+      <p><b>Fecha preferida:</b> {{ item.preferred_date|date:'d/m/Y'|default:'Sin preferencia' }}{% if item.preferred_time %} · {{ item.preferred_time|time:'H:i' }}{% endif %}</p>
+      {% if item.preferred_city %}<p><b>Comuna preferida:</b> {{ item.preferred_city }}</p>{% endif %}
+      {% if item.relief_channel %}<p><b>Canal preferido:</b> {{ item.get_relief_channel_display }}</p>{% endif %}
+      <div class="preserve-lines">{{ item.message }}</div>
+      {% if item.relief_topic %}<p class="muted">Las preferencias quedan registradas para el seguimiento. No confirman una cita.</p>{% endif %}
+    </article>
+    <article class="portal-card">
+      <h2>Historial de seguimiento</h2>
+      {% for event in events %}
+        <div class="timeline-item"><small>{{ event.created_at|date:'d/m/Y H:i' }}</small><h3>{{ event.get_status_display }}</h3><p>{{ event.note }}</p></div>
+      {% endfor %}
+    </article>
+  </div>
+  {% if form %}
+    <div class="form-panel ks-panel-section">
+      <h2>Actualizar seguimiento</h2><p class="muted">Pendiente → En revisión → Aprobada → Completada. Puede rechazarse antes de aprobar.</p>
+      <form method="post" class="portal-form">
+        {% csrf_token %}{{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Registrar actualización</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

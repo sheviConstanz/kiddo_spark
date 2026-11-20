@@ -1,0 +1,20 @@
+<div class="cards two">
+  <article class="portal-card">
+    <h3>Evolución de reservas</h3>
+    <p>Reservas no canceladas por fecha de creación.</p>
+    {% for row in series %}
+      <div class="chart-row"><span>{{ row.day|date:'d/m/Y' }}</span><div class="chart-track" aria-hidden="true"><span style="width:{{ row.width }}%"></span></div><b>{{ row.count }}</b></div>
+    {% empty %}
+      <p class="muted">No hay reservas para graficar en este período.</p>
+    {% endfor %}
+  </article>
+  <article class="portal-card">
+    <h3>Actividades más reservadas</h3>
+    {% for row in popular %}
+      <div class="list-row"><span>{{ row.schedule__activity__name }}</span><b>{{ row.count }}</b></div>
+    {% empty %}
+      <p class="muted">No hay reservas en este período.</p>
+    {% endfor %}
+    {% if user.is_superuser and user_count %}<p>Usuarios registrados: <b>{{ user_count }}</b></p>{% endif %}
+  </article>
+</div>

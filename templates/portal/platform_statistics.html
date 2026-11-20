@@ -1,0 +1,120 @@
+{% extends 'portal/base.html' %}
+{% block title %}Estadísticas · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="portal-shell section-space ks-statistics">
+  <header class="ks-stats-header">
+    <div>
+      <p class="ks-kicker">Mi panel</p>
+      <h1>Estadísticas de la plataforma</h1>
+      <p>Reservas, solicitudes y cupos de la operación de prueba.</p>
+    </div>
+    <a class="btn btn-outline ks-hero-secondary" href="{% url 'dashboard' %}">Volver al resumen</a>
+  </header>
+
+  <section class="ks-stats-period" aria-labelledby="statistics-period">
+    <h2 id="statistics-period">Reservas y solicitudes</h2>
+    <p id="period-help" class="muted">Las fechas se aplican al día en que se creó cada reserva o solicitud.</p>
+    <form class="ks-stats-filter" method="get" aria-describedby="period-help" aria-label="Filtrar por fecha">
+      <label>Desde <input type="date" name="from" value="{{ request.GET.from }}"></label>
+      <label>Hasta <input type="date" name="to" value="{{ request.GET.to }}"></label>
+      <button class="btn btn-primary" type="submit">Aplicar fechas</button>
+    </form>
+    {% url 'platform_statistics' as statistics_url %}
+    <div class="ks-stats-shortcuts">
+      <a href="{{ statistics_url }}?from={{ week_start|date:'Y-m-d' }}&amp;to={{ today|date:'Y-m-d' }}">Últimos 7 días</a>
+      <a href="{{ statistics_url }}?from={{ month_start|date:'Y-m-d' }}&amp;to={{ today|date:'Y-m-d' }}">Últimos 30 días</a>
+      <a href="{{ statistics_url }}">Todo el historial</a>
+    </div>
+
+    <dl class="ks-stats-kpis">
+      <div><dt>{% include 'portal/icon.html' with name='calendar' %} Reservas</dt><dd>{{ booking_count }}</dd></div>
+      <div>
+        <dt>{% include 'portal/icon.html' with name='check' %} Tasa de finalización</dt>
+        <dd>{% if booking_count %}{% widthratio completed_count booking_count 100 %}%{% else %}<span class="ks-stats-no-rate">Sin reservas</span>{% endif %}</dd>
+      </div>
+      <div><dt>{% include 'portal/icon.html' with name='list' %} Solicitudes</dt><dd>{{ request_count }}</dd></div>
+      <div><dt>{% include 'portal/icon.html' with name='briefcase' %} Solicitudes abiertas</dt><dd>{{ open_request_count }}</dd></div>
+    </dl>
+
+    <div class="ks-stats-grid">
+      <section class="portal-card ks-stats-card">
+        <h3>Reservas por día</h3>
+        <p>Hasta 7 fechas recientes con reservas, sin contar las canceladas.</p>
+        {% if recent_days %}
+          <ul class="ks-stats-days">
+            {% for row in recent_days %}
+              <li>
+                <b>{{ row.count }}<span class="sr-only"> reservas el </span></b>
+                <span class="ks-stats-column" style="--share: {% widthratio row.count daily_max 100 %}%" aria-hidden="true"></span>
+                <time datetime="{{ row.day|date:'Y-m-d' }}" title="{{ row.day|date:'j \d\e F \d\e Y' }}">{{ row.day|date:'d/m' }}<span class="sr-only">/{{ row.day|date:'Y' }}</span></time>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}<p class="ks-stats-empty">Sin reservas vigentes o completadas en estas fechas.</p>{% endif %}
+      </section>
+      <section class="portal-card ks-stats-card">
+        <h3>Reservas por comuna</h3>
+        <p>Comunas de los centros con más reservas confirmadas o completadas.</p>
+        <ul class="ks-stats-rows">
+          {% for name, count in cities %}
+            <li>
+              <span>{{ name|default:'Comuna sin registrar' }}</span><b>{{ count }}</b>
+              <span class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio count city_max 100 %}%"></span></span>
+            </li>
+          {% empty %}
+            <li class="ks-stats-empty">Sin reservas para comparar por comuna.</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="portal-card ks-stats-card">
+        <h3>Estado de las reservas</h3>
+        <p>La tasa de finalización divide las completadas por el total de reservas.</p>
+        {% include 'portal/statistic_states.html' with records=bookings_by_status total=booking_count only %}
+      </section>
+      <section class="portal-card ks-stats-card">
+        <h3>Estado de las solicitudes</h3>
+        <p>Se consideran abiertas las pendientes y las que están en revisión.</p>
+        {% include 'portal/statistic_states.html' with records=requests_by_status total=request_count only %}
+      </section>
+      {% if popular %}
+        <section class="portal-card ks-stats-card ks-stats-wide">
+          <h3>Actividades más reservadas</h3>
+          <p>Hasta cinco actividades, ordenadas por reservas confirmadas o completadas.</p>
+          <ol class="ks-stats-ranking">
+            {% for activity in popular %}
+              <li><span>{{ activity.schedule__activity__name }}</span><b>{{ activity.count }}</b></li>
+            {% endfor %}
+          </ol>
+        </section>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="ks-stats-catalog" aria-labelledby="current-catalogue">
+    <h2 id="current-catalogue">Catálogo y próximos cupos</h2>
+    <p class="muted">Estado actual del catálogo. Estas cifras se mantienen al aplicar el filtro de fechas.</p>
+    <div class="ks-stats-grid">
+      <section class="portal-card ks-stats-card">
+        <h3>Ocupación de próximos horarios</h3>
+        {% if capacity.seats %}
+          <p>{{ capacity.slots }} horario{{ capacity.slots|pluralize }} futuro{{ capacity.slots|pluralize }} de actividades publicadas.</p>
+          <p class="ks-stats-occupancy"><strong>{% widthratio capacity.used capacity.seats 100 %}%</strong> de ocupación</p>
+          <div class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio capacity.used capacity.seats 100 %}%"></span></div>
+          <ul class="ks-stats-legend">
+            <li><b>{{ capacity.used }}</b> ocupados</li>
+            <li><b>{{ capacity.available }}</b> disponibles</li>
+            <li><b>{{ capacity.seats }}</b> cupos totales</li>
+          </ul>
+        {% else %}<p class="ks-stats-empty">Sin horarios futuros publicados.</p>{% endif %}
+      </section>
+      <section class="portal-card ks-stats-card">
+        <h3>Oferta publicada</h3>
+        <dl class="ks-stats-kpis ks-stats-kpis-catalog">
+          <div><dt>{% include 'portal/icon.html' with name='spark' %} Actividades</dt><dd>{{ published_count }}</dd></div>
+          <div><dt>{% include 'portal/icon.html' with name='store' %} Centros habilitados</dt><dd>{{ provider_count }}</dd></div>
+        </dl>
+      </section>
+    </div>
+  </section>
+</section>
+{% endblock %}

@@ -26,7 +26,7 @@ tiempo para comparar alternativas son objetivos para evaluar en un piloto.
 | **Proveedor que quiere incorporarse** | Registrar su centro, seguir el estado de su ficha y corregirla y reenviarla si recibe observaciones. Puede consultar si fue aprobada o rechazada y leer la decisión. |
 | **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede crear, editar o desactivar publicaciones, administrar horarios y cupos, ver y exportar reservas, registrar asistencia y responder opiniones. El panel muestra reservas y actividades más solicitadas a partir de los registros de la demo. |
 | **Equipo de Kiddo Spark** | El administrador de plataforma gestiona catálogo, reservas y solicitudes. El superadministrador también revisa fichas de proveedores, asigna operadores y administra cuentas y permisos. |
-| **Empresa, colegio o centro que busca apoyo** | Enviar una solicitud de convenio o demostración. Los centros también pueden consultar el directorio de aliados de ejemplo y solicitar asesoría o una cotización. Las solicitudes quedan guardadas y se puede revisar su avance. |
+| **Empresa, colegio o centro que busca apoyo** | Enviar una solicitud de convenio o demostración. En **Alivios B2B**, un centro puede hacer un diagnóstico breve, filtrar aliados por área y pedir orientación, asesoría o una cotización. Las solicitudes y las preferencias de contacto quedan guardadas. |
 
 Para mostrar cómo se conectan los roles, hagan una reserva familiar en una
 actividad con cupos. Abran la reserva desde la cuenta del centro, registren
@@ -97,13 +97,34 @@ la pantalla de la demo local.
 | 1 min | **Empresas y colegios** en la portada. Muestren la propuesta de convenio y el panel ilustrativo. | «Los convenios exploran un beneficio extracurricular para comunidades. El panel ilustra cómo ver participación agregada». |
 | 1 min | Cierre y conversación con jefatura. | «Queremos comentarios sobre el proceso y el valor para familias y centros, para definir qué mediríamos en un piloto». |
 
+Para mostrar cómo se seguiría el piloto, entren como `admin` y abran
+**Mi panel → Estadísticas**. Seleccionen **Últimos 7 días** o el período en
+que hicieron las pruebas. Muestren qué comunas concentraron más reservas,
+cuántas reservas se completaron y cuántas solicitudes quedan pendientes o
+en revisión. Luego abran **Catálogo y próximos cupos** para mostrar cuántos
+centros están habilitados, cuántas actividades se publicaron y qué proporción de sus próximos
+cupos está ocupada. Esa sección muestra la oferta actual, aunque cambien las
+fechas arriba. Pueden decir «Estas cifras se actualizan según lo que hacemos
+en la demo. En un piloto podríamos usar la misma vista para seguir la
+demanda y decidir dónde necesitamos más horarios».
+
+El menú principal queda visible en el teléfono y en el computador.
+Cuando entren a **Mi panel** aparecerán los accesos de la cuenta. Al volver
+a **Explorar actividades** u otra sección pública se ocultan.
+
 Si van a mostrar una aprobación, practiquen antes con una ficha ficticia. La
 aprobación y la asignación del operador son pasos separados.
+
+Si quieren mostrar **Alivios B2B**, usen el minuto de convenios para abrir
+**Alivios B2B** desde el menú principal. Marquen un tema en el diagnóstico, elijan un
+aliado de ejemplo y guarden una cotización. Muestren el estado en **Mis
+solicitudes**. Pueden decir: «El centro encuentra apoyo y puede seguir su
+solicitud. La fecha que elige es una preferencia para conversar».
 
 ## Cómo explicarlo si preguntan por la tecnología
 
 - **Navegador web.** La interfaz usa HTML para organizar el contenido, CSS
-  para presentarlo y JavaScript para interacciones como el menú móvil.
+  para presentarlo y JavaScript para interacciones como la calculadora de Sparks.
 - **Django y Python.** Reciben las acciones que hace cada persona, aplican
   reglas y permisos y muestran el resultado en pantalla.
 - **SQLite.** Guarda las cuentas de prueba, las fichas, los horarios y las

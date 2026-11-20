@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 from core.models import User, City, Category, Organization, Activity, Schedule, Plan
+from core.relief import REFERENCE_AREAS
 
 
 def field(text, key):
@@ -76,5 +77,16 @@ class Command(BaseCommand):
         raw = source.split('const allies=[', 1)[1].split('\n];', 1)[0]
         for line in raw.splitlines():
             if line.strip().startswith('{cat:'):
-                seeded(Organization, 'ally:' + field(line, 'name'), {'name': field(line, 'name'), 'kind': 'ally'}, {'city': default_city, 'email': 'aliado@example.invalid', 'created_by': owner, 'approved': True, 'description': field(line, 'desc')})
+                name = field(line, 'name')
+                description = field(line, 'desc')
+                if name == 'Espacio Seguro Mantención':
+                    description = 'Apoyo de ejemplo para recintos deportivos, artísticos y culturales.'
+                tags = re.search(r'tags:\[([^\]]*)\]', line)[1]
+                seeded(Organization, 'ally:' + name, {'name': name, 'kind': 'ally'}, {
+                    'city': default_city, 'email': 'aliado@example.invalid', 'created_by': owner,
+                    'approved': True, 'description': description,
+                    'relief_area': REFERENCE_AREAS[field(line, 'cat')],
+                    'relief_focus': field(line, 'meta'),
+                    'relief_topics': '; '.join(re.findall(r"'([^']+)'", tags)),
+                })
         self.stdout.write(self.style.SUCCESS('Catálogo de referencia, planes y grupo administrador preparados. No se crearon contraseñas. Repetir no sobrescribe registros existentes.'))

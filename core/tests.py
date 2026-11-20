@@ -154,6 +154,194 @@ class DemoAccountTests(TestCase):
         self.assertTrue(m.User.objects.filter(username='familia_existente', pk=self.family.pk).exists())
 
 
+    def test_main_navigation_stays_visible_and_account_navigation_stays_in_panel(self):
+        public_routes = ('home', 'explore', 'providers', 'plans', 'relief_home')
+        main_links = (*map(reverse, public_routes[1:]), '/#convenios', reverse('reference'))
+        for signed_in in (False, True):
+            if signed_in:
+                self.client.force_login(self.family)
+            for route in public_routes:
+                with self.subTest(route=route, signed_in=signed_in):
+                    response = self.client.get(reverse(route))
+                    page = response.content.decode()
+                    main_nav = page.split('<nav id="main-nav"', 1)[1].split('</nav>', 1)[0]
+                    for link in main_links:
+                        self.assertIn(f'href="{link}"', main_nav)
+                    self.assertNotContains(response, 'class="account-nav"')
+                    self.assertNotContains(response, 'nav-toggle')
+                    self.assertNotContains(response, 'nav-more')
+        for route in ('dashboard', 'bookings', 'requests', 'profile', 'wallet'):
+            self.assertContains(self.client.get(reverse(route)), 'class="account-nav"')
+        self.assertContains(self.client.get(reverse('explore'), {'favorites': '1'}), 'class="account-nav"')
+        self.assertNotContains(self.client.get(reverse('activity', args=[self.activity.pk])), 'class="account-nav"')
+
+    def test_platform_statistics_link_and_direct_access_match_role(self):
+        endpoint = reverse('platform_statistics')
+        self.assertRedirects(self.client.get(endpoint), f"{reverse('login')}?next={endpoint}")
+        for username, can_view in [('admin', True), ('superadmin', True), ('usuario', False), ('proveedor', False)]:
+            with self.subTest(username=username):
+                self.client.force_login(m.User.objects.get(username=username))
+                dashboard = self.client.get(reverse('dashboard'))
+                response = self.client.get(endpoint)
+                if can_view:
+                    self.assertContains(dashboard, f'href="{endpoint}"')
+                    self.assertContains(response, 'Estadísticas de la plataforma')
+                    self.assertContains(response, 'aria-current="page"')
+                else:
+                    self.assertNotContains(dashboard, f'href="{endpoint}"')
+                    self.assertEqual(response.status_code, 403)
+
+    def test_platform_statistics_use_saved_records_and_respect_dates(self):
+        slot = self.activity.schedules.get()
+        include = [m.Booking.objects.create(
+            user=self.family, schedule=slot, sparks=4, amount=0, status=status,
+        ) for status in ('confirmed', 'cancelled')]
+        outside = m.Booking.objects.create(
+            user=self.family, schedule=slot, sparks=4, amount=0, status='completed',
+        )
+        day = timezone.localdate()
+        noon = timezone.make_aware(datetime.combine(day, datetime.min.time()).replace(hour=12))
+        m.Booking.objects.filter(pk__in=[row.pk for row in include]).update(created_at=noon)
+        m.Booking.objects.filter(pk=outside.pk).update(created_at=noon - timedelta(days=2))
+        ticket = m.ServiceRequest.objects.create(
+            user=self.family, kind='agreement', entity_name='Centro privado demo',
+            subject='Asunto confidencial de prueba', message='Texto privado de la solicitud',
+            status='reviewing',
+        )
+        m.ServiceRequest.objects.filter(pk=ticket.pk).update(created_at=noon)
+        future = timezone.now() + timedelta(days=1)
+        m.Schedule.objects.filter(pk=slot.pk).update(starts_at=future, capacity=10, available=6)
+        m.Schedule.objects.create(activity=self.other_activity, starts_at=future, capacity=6, available=6)
+        m.Schedule.objects.create(activity=self.activity, starts_at=future, active=False, capacity=20, available=0)
+        m.Schedule.objects.create(activity=self.activity, starts_at=noon - timedelta(days=1), capacity=20, available=0)
+        hidden = m.Activity.objects.create(
+            organization=self.center, name='Fuera del catálogo', category=self.activity.category, active=False,
+        )
+        m.Schedule.objects.create(activity=hidden, starts_at=future, capacity=20, available=0)
+
+        self.client.force_login(m.User.objects.get(username='admin'))
+        response = self.client.get(reverse('platform_statistics'), {'from': day.isoformat(), 'to': day.isoformat()})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['booking_count'], 2)
+        self.assertEqual(dict(response.context['bookings_by_status']),
+                         {'Confirmada': 1, 'Completada': 0, 'Cancelada': 1})
+        self.assertEqual(dict(response.context['requests_by_status'])['En revisión'], 1)
+        self.assertEqual(response.context['published_count'], 2)
+        self.assertEqual(response.context['provider_count'], 2)
+        self.assertEqual(response.context['open_request_count'], 1)
+        self.assertEqual([row['count'] for row in response.context['recent_days']], [1])
+        self.assertEqual(response.context['cities'], [(self.center.city.name, 1)])
+        self.assertEqual(response.context['capacity'], {'slots': 2, 'seats': 16, 'available': 12, 'used': 4})
+        self.assertContains(response, '<strong>25%</strong>', html=True)
+        self.assertNotContains(response, ticket.subject)
+        self.assertNotContains(response, 'Usuarios registrados')
+        history = self.client.get(reverse('platform_statistics'))
+        self.assertEqual(history.context['booking_count'], 3)
+        self.assertEqual(history.context['completed_count'], 1)
+        self.assertEqual(history.context['capacity'], response.context['capacity'])
+        self.assertContains(history, '<dd>33%</dd>', html=True)
+
+    def test_platform_statistics_marks_empty_rates_as_unavailable(self):
+        m.Schedule.objects.update(active=False)
+        self.client.force_login(m.User.objects.get(username='admin'))
+        response = self.client.get(reverse('platform_statistics'))
+        self.assertContains(response, 'Sin reservas para comparar por comuna.')
+        self.assertContains(response, 'Sin horarios futuros publicados.')
+        self.assertContains(response, '<span class="ks-stats-no-rate">Sin reservas</span>', html=True)
+
+
+class ReliefTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        call_command('seed_demo', stdout=StringIO())
+        cls.requester = m.User.objects.get(username='proveedor')
+        cls.family = m.User.objects.get(username='usuario')
+        cls.admin = m.User.objects.get(username='admin')
+        cls.ally = m.Organization.objects.get(origin_key='ally:ContaPyme Valparaíso')
+        cls.unrelated = m.Organization.objects.get(origin_key='demo:operator-center')
+
+    def test_reference_directory_contains_eight_classified_allies_and_filters(self):
+        home = reverse('relief_home')
+        directory = self.client.get(home)
+        self.assertContains(directory, 'Cinco áreas de apoyo')
+        self.assertContains(directory, 'Mis solicitudes')
+        self.assertEqual(len(directory.context['allies']), 8)
+        self.assertContains(directory, 'F29')
+        self.assertNotContains(directory, 'Técnicos verificados')
+        response = self.client.get(home, {'area': 'insurance'})
+        self.assertEqual([entry['organization'].name for entry in response.context['allies']],
+                         ['Previene Kids', 'Red Segura Marga Marga'])
+        self.assertContains(response, 'aria-current="true"')
+        self.assertNotContains(response, self.ally.name)
+        self.assertContains(self.client.get(reverse('organizations') + '?kind=ally'), 'Diagnóstico rápido')
+
+    def test_diagnostic_suggests_only_selected_supported_topics(self):
+        response = self.client.get(reverse('relief_home'), {
+            'diagnostico': '1', 'need': ['maintenance', 'insurance', 'legal', 'invalid'],
+        })
+        self.assertEqual({area['key'] for area in response.context['suggestions']}, {'maintenance', 'legal'})
+        self.assertContains(response, 'Empieza por estas áreas')
+        self.assertFalse(m.ServiceRequest.objects.exists())
+
+    def request_data(self):
+        return {
+            'entity_name': 'Mi centro ficticio', 'relief_topic': 'tax', 'message': 'Necesidad de contabilidad',
+            'preferred_city': self.ally.city_id, 'relief_channel': 'phone',
+            'preferred_date': (timezone.localdate() + timedelta(days=3)).isoformat(), 'preferred_time': '11:30',
+        }
+
+    def test_quote_and_guidance_keep_preferences_and_private_followup(self):
+        quote = reverse('relief_quote', args=[self.ally.pk])
+        self.assertRedirects(self.client.get(quote), f"{reverse('login')}?next={quote}")
+        self.client.force_login(self.requester)
+        self.assertContains(self.client.get(quote), 'no confirma una cita')
+        response = self.client.post(quote, self.request_data())
+        order = m.ServiceRequest.objects.get(user=self.requester, kind='quote')
+        detail = reverse('request_detail', args=[order.pk])
+        self.assertRedirects(response, detail)
+        self.assertEqual(order.organization, self.ally)
+        self.assertEqual(order.preferred_city, self.ally.city)
+        self.assertEqual(order.relief_channel, 'phone')
+        self.assertEqual(order.preferred_time.strftime('%H:%M'), '11:30')
+        self.assertEqual(order.events.get().status, 'pending')
+        self.assertContains(self.client.get(detail), 'Teléfono')
+        self.assertContains(self.client.get(reverse('relief_home')), f'SOL-{order.pk}')
+
+        response = self.client.post(reverse('relief_diagnosis'), {
+            **self.request_data(), 'relief_topic': 'orientation', 'message': 'Orientación para mi equipo',
+        })
+        orientation = m.ServiceRequest.objects.get(user=self.requester, kind='diagnosis')
+        self.assertIsNone(orientation.organization)
+        self.assertRedirects(response, reverse('request_detail', args=[orientation.pk]))
+
+        self.client.force_login(self.family)
+        self.assertEqual(self.client.get(detail).status_code, 404)
+        self.assertNotContains(self.client.get(reverse('relief_home')), f'SOL-{order.pk}')
+        self.client.force_login(self.admin)
+        self.assertRedirects(self.client.post(detail, {'status': 'reviewing', 'note': 'Recibida para revisión'}), detail)
+        self.assertNotContains(self.client.get(reverse('relief_home')), f'SOL-{order.pk}')
+        self.client.force_login(self.requester)
+        self.assertContains(self.client.get(detail), 'Recibida para revisión')
+
+    def test_advice_rejects_invalid_preferences_and_never_routes_to_an_unpublished_ally(self):
+        self.client.force_login(self.requester)
+        payload = self.request_data()
+        advice = reverse('relief_advice', args=[self.ally.pk])
+        self.assertEqual(self.client.post(reverse('relief_advice', args=[self.unrelated.pk]), payload).status_code, 404)
+        response = self.client.post(advice, {
+            **payload, 'preferred_date': (timezone.localdate() - timedelta(days=1)).isoformat(),
+            'relief_channel': 'invalid',
+        })
+        self.assertContains(response, 'La fecha no puede estar en el pasado.')
+        self.assertFalse(m.ServiceRequest.objects.exists())
+        response = self.client.post(advice, {**payload, 'organization': self.unrelated.pk, 'kind': 'diagnosis'})
+        request = m.ServiceRequest.objects.get(user=self.requester, kind='advice', organization=self.ally)
+        self.assertRedirects(response, reverse('request_detail', args=[request.pk]))
+        m.Organization.objects.filter(pk=self.ally.pk).update(active=False)
+        self.assertEqual(self.client.post(advice, payload).status_code, 404)
+        self.assertEqual(m.ServiceRequest.objects.count(), 1)
+
+
 class PortalTests(TestCase):
     @classmethod
     def setUpTestData(cls):

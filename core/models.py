@@ -48,6 +48,13 @@ class Category(Named):
 
 
 class Organization(models.Model):
+    class ReliefArea(models.TextChoices):
+        ACCOUNTING = 'accounting', 'Contabilidad y tributación'
+        LEGAL = 'legal', 'Legal y cumplimiento'
+        MAINTENANCE = 'maintenance', 'Mantención'
+        INSURANCE = 'insurance', 'Seguros y prevención'
+        MARKETING = 'marketing', 'Marketing y audiovisual'
+
     origin_key = models.CharField(max_length=180, null=True, blank=True, unique=True, editable=False)
     KINDS = [('provider', 'Academia / proveedor'), ('company', 'Empresa'), ('school', 'Colegio'), ('ally', 'Aliado de apoyo')]
     name = models.CharField('nombre', max_length=160)
@@ -60,6 +67,9 @@ class Organization(models.Model):
     contact_last_name = models.CharField('apellido del contacto', max_length=80, blank=True)
     website = models.URLField('sitio web o red social', blank=True)
     specialty = models.ForeignKey(Category, on_delete=models.PROTECT, null=True, blank=True, verbose_name='categoría del centro')
+    relief_area = models.CharField('área de apoyo B2B', max_length=16, choices=ReliefArea.choices, blank=True)
+    relief_focus = models.CharField('especialidad del aliado', max_length=160, blank=True)
+    relief_topics = models.CharField('servicios del aliado, separados por punto y coma', max_length=320, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='registered_organizations')
     administrators = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='organizations', verbose_name='administradores')
     approved = models.BooleanField('aprobado', default=False)
@@ -68,6 +78,10 @@ class Organization(models.Model):
     @property
     def review_stage_label(self):
         return ProviderReviewEvent.Status(self.review_stage).label
+
+    @property
+    def relief_topic_list(self):
+        return [topic.strip() for topic in self.relief_topics.split(';') if topic.strip()]
 
     def __str__(self):
         return self.name
@@ -166,7 +180,24 @@ class Movement(models.Model):
 
 
 class ServiceRequest(models.Model):
-    KINDS = [('agreement', 'Convenio empresa / colegio'), ('demo', 'Demostración corporativa'), ('advice', 'Asesoría / cotización')]
+    KINDS = [
+        ('agreement', 'Convenio empresa / colegio'), ('demo', 'Demostración corporativa'),
+        ('advice', 'Asesoría'), ('quote', 'Cotización'), ('diagnosis', 'Orientación inicial'),
+    ]
+    RELIEF_KINDS = ('advice', 'quote', 'diagnosis')
+    RELIEF_TOPICS = [
+        ('orientation', 'Ayuda para definir mi necesidad'),
+        ('tax', 'Formalización y SII'),
+        ('contracts', 'Contratos con apoderados'),
+        ('safety', 'Protocolos de seguridad infantil'),
+        ('maintenance', 'Mantención preventiva'),
+        ('insurance', 'Seguro de accidentes'),
+        ('media', 'Producción audiovisual'),
+        ('other', 'Otra necesidad'),
+    ]
+    RELIEF_CHANNELS = [
+        ('video', 'Videollamada'), ('phone', 'Teléfono'), ('in_person', 'Presencial'),
+    ]
     STATUS = [('pending', 'Pendiente'), ('reviewing', 'En revisión'), ('approved', 'Aprobada'), ('rejected', 'Rechazada'), ('completed', 'Completada')]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='service_requests')
     kind = models.CharField('tipo', max_length=16, choices=KINDS)
@@ -179,6 +210,9 @@ class ServiceRequest(models.Model):
     message = models.TextField('necesidad / mensaje')
     preferred_date = models.DateField('fecha preferida', null=True, blank=True)
     preferred_time = models.TimeField('hora preferida', null=True, blank=True)
+    preferred_city = models.ForeignKey(City, on_delete=models.PROTECT, null=True, blank=True, verbose_name='comuna preferida')
+    relief_topic = models.CharField('problema o servicio', max_length=16, choices=RELIEF_TOPICS, blank=True)
+    relief_channel = models.CharField('canal preferido', max_length=16, choices=RELIEF_CHANNELS, blank=True)
     status = models.CharField(max_length=12, choices=STATUS, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 

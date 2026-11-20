@@ -1,5 +1,5 @@
 import csv
-from datetime import date
+from datetime import date, timedelta
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.conf import settings
-from . import models as m, forms as f, access, services
+from . import models as m, forms as f, access, relief, services
 
 
 def public_activities():
@@ -151,17 +151,73 @@ def period_filter(request, qs):
     return qs
 
 
-@login_required
-def dashboard(request):
-    bookings = period_filter(request, access.bookings(request.user)).select_related('schedule__activity', 'user')
-    requests = period_filter(request, access.requests(request.user))
+def booking_trends(bookings):
     live = bookings.exclude(status='cancelled')
-    totals = live.aggregate(sparks=Sum('sparks'), amount=Sum('amount'))
     series = list(live.annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id')).order_by('day'))
     max_count = max([x['count'] for x in series] or [1])
     for row in series:
         row['width'] = row['count'] * 100 // max_count
-    return render(request, 'portal/dashboard.html', {'booking_count': bookings.count(), 'completed_count': bookings.filter(status='completed').count(), 'request_count': requests.count(), 'pending_count': requests.filter(status='pending').count(), 'totals': totals, 'recent_bookings': bookings.order_by('-created_at')[:5], 'series': series, 'popular': live.values('schedule__activity__name').annotate(count=Count('id')).order_by('-count')[:5], 'requests_by_status': requests.values('status').annotate(count=Count('id')), 'own_orgs': access.organizations(request.user), 'user_count': m.User.objects.count() if request.user.is_superuser else None})
+    popular = live.values('schedule__activity_id', 'schedule__activity__name').annotate(count=Count('id'))
+    return {'series': series, 'popular': popular.order_by('-count', 'schedule__activity__name', 'schedule__activity_id')[:5]}
+
+
+@login_required
+def dashboard(request):
+    bookings = period_filter(request, access.bookings(request.user))
+    requests = period_filter(request, access.requests(request.user))
+    return render(request, 'portal/dashboard.html', {
+        'booking_count': bookings.count(),
+        'completed_count': bookings.filter(status='completed').count(),
+        'request_count': requests.count(),
+        'pending_count': requests.filter(status='pending').count(),
+        'totals': bookings.exclude(status='cancelled').aggregate(sparks=Sum('sparks'), amount=Sum('amount')),
+        'own_orgs': access.organizations(request.user),
+        'user_count': m.User.objects.count() if request.user.is_superuser else None,
+        **booking_trends(bookings),
+    })
+
+
+@login_required
+def platform_statistics(request):
+    if not access.operates_platform(request.user):
+        raise PermissionDenied
+    bookings = period_filter(request, access.bookings(request.user))
+    requests = period_filter(request, access.requests(request.user))
+    booking_counts = dict(bookings.order_by().values('status').annotate(total=Count('pk')).values_list('status', 'total'))
+    request_counts = dict(requests.order_by().values('status').annotate(total=Count('pk')).values_list('status', 'total'))
+    booking_total = sum(booking_counts.values())
+    published = public_activities()
+    capacity = m.Schedule.objects.filter(
+        activity__in=published, active=True, starts_at__gt=timezone.now(),
+    ).aggregate(slots=Count('pk'), seats=Sum('capacity', default=0), available=Sum('available', default=0))
+    capacity['used'] = capacity['seats'] - capacity['available']
+    trends = booking_trends(bookings)
+    recent_days = trends['series'][-7:]
+    city_name = 'schedule__activity__organization__city__name'
+    cities = list(
+        bookings.exclude(status='cancelled').order_by().values_list(city_name)
+        .annotate(total=Count('pk')).order_by('-total', city_name)[:5]
+    )
+    today = timezone.localdate()
+    return render(request, 'portal/platform_statistics.html', {
+        'booking_count': booking_total,
+        'completed_count': booking_counts.get('completed', 0),
+        'request_count': sum(request_counts.values()),
+        'open_request_count': request_counts.get('pending', 0) + request_counts.get('reviewing', 0),
+        'bookings_by_status': [(label, booking_counts.get(status, 0)) for status, label in m.Booking.STATUS],
+        'requests_by_status': [(label, request_counts.get(status, 0)) for status, label in m.ServiceRequest.STATUS],
+        'published_count': published.count(),
+        'provider_count': access.organizations(request.user).filter(kind='provider', approved=True, active=True).count(),
+        'capacity': capacity,
+        'recent_days': recent_days,
+        'daily_max': max((row['count'] for row in recent_days), default=0),
+        'popular': trends['popular'],
+        'cities': cities,
+        'city_max': cities[0][1] if cities else 0,
+        'today': today,
+        'week_start': today - timedelta(days=6),
+        'month_start': today - timedelta(days=29),
+    })
 
 
 def plans(request):
@@ -265,10 +321,64 @@ def reply_review(request, pk):
 
 def organizations_list(request):
     kind = request.GET.get('kind', 'provider')
-    qs = m.Organization.objects.filter(active=True, approved=True).select_related('city')
-    if kind in dict(m.Organization.KINDS):
-        qs = qs.filter(kind=kind)
-    return render(request, 'portal/organizations.html', {'organizations': qs.order_by('name'), 'kind': kind})
+    if kind == 'ally':
+        return relief_home(request)
+    if kind not in dict(m.Organization.KINDS):
+        kind = 'provider'
+    qs = m.Organization.objects.filter(kind=kind, active=True, approved=True).select_related('city')
+    return render(request, 'portal/organizations.html', {'organizations': qs.order_by('name')})
+
+
+def published_allies():
+    return m.Organization.objects.filter(kind='ally', approved=True, active=True)
+
+
+def relief_home(request):
+    area = request.GET.get('area', '')
+    selected_area = area if area in relief.AREA_CONTENT else ''
+    qs = published_allies()
+    if selected_area:
+        qs = qs.filter(relief_area=selected_area)
+    areas = [
+        {'key': key, 'label': key.label, 'icon': icon, 'tone': tone, 'description': description}
+        for key, (icon, tone, description, _) in relief.AREA_CONTENT.items()
+    ]
+    allies = []
+    for organization in qs.order_by('name', 'pk'):
+        icon, tone, *_ = relief.AREA_CONTENT.get(organization.relief_area, ('briefcase', 'ks-mint'))
+        allies.append({'organization': organization, 'icon': icon, 'tone': tone})
+    selected_needs = request.GET.getlist('need')
+    suggestions = [area for area in areas if area['key'] in selected_needs and area['key'] in relief.DIAGNOSTIC_QUESTIONS]
+    my_requests = None
+    if request.user.is_authenticated:
+        my_requests = request.user.service_requests.filter(kind__in=m.ServiceRequest.RELIEF_KINDS)
+        my_requests = my_requests.select_related('organization').order_by('-created_at', '-pk')[:8]
+    return render(request, 'portal/relief.html', {
+        'allies': allies, 'areas': areas, 'selected_area': selected_area, 'my_relief_requests': my_requests,
+        'diagnostic_questions': relief.DIAGNOSTIC_QUESTIONS, 'selected_needs': selected_needs,
+        'diagnostic_submitted': request.GET.get('diagnostico') == '1', 'suggestions': suggestions,
+    })
+
+
+@login_required
+def relief_request(request, request_kind, pk=None):
+    ally = get_object_or_404(published_allies(), pk=pk) if pk is not None else None
+    area = relief.AREA_CONTENT.get(ally.relief_area) if ally else None
+    default_topic = 'orientation' if ally is None else area[3] if area else 'other'
+    form = f.ReliefRequestForm(request.POST if request.method == 'POST' else None, initial={
+        'relief_topic': default_topic,
+        'relief_channel': 'video',
+    })
+    titles = {'advice': 'Solicitar asesoría', 'quote': 'Pedir cotización', 'diagnosis': 'Solicitar orientación'}
+    if request.method == 'POST' and form.is_valid():
+        item = form.save(commit=False)
+        item.kind = request_kind
+        item.organization = ally
+        item.subject = item.get_relief_topic_display()
+        services.submit_request(request.user, item)
+        messages.success(request, 'Solicitud guardada. Puedes seguir su estado desde Mis solicitudes.')
+        return redirect('request_detail', pk=item.pk)
+    return render(request, 'portal/relief_request.html', {'form': form, 'ally': ally, 'title': titles[request_kind]})
 
 
 def providers(request):
@@ -400,12 +510,8 @@ def request_create(request):
     initial = {k: request.GET[k] for k in ['kind', 'organization'] if k in request.GET}
     form = f.ServiceRequestForm(request.POST or None, initial=initial)
     if request.method == 'POST' and form.is_valid():
-        with transaction.atomic():
-            obj = form.save(commit=False)
-            obj.user = request.user
-            obj.save()
-            m.RequestEvent.objects.create(request=obj, actor=request.user, status='pending', note='Solicitud recibida en la plataforma.')
-            services.audit(request.user, 'request_create', obj)
+        obj = form.save(commit=False)
+        services.submit_request(request.user, obj)
         messages.success(request, 'Solicitud guardada. Puedes consultar su seguimiento.')
         return redirect('request_detail', pk=obj.pk)
     return render(request, 'portal/form.html', {'form': form, 'title': 'Nueva solicitud'})
@@ -413,7 +519,7 @@ def request_create(request):
 
 @login_required
 def request_detail(request, pk):
-    obj = get_object_or_404(access.requests(request.user).select_related('user', 'organization'), pk=pk)
+    obj = get_object_or_404(access.requests(request.user).select_related('user', 'organization', 'preferred_city'), pk=pk)
     form = f.TransitionForm(request.POST or None)
     may_manage = (
         request.user.is_staff and request.user.has_perm('core.change_servicerequest')

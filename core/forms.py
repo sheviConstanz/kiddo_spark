@@ -145,6 +145,7 @@ class ServiceRequestForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['organization'].queryset = Organization.objects.filter(kind='ally', approved=True, active=True)
+        self.fields['kind'].choices = [(key, label) for key, label in ServiceRequest.KINDS if key not in {'quote', 'diagnosis'}]
         self.fields['organization'].help_text = 'Selecciona un aliado solo para asesorías o cotizaciones.'
 
     def clean(self):
@@ -156,6 +157,39 @@ class ServiceRequestForm(forms.ModelForm):
         if data.get('preferred_date') and data['preferred_date'] < timezone.localdate():
             self.add_error('preferred_date', 'La fecha no puede estar en el pasado.')
         return data
+
+
+class ReliefRequestForm(forms.ModelForm):
+    class Meta:
+        model = ServiceRequest
+        fields = [
+            'entity_name', 'relief_topic', 'message', 'preferred_city',
+            'relief_channel', 'preferred_date', 'preferred_time', 'contact_name', 'contact_email',
+        ]
+        widgets = {
+            'message': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Cuéntanos qué necesita tu centro.'}),
+            'preferred_date': forms.DateInput(attrs={'type': 'date'}),
+            'preferred_time': forms.TimeInput(format='%H:%M', attrs={'type': 'time'}),
+        }
+        labels = {
+            'entity_name': 'Nombre de tu centro', 'message': 'Describe tu necesidad',
+            'preferred_date': 'Fecha preferida para conversar',
+            'preferred_time': 'Hora preferida',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['relief_topic'].required = True
+        self.fields['relief_channel'].required = True
+        self.fields['preferred_city'].queryset = City.objects.filter(active=True, name__in=City.PILOT).order_by('name')
+        for name in ('preferred_date', 'preferred_time', 'preferred_city', 'contact_name', 'contact_email'):
+            self.fields[name].label += ' (opcional)'
+
+    def clean_preferred_date(self):
+        preferred_date = self.cleaned_data['preferred_date']
+        if preferred_date and preferred_date < timezone.localdate():
+            raise ValidationError('La fecha no puede estar en el pasado.')
+        return preferred_date
 
 
 class TransitionForm(forms.Form):

@@ -1,5 +1,29 @@
 # Historial de cambios
 
+## 2026-11-20 — Navegación y gráficos de operación
+
+- Los enlaces principales quedan a la vista en todos los tamaños. El menú de
+  cuenta aparece al entrar a **Mi panel** y sus secciones.
+- **Estadísticas** incluye gráficos de reservas por fecha, comuna y estado,
+  solicitudes por estado, ocupación de próximos cupos y actividades más
+  reservadas. Añade filtros rápidos de 7 y 30 días.
+- El README y la guía de presentación explican cómo mostrar e interpretar
+  cada indicador.
+
+## 2026-11-20 — Estadísticas para administración de plataforma
+
+- Acceso a **Estadísticas** para `admin` y `superadmin`, con cifras
+  agrupadas del catálogo, reservas y solicitudes y filtro por fecha.
+
+## 2026-11-20 — Alivios B2B para proveedores
+
+- Página dedicada con diagnóstico, cinco áreas de apoyo y fichas de los ocho
+  aliados de ejemplo de la referencia, con filtros por área.
+- Solicitudes de orientación, asesoría y cotización con preferencias de fecha,
+  hora, comuna y canal, más seguimiento desde el apartado.
+- Migración que completa las fichas de ejemplo existentes sin alterar solicitudes
+  previas. El README y la guía comercial incluyen el recorrido.
+
 ## 2026-11-20 — Cuatro cuentas listas para la demo local
 
 - Migración de datos para superadministración, administración de plataforma,

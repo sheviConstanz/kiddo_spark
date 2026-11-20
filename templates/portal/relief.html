@@ -1,0 +1,127 @@
+{% extends 'portal/base.html' %}
+{% block title %}Alivios B2B · Kiddo Spark{% endblock %}
+{% block content %}
+<section class="provider-hero">
+  <div class="portal-shell provider-layout">
+    <div>
+      <p class="provider-kicker">{% include 'portal/icon.html' with name='briefcase' %} Alivios B2B · Para academias, talleres y clubes</p>
+      <h1>Aliados para resolver tu operación</h1>
+      <p class="provider-lead">Encuentra apoyo para la gestión diaria de tu centro y dedica más tiempo a enseñar. Reúne contabilidad, legal, mantención, seguros y marketing en un solo lugar.</p>
+      <div class="cta-row">
+        <a class="btn ks-coral" href="#directorio">Explorar soluciones {% include 'portal/icon.html' with name='arrow' %}</a>
+        <a class="btn btn-outline" href="{% url 'relief_diagnosis' %}">Necesito ayuda para definir mi problema</a>
+      </div>
+      <p class="provider-territory">Kiddo Spark facilita la conexión. El servicio profesional corresponde al aliado externo.</p>
+    </div>
+    <section class="ks-relief-diagnostic" id="diagnostico" aria-labelledby="diagnostic-title">
+      <p class="ks-kicker">Tu centro hoy</p>
+      <h2 id="diagnostic-title">Diagnóstico rápido</h2>
+      <form method="get" action="{% url 'relief_home' %}#diagnostico">
+        <fieldset>
+          <legend>Marca los temas que quieres revisar</legend>
+          {% for key, label in diagnostic_questions.items %}
+            <label><input type="checkbox" name="need" value="{{ key }}"{% if key in selected_needs %} checked{% endif %}> {{ label }}</label>
+          {% endfor %}
+        </fieldset>
+        {% if selected_area %}<input type="hidden" name="area" value="{{ selected_area }}">{% endif %}
+        <input type="hidden" name="diagnostico" value="1">
+        <button class="btn ks-coral" type="submit">Ver áreas sugeridas</button>
+      </form>
+      {% if diagnostic_submitted %}
+        <div class="ks-diagnostic-result">
+          {% if suggestions %}
+            <p>Empieza por estas áreas del directorio.</p>
+            <ul>{% for area in suggestions %}<li><a href="{% url 'relief_home' %}?area={{ area.key }}#directorio">{{ area.label }}</a></li>{% endfor %}</ul>
+          {% else %}
+            <p>Si no sabes por dónde empezar, <a href="{% url 'relief_diagnosis' %}">solicita orientación inicial</a>.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </section>
+  </div>
+</section>
+
+<section class="portal-shell section-space" aria-labelledby="relief-areas-title">
+  <div class="section-heading"><h2 id="relief-areas-title">Cinco áreas de apoyo</h2></div>
+  <div class="ks-relief-areas">
+    {% for area in areas %}
+      <a class="portal-card ks-relief-area" href="{% url 'relief_home' %}?area={{ area.key }}#directorio">
+        <span class="ks-icon-tile {{ area.tone }}">{% include 'portal/icon.html' with name=area.icon %}</span>
+        <h3>{{ area.label }}</h3>
+        <p>{{ area.description }}</p>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="ks-section-soft section-space ks-relief-anchor" id="directorio" aria-labelledby="relief-directory-title">
+  <div class="portal-shell">
+    <div class="section-heading">
+      <div><p class="ks-kicker">Directorio de demostración</p><h2 id="relief-directory-title">Aliados para resolver tu operación</h2>
+      <p class="muted">Filtra por necesidad, revisa el alcance y guarda una solicitud de asesoría o cotización.</p></div>
+    </div>
+    <nav class="module-nav ks-relief-filters" aria-label="Filtrar aliados por área">
+      <a href="{% url 'relief_home' %}#directorio"{% if not selected_area %} aria-current="true"{% endif %}>Todos</a>
+      {% for area in areas %}
+        <a href="{% url 'relief_home' %}?area={{ area.key }}#directorio"{% if selected_area == area.key %} aria-current="true"{% endif %}>{{ area.label }}</a>
+      {% endfor %}
+    </nav>
+    <p class="muted">Los nombres, las especialidades y los servicios se muestran como ejemplos del prototipo.</p>
+    <div class="cards three">
+      {% for ally in allies %}
+        {% with org=ally.organization %}
+        <article class="portal-card ks-relief-ally">
+          <span class="ks-icon-tile {{ ally.tone }}">{% include 'portal/icon.html' with name=ally.icon %}</span>
+          {% if org.relief_area %}<p class="ks-kicker">{{ org.get_relief_area_display }}</p>{% endif %}
+          <h3>{{ org.name }}</h3>
+          {% if org.relief_focus %}<p class="ks-ally-focus">{{ org.relief_focus }}</p>{% endif %}
+          <p>{{ org.description }}</p>
+          {% if org.relief_topics %}
+            <ul class="ks-relief-tags" aria-label="Servicios de ejemplo">
+              {% for topic in org.relief_topic_list %}<li>{{ topic }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+          <div class="cta-row ks-relief-actions">
+            <a class="btn btn-outline" href="{% url 'relief_advice' org.pk %}" aria-label="Solicitar asesoría a {{ org.name }}">Solicitar asesoría</a>
+            <a class="btn btn-primary" href="{% url 'relief_quote' org.pk %}" aria-label="Cotizar con {{ org.name }}">Cotizar</a>
+          </div>
+        </article>
+        {% endwith %}
+      {% empty %}
+        <div class="empty-state">No hay aliados de ejemplo para esta área. <a class="inline-link" href="{% url 'relief_home' %}#directorio">Ver todas las áreas</a>.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="portal-shell section-space ks-relief-anchor" id="mis-solicitudes" aria-labelledby="relief-requests-title">
+  <div class="section-heading">
+    <div><h2 id="relief-requests-title">Mis solicitudes</h2><p class="muted">Consulta el estado de tus asesorías, cotizaciones y solicitudes de orientación.</p></div>
+    {% if user.is_authenticated %}<a class="btn btn-outline" href="{% url 'requests' %}">Abrir seguimiento general</a>{% endif %}
+  </div>
+  {% if user.is_authenticated %}
+    {% if my_relief_requests %}
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Solicitudes de Alivios B2B">
+        <table>
+          <thead><tr><th scope="col">Solicitud</th><th scope="col">Aliado</th><th scope="col">Necesidad</th><th scope="col">Fecha preferida</th><th scope="col">Estado</th></tr></thead>
+          <tbody>
+            {% for item in my_relief_requests %}
+              <tr>
+                <td><a class="inline-link" href="{% url 'request_detail' item.pk %}">SOL-{{ item.pk }}</a><small>{{ item.get_kind_display }}</small></td>
+                <td>{{ item.organization|default:'Equipo Kiddo Spark' }}</td>
+                <td>{{ item.subject }}</td>
+                <td>{{ item.preferred_date|date:'d/m/Y'|default:'Por acordar' }}{% if item.preferred_time %} · {{ item.preferred_time|time:'H:i' }}{% endif %}</td>
+                <td><span class="status-pill">{{ item.get_status_display }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="notice">Todavía no has enviado solicitudes de Alivios B2B.</p>
+    {% endif %}
+  {% else %}
+    <p class="notice"><a class="inline-link" href="{% url 'login' %}?next={% url 'relief_home' %}">Ingresa</a> para ver tus solicitudes.</p>
+  {% endif %}
+</section>
+{% endblock %}

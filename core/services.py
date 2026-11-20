@@ -9,6 +9,16 @@ def audit(user, action, obj):
     AuditLog.objects.create(actor=user, action=action, target=f'{obj._meta.model_name}:{obj.pk}')
 
 
+@transaction.atomic
+def submit_request(user, service_request):
+    service_request.user = user
+    service_request.save()
+    RequestEvent.objects.create(
+        request=service_request, actor=user, status='pending', note='Solicitud recibida en la plataforma.',
+    )
+    audit(user, 'request_create', service_request)
+
+
 ProviderStatus = ProviderReviewEvent.Status
 PROVIDER_DECISIONS = {
     ProviderStatus.PENDING: (ProviderStatus.REVIEWING,),

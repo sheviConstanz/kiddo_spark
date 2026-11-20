@@ -18,38 +18,33 @@
   <header class="portal-header">
     <div class="portal-header-in">
       <a href="{% url 'home' %}" class="brand" aria-label="Kiddo Spark, inicio"><img src="{% static 'logo.png' %}" width="72" height="65" alt="Kiddo Spark"></a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-nav">{% include 'portal/icon.html' with name='menu' %} Menú</button>
       {% with route=request.resolver_match.url_name %}
       <nav id="main-nav" aria-label="Navegación principal">
-        <div class="main-links">
-          <a href="{% url 'explore' %}"{% if route == 'explore' or route == 'activity' %} aria-current="page"{% endif %}>Explorar actividades</a>
-          <a href="{% url 'providers' %}"{% if route == 'providers' or route == 'provider_submissions' %} aria-current="page"{% endif %}>Proveedores</a>
-          <a href="{% url 'home' %}#convenios">Empresas y colegios</a>
-          <details class="nav-more">
-            <summary>Exploraciones {% include 'portal/icon.html' with name='chevron' %}</summary>
-            <div class="nav-more-links">
-              <a href="{% url 'plans' %}">Planes y Sparks</a>
-              <a href="{% url 'organizations' %}?kind=ally">Aliados de apoyo</a>
-              <a href="{% url 'reference' %}">Propuesta original</a>
-            </div>
-          </details>
-        </div>
-        <div class="account-links">
-          {% if user.is_authenticated %}
-            <a href="{% url 'dashboard' %}" class="btn btn-primary">{% include 'portal/icon.html' with name='grid' %} Mi panel</a>
-          {% else %}
-            <a href="{% url 'login' %}">Ingresar</a>
-            <a href="{% url 'register' %}" class="btn btn-primary">Crear cuenta</a>
-          {% endif %}
-        </div>
+        <a href="{% url 'explore' %}"{% if route == 'explore' or route == 'activity' %} aria-current="page"{% endif %}>Explorar actividades</a>
+        <a href="{% url 'providers' %}"{% if route == 'providers' %} aria-current="page"{% endif %}>Proveedores</a>
+        <a href="{% url 'home' %}#convenios">Empresas y colegios</a>
+        <a href="{% url 'plans' %}"{% if route == 'plans' %} aria-current="page"{% endif %}>Planes y Sparks</a>
+        <a href="{% url 'relief_home' %}"{% if route == 'relief_home' %} aria-current="page"{% endif %}>Alivios B2B</a>
+        <a href="{% url 'reference' %}">Propuesta original</a>
       </nav>
+      <div class="account-links">
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}" class="btn btn-primary"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Mi panel</a>
+        {% else %}
+          <a href="{% url 'login' %}">Ingresar</a>
+          <a href="{% url 'register' %}" class="btn btn-primary">Crear cuenta</a>
+        {% endif %}
+      </div>
       {% endwith %}
     </div>
   </header>
-  {% if user.is_authenticated %}
+  {% if show_account_navigation %}
     <nav class="account-nav" aria-label="Navegación de mi cuenta">
       {% with route=request.resolver_match.url_name %}
       <a href="{% url 'dashboard' %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='grid' %} Resumen</a>
+      {% if user.is_superuser or user.is_staff and perms.core.operate_platform %}
+        <a href="{% url 'platform_statistics' %}"{% if route == 'platform_statistics' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='chart' %} Estadísticas</a>
+      {% endif %}
       <a href="{% url 'bookings' %}"{% if route == 'bookings' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Reservas</a>
       <a href="{% url 'requests' %}"{% if route == 'requests' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
       {% if user.is_staff %}

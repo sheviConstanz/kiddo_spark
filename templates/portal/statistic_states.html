@@ -1,0 +1,8 @@
+<ul class="ks-stats-rows">
+  {% for label, count in records %}
+    <li>
+      <span>{{ label }}</span><b>{{ count }}</b>
+      <span class="ks-stats-track" aria-hidden="true"><span style="--share: {% widthratio count total 100 %}%"></span></span>
+    </li>
+  {% endfor %}
+</ul>
