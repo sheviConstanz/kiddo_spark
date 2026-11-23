@@ -9,7 +9,7 @@ from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
 from django.db.models import Case, Count, Exists, OuterRef, Subquery, Sum, Avg, Q, F, Value, When
 from django.db.models.functions import Coalesce, TruncDate
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, FileResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.templatetags.static import static
 from django.urls import reverse, reverse_lazy
@@ -20,8 +20,30 @@ from django.conf import settings
 from . import models as m, forms as f, access, metrics, relief, services
 
 
+def published_activities():
+    return m.Activity.objects.filter(active=True, publication_status='published', organization__kind='provider', organization__active=True, organization__approved=True).select_related('organization__city', 'category')
+
+
 def public_activities():
-    return m.Activity.objects.filter(active=True, organization__kind='provider', organization__active=True, organization__approved=True).select_related('organization__city', 'category')
+    available = m.Schedule.objects.filter(activity=OuterRef('pk'), active=True, starts_at__gt=timezone.now(), available__gt=0)
+    return published_activities().filter(Exists(available))
+
+
+def activity_image(request, pk):
+    visible = published_activities().filter(pk=OuterRef('pk'))
+    allowed = m.Activity.objects.filter(Exists(visible))
+    if request.user.is_authenticated:
+        allowed = m.Activity.objects.filter(Q(pk__in=allowed.values('pk')) | Q(pk__in=access.activities(request.user).values('pk')))
+    activity = get_object_or_404(allowed, pk=pk)
+    if not activity.image:
+        raise Http404
+    try:
+        resource = activity.image.open('rb')
+    except FileNotFoundError:
+        raise Http404
+    response = FileResponse(resource, content_type='image/png' if activity.image.name.lower().endswith('.png') else 'image/jpeg')
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 def home(request):
@@ -133,7 +155,7 @@ def explore(request):
 
 
 def activity_detail(request, pk):
-    obj = get_object_or_404(public_activities(), pk=pk)
+    obj = get_object_or_404(published_activities(), pk=pk)
     slots = services.bookable_schedules().filter(activity=obj, available__gt=0).order_by('starts_at')
     favorite_access = request.user.is_authenticated and request.user.role != 'admin'
     return render(request, 'portal/activity.html', {
@@ -278,6 +300,7 @@ def provider_statistics(request, centers, bookings, *, viewing_as_admin=False):
         'activities': activities, 'selected_activity': selected_activity,
         'metrics_url': reverse('platform_statistics' if viewing_as_admin else 'dashboard'),
         'viewing_as_admin': viewing_as_admin,
+        'financial': metrics.financial_reference(filtered),
         **metrics.period_controls(),
     })
 
@@ -329,6 +352,7 @@ def platform_statistics(request):
     )
     sparks['applied'] = -sparks['applied']
     return render(request, 'portal/platform_statistics.html', {
+        'financial': metrics.financial_reference(bookings),
         'booking_count': booking_total,
         'completed_count': bookings.filter(attendance_recorded=True).count(),
         'request_count': sum(request_counts.values()),
@@ -501,6 +525,7 @@ def review(request, pk):
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
         obj.booking = booking
+        obj.is_demo = booking.schedule.activity.demo_data
         obj.save()
         return redirect('activity', pk=booking.schedule.activity_id)
     return render(request, 'portal/form.html', {'form': form, 'title': 'Valorar experiencia'})
@@ -599,6 +624,7 @@ def providers(request):
 def provider_applications():
     event = m.ProviderReviewEvent.objects.filter(organization=OuterRef('pk')).values('status')[:1]
     return m.Organization.objects.filter(kind='provider').select_related('city', 'specialty').annotate(
+        submitted_at=Subquery(m.ProviderReviewEvent.objects.filter(organization=OuterRef('pk')).order_by('pk').values('created_at')[:1]),
         review_stage=Case(
             When(approved=True, then=Value(services.ProviderStatus.APPROVED)),
             default=Coalesce(Subquery(event), Value(services.ProviderStatus.PENDING)),
@@ -642,6 +668,13 @@ def provider_events(organization):
     return list(organization.review_events.select_related('actor'))
 
 
+def provider_access_ready(organization):
+    owner = organization.created_by
+    return owner.is_active and (access.operates_platform(owner) or (
+        owner.is_staff and organization.administrators.filter(pk=owner.pk).exists() and owner.has_perm('core.add_activity')
+    ))
+
+
 @login_required
 def provider_submission(request, pk):
     access.require_service_profile(request.user)
@@ -671,17 +704,20 @@ def provider_submission(request, pk):
         org.refresh_from_db()
     return render(request, 'portal/provider_detail.html', {
         'organization': org, 'status': status, 'events': events, 'form': correction,
+        'provider_enabled': provider_access_ready(org),
     })
 
 
 @login_required
 def provider_review_queue(request):
-    if not request.user.is_superuser:
+    if not access.may_review_providers(request.user):
         raise PermissionDenied
     statuses = services.ProviderStatus
-    stage = request.GET.get('estado', statuses.PENDING)
+    stage = request.GET.get('estado', 'abiertas')
     submissions = provider_applications()
-    if stage in statuses.values:
+    if stage == 'abiertas':
+        submissions = submissions.filter(review_stage__in=(statuses.PENDING, statuses.REVIEWING))
+    elif stage in statuses.values:
         submissions = submissions.filter(review_stage=stage)
     return render(request, 'portal/provider_queue.html', {
         'page': Paginator(submissions, 20).get_page(request.GET.get('page')),
@@ -691,12 +727,20 @@ def provider_review_queue(request):
 
 @login_required
 def provider_review(request, pk):
-    if not request.user.is_superuser:
+    if not access.may_review_providers(request.user):
         raise PermissionDenied
     org = get_object_or_404(m.Organization.objects.select_related('city', 'specialty'), pk=pk, kind='provider')
     events = provider_events(org)
     latest = events[0] if events else None
     status = services.provider_status(org, latest)
+    if request.method == 'POST' and request.POST.get('action') == 'enable':
+        try:
+            services.enable_approved_provider(request.user, org)
+        except ValidationError as exc:
+            messages.error(request, '; '.join(exc.messages))
+        else:
+            messages.success(request, 'Acceso del titular habilitado exclusivamente para su centro.')
+        return redirect('provider_review', pk=org.pk)
     next_states = services.PROVIDER_DECISIONS.get(status, ()) if org.active else ()
     form = None
     if request.method == 'POST' and not next_states:
@@ -717,6 +761,7 @@ def provider_review(request, pk):
                 return redirect('provider_review', pk=org.pk)
     return render(request, 'portal/provider_detail.html', {
         'organization': org, 'status': status, 'events': events, 'form': form, 'admin_review': True,
+        'provider_enabled': provider_access_ready(org),
     })
 
 
@@ -784,7 +829,7 @@ def managed_queryset(user, kind):
     model = CRUD[kind][0]
     qs = model.objects.all()
     if kind == 'organizations' and user.role == 'admin':
-        return qs.filter(kind='provider')
+        return provider_applications()
     if access.operates_platform(user):
         return qs
     if kind in ['categories', 'cities', 'plans']:
@@ -813,16 +858,27 @@ def management(request, kind='activities'):
     model, _, title = CRUD[kind]
     access.require_manager(request.user, model, 'view')
     qs = managed_queryset(request.user, kind)
+    if kind == 'organizations':
+        stage = provider_applications().filter(pk=OuterRef('pk')).values('review_stage')[:1]
+        qs = qs.annotate(review_stage=Subquery(stage))
     provider_editor = kind == 'organizations' and access.may_edit_provider_records(request.user)
     if provider_editor:
         title = 'Proveedores'
     can_cancel_schedules = False
+    selected_activity = None
+    if kind == 'activities':
+        slots = m.Schedule.objects.filter(activity=OuterRef('pk'), active=True, starts_at__gt=timezone.now())
+        qs = qs.annotate(has_future_slots=Exists(slots), has_available_slots=Exists(slots.filter(available__gt=0)))
     if kind == 'schedules':
+        if request.GET.get('activity'):
+            selected_activity = get_object_or_404(access.activities(request.user), pk=catalog_number(request.GET['activity']))
+            qs = qs.filter(activity=selected_activity)
         centers = access.schedule_cancellation_centers(request.user)
         can_cancel_schedules = centers.exists()
         qs = qs.select_related('activity').annotate(can_cancel=Exists(centers.filter(pk=OuterRef('activity__organization_id'))))
     return render(request, 'portal/management.html', {
         'items': qs.order_by('-pk'), 'kind': kind, 'title': title,
+        'selected_activity': selected_activity,
         'can_add': (kind != 'organizations' or request.user.is_superuser)
                    and request.user.has_perm(f'core.add_{model._meta.model_name}'),
         'can_edit': provider_editor or request.user.has_perm(f'core.change_{model._meta.model_name}'),
@@ -852,7 +908,10 @@ def edit_record(request, kind, pk=None):
     if kind == 'schedules' and obj and obj.cancelled_at:
         raise PermissionDenied('Un horario cancelado conserva su historial. Crea un horario nuevo.')
     kwargs = {'user': request.user} if kind in ['activities', 'schedules', 'campaigns'] else {}
-    form = form_class(request.POST or None, instance=obj, **kwargs)
+    initial = {}
+    if kind == 'schedules' and not pk and request.GET.get('activity'):
+        initial['activity'] = get_object_or_404(access.activities(request.user), pk=catalog_number(request.GET['activity']))
+    form = form_class(request.POST or None, request.FILES or None, instance=obj, initial=initial, **kwargs)
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             item = form.save(commit=False)
@@ -864,6 +923,9 @@ def edit_record(request, kind, pk=None):
                 item.save()
             services.audit(request.user, 'edit' if pk else 'create', item)
         messages.success(request, 'Cambios guardados.')
+        if kind == 'activities':
+            messages.info(request, 'Agrega sesiones futuras con cupos para que una actividad publicada aparezca en el catálogo.')
+            return redirect(reverse('management', kwargs={'kind': 'schedules'}) + f'?activity={item.pk}')
         return redirect('management', kind=kind)
     return render(request, 'portal/form.html', {'form': form, 'title': f'{"Editar" if pk else "Crear"} · {title}'})
 
@@ -881,7 +943,11 @@ def deactivate(request, kind, pk):
     access.require_manager(request.user, model, 'delete')
     obj = get_object_or_404(managed_queryset(request.user, kind), pk=pk)
     obj.active = False
-    obj.save(update_fields=['active'])
+    if kind == 'activities':
+        obj.publication_status = m.Activity.Publication.PAUSED
+        obj.save(update_fields=['active', 'publication_status'])
+    else:
+        obj.save(update_fields=['active'])
     services.audit(request.user, 'deactivate', obj)
     messages.success(request, 'Registro desactivado. Se conserva el historial.')
     return redirect('management', kind=kind)
@@ -1012,7 +1078,16 @@ def reputation(request):
 def document(request, pk):
     bookings = access.bookings(request.user).select_related('schedule__activity')
     obj = get_object_or_404(bookings, pk=pk)
-    body = f'KIDDO SPARK - COMPROBANTE DEMO\nReserva: KS-{obj.pk}\nActividad: {obj.schedule.activity.name}\nEstado: {obj.get_status_display()}\nSparks: {obj.sparks}\nMonto referencial: CLP {obj.amount}\n\nNo acredita pagos ni constituye documento tributario. Prototipo académico.'
+    start = timezone.localtime(obj.schedule.starts_at)
+    created = timezone.localtime(obj.created_at)
+    body = (f'KIDDO SPARK - COMPROBANTE DEMO\nReserva: KS-{obj.pk}\n'
+            f'Actividad: {obj.schedule.activity.name}\nProveedor: {obj.schedule.activity.organization.name}\n'
+            f'Sesión: {obj.schedule_id} · {start:%d/%m/%Y %H:%M} (America/Santiago)\n'
+            f'Reservada el: {created:%d/%m/%Y %H:%M}\nTitular: {obj.user.username}\nCupos: 1\n'
+            f'Estado: {obj.get_status_display()}\nAsistencia: {"Registrada" if obj.attendance_recorded else "Sin registrar"}\n'
+            f'Sparks: {obj.sparks} (créditos simulados)\nMonto referencial: CLP {obj.amount}\n\n'
+            'No acredita pagos ni constituye documento tributario. Prototipo académico.\n'
+            'No existe una conversión Spark/CLP aprobada.')
     response = HttpResponse(body, content_type='text/plain; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="KS-{obj.pk}_DEMO.txt"'
     return response

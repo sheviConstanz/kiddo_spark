@@ -6,9 +6,9 @@ o ideas del material original. No se presupone un negocio operativo.
 | Área | Implementación funcional | Límite de demostración |
 | --- | --- | --- |
 | Cuenta | Registro de cliente y alta de proveedor separados, ingreso por perfil, cierre de sesión, cambio de contraseña, edición de nombre | Sin envío de email; recuperación mediante responsable local |
-| Permisos | Superadministración, administrador de plataforma, proveedor, proveedor en incorporación y cliente | La migración crea cuatro cuentas ficticias para uso local. El administrador de plataforma no accede a usuarios, permisos, validación de proveedores ni finanzas |
+| Permisos | Superadministración, administrador de plataforma, proveedor, proveedor en incorporación y cliente | La migración crea cuatro cuentas ficticias locales. Administración revisa proveedores, sin acceso a usuarios, permisos generales ni finanzas sensibles |
 | Exploración | Mapa referencial por comuna, búsqueda, categoría, edad, horario, Sparks, cupos y favoritos persistentes | El mapa agrupa por comuna. No muestra coordenadas ni direcciones de los centros |
-| Actividades | CRUD, rangos de edad, proveedor, categoría, valor y estado | Sin verificación externa de academias |
+| Actividades | CRUD, edades 5–14 en formularios, modalidad, lugar, imagen PNG/JPEG opcional, Borrador/Publicada/Pausada y sesiones propias | El catálogo exige publicación y una sesión futura con cupos. Agotada se calcula desde la disponibilidad. Sin segunda revisión de actividades |
 | Horarios | Fecha, capacidad, cupos y disponibilidad | Datos iniciales ilustrativos, renovados por administrador |
 | Planes | CRUD y activaciones registradas | Recargas manuales demo; sin pagos ni renovación automática |
 | Sparks | Libro de movimientos y saldo por usuario | No existe moneda ni valor económico real |
@@ -17,23 +17,24 @@ o ideas del material original. No se presupone un negocio operativo.
 | Notificaciones | Avisos privados al cliente por reserva y cancelación, y al proveedor asignado por una nueva reserva | Se consultan en la campanita del portal |
 | Confirmaciones y avisos | Cuadros con la acción y su efecto, avisos en página para el resultado y confirmación por teclado | En el portal |
 | Convenios | Solicitudes con organización, contacto y estimación de familias | Aprobación académica, sin firma contractual ni elegibilidad automática |
-| Centros | Alta en comunas piloto, revisión, corrección, aprobación o rechazo e historial | Aprobación académica. Permisos asignados por separado. Documentos de validación por definir |
+| Centros | Alta en comunas piloto, revisión, corrección, aprobación o rechazo e historial; aprobar habilita al titular para su centro | Aprobación académica por administración o superadministración. Operadores adicionales y permisos generales por superadministración. Documentos de validación por definir |
 | Alivios B2B | Diagnóstico, filtros por área, fichas de aliados, orientación, asesorías, cotizaciones y seguimiento | Aliados de ejemplo. La fecha y el canal son preferencias y no confirman una cita |
 | Seller Center | Gestiona su oferta y reservas. Muestra horarios con mayor demanda, asistencia, ocupación, cancelaciones, recurrencia, opiniones y rendimiento por taller | Cada proveedor accede a sus centros. Los montos de la demo son referenciales |
 | Opiniones | Una por reserva completada y respuesta del centro | No se importan reseñas o estrellas ficticias como reales |
-| Liquidaciones | Monto referencial de reservas completadas | Comisión del 10% del modelo pendiente de implementar. Sin documento tributario |
+| Liquidaciones | Monto referencial de reservas con asistencia | El dashboard estima aparte una comisión del 10%; no altera liquidaciones ni simula ingresos cobrados. Sin documento tributario |
 | Retiros | Solicitud, reserva de saldo, rechazo o finalización simulada | No se mueve dinero |
 | Campañas | Nombre, actividad, presupuesto y estado persistentes | Sin difusión, gasto, impresiones ni ROAS externos |
 | Dashboard | Reservas por fecha, agregaciones, popularidad y estado de solicitudes | No inventa visitas, conversiones ni ingresos |
 | Estadísticas de plataforma | Reservas por día, comuna y categoría, solicitudes, incorporación, Sparks y vista de indicadores por centro | Para administración de plataforma y superadministración. Ver las [definiciones de métricas](METRICAS.md) |
-| Gestión operativa | Abre la tabla de proveedores y da acceso a las tablas de publicaciones, horarios, categorías, comunas y planes. Lista global de reservas con filtros y CSV | Administración consulta el catálogo, administra sus datos y visualiza reservas. La validación y habilitación de proveedores y la asignación de operadores corresponden a superadministración |
+| Gestión operativa | Tablas de proveedores, publicaciones, horarios, categorías, comunas y planes; cola de solicitudes de proveedores; reservas con filtros y CSV | Administración puede revisar fichas y habilitar a su titular. Usuarios, operadores adicionales y permisos generales corresponden a superadministración |
+| Datos demostrativos | Escenario optativo e idempotente con cuatro fichas, cuatro familias, seis actividades y doce reservas conectadas | Solo configuración local autorizada; opiniones ficticias identificadas. No representa metas ni operaciones comerciales. Ver [guía](DEMO-ACADEMICA.md) |
 | Navegación | Administración consulta **Actividades** y **Alivios B2B** desde la barra superior y abre **Notificaciones** en la campanita. El lateral reúne **Estadísticas**, **Reservas**, **Solicitudes**, tablas y cuenta en grupos plegables | Alivios B2B es de consulta para administración. El lateral filtra módulos por permisos, abre el grupo de la pantalla actual y recuerda si se plegó por completo |
 | Móvil | Menú principal en varias filas, rejillas y formularios adaptables y tablas desplazables | Navegación y Estadísticas verificadas en Chrome |
 
 ## Flujos y decisiones
 - El alta pública crea un cliente o un proveedor en incorporación. La segunda
-  modalidad permite presentar y consultar fichas. Los operadores de proveedor
-  requieren permisos y centro asignado. Las cuentas ficticias preconfiguradas
+  modalidad permite presentar y consultar fichas. La aprobación concede al titular
+  permisos de operador y centro asignado. Las cuentas ficticias preconfiguradas
   se reservan a la demo local.
 - El cliente conserva su historial de solicitudes y puede enviar convenios
   desde el recorrido público. Las demostraciones corporativas y solicitudes
@@ -55,7 +56,7 @@ o ideas del material original. No se presupone un negocio operativo.
   activos y futuros de actividades publicadas de centros activos y aprobados.
 
 ## Verificación pendiente
-La generación de páginas y recursos se probó por HTTP y mediante el cliente de
-pruebas Django. La navegación visual, comparación de diseño y usabilidad móvil
-necesitan revisión humana; no se declaran aprobadas por comprobar solo el HTML.
-El túnel de VS Code debe probarse con el dominio concreto de la presentación.
+Las correcciones del 23 de noviembre se comprobaron con 100 pruebas Django,
+Chrome por HTTP y anchos 1366, 390 y 320 px. Ver [evidencia y límites](CORRECCIONES-2026-11-23.md).
+La aceptación del equipo académico y la prueba en otros navegadores y dispositivos
+físicos siguen pendientes. El túnel necesita el dominio concreto de presentación.

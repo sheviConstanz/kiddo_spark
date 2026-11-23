@@ -79,13 +79,57 @@ class ProviderDecisionForm(forms.Form):
 class ActivityForm(forms.ModelForm):
     class Meta:
         model = Activity
-        fields = ['name', 'organization', 'category', 'description', 'age_min', 'age_max', 'sparks', 'price', 'icon', 'active']
+        fields = ['name', 'organization', 'category', 'description', 'age_min', 'age_max', 'modality', 'venue', 'sparks', 'price', 'image', 'icon', 'publication_status']
         widgets = {'description': forms.Textarea(attrs={'rows': 4})}
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
         from .access import organizations
         self.fields['organization'].queryset = organizations(user).filter(kind='provider', approved=True, active=True)
+        self.fields['organization'].help_text = 'La actividad usa la comuna del centro seleccionado.'
+        if not self.instance.pk:
+            self.initial['publication_status'] = Activity.Publication.DRAFT
+        for field in ('age_min', 'age_max'):
+            self.fields[field].min_value = 5
+            self.fields[field].max_value = 14
+            self.fields[field].widget.attrs.update(min=5, max=14)
+        self.fields['venue'].help_text = 'Obligatorio para nuevas actividades presenciales. No ingreses datos privados de menores.'
+        self.fields['sparks'].help_text = 'Créditos simulados por cupo. No existe una conversión Spark/CLP aprobada.'
+        self.fields['price'].help_text = 'Valor referencial independiente para la demo; no representa un pago.'
+        self.fields['image'].help_text = 'Opcional: PNG o JPEG, hasta 3 MB. Usa imágenes ilustrativas sin datos personales.'
+
+    def clean(self):
+        data = super().clean()
+        for field in ('age_min', 'age_max'):
+            if data.get(field) is not None and not 5 <= data[field] <= 14:
+                self.add_error(field, 'Usa una edad entre 5 y 14 años.')
+        if data.get('modality') == Activity.Modality.IN_PERSON and not data.get('venue'):
+            self.add_error('venue', 'Indica el lugar de la actividad presencial.')
+        if self.instance.pk and self.instance.schedules.filter(bookings__isnull=False).exists():
+            if data.get('organization') != self.instance.organization:
+                self.add_error('organization', 'Una actividad con reservas conserva su centro. Crea otra actividad para otro centro.')
+        return data
+
+    def clean_image(self):
+        uploaded = self.cleaned_data.get('image')
+        if uploaded and hasattr(uploaded, 'content_type'):
+            if uploaded.size > 3 * 1024 * 1024:
+                raise ValidationError('La imagen debe pesar como máximo 3 MB.')
+            header = uploaded.read(12)
+            uploaded.seek(0)
+            png = header.startswith(b'\x89PNG\r\n\x1a\n') and uploaded.name.lower().endswith('.png')
+            jpeg = header.startswith(b'\xff\xd8\xff') and uploaded.name.lower().endswith(('.jpg', '.jpeg'))
+            if not (png or jpeg):
+                raise ValidationError('Selecciona una imagen PNG o JPEG válida.')
+        return uploaded
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.active = instance.publication_status == Activity.Publication.PUBLISHED
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 class ScheduleForm(forms.ModelForm):

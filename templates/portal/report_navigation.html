@@ -24,6 +24,9 @@
       {% if perms.core.view_servicerequest %}
         <a href="{% url 'requests' %}"{% if route == 'requests' or route == 'request_detail' or route == 'request_create' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Solicitudes</a>
       {% endif %}
+      {% if perms.core.operate_platform %}
+        <a href="{% url 'provider_review_queue' %}"{% if route == 'provider_review_queue' or route == 'provider_review' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='shield' %} Solicitudes de proveedores</a>
+      {% endif %}
     </details>
 
     {% if perms.core.view_organization or perms.core.view_activity or perms.core.view_schedule or perms.core.view_campaign or perms.core.operate_platform and perms.core.view_category or perms.core.operate_platform and perms.core.view_city or perms.core.operate_platform and perms.core.view_plan %}
@@ -33,7 +36,7 @@
           <a href="{% url 'management' 'organizations' %}"{% if workspace_kind == 'organizations' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='store' %} {% if user.role == 'admin' %}Proveedores{% else %}Organizaciones{% endif %}</a>
         {% endif %}
         {% if perms.core.view_activity %}
-          <a href="{% url 'management' 'activities' %}"{% if workspace_kind == 'activities' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} Publicaciones y actividades</a>
+          <a href="{% url 'management' 'activities' %}"{% if workspace_kind == 'activities' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='list' %} {% if user.role == 'provider' %}Mis actividades{% else %}Publicaciones y actividades{% endif %}</a>
         {% endif %}
         {% if perms.core.view_schedule %}
           <a href="{% url 'management' 'schedules' %}"{% if workspace_kind == 'schedules' %} aria-current="page"{% endif %}>{% include 'portal/icon.html' with name='calendar' %} Horarios y cupos</a>

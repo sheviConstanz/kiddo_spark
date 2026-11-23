@@ -25,7 +25,7 @@ tiempo para comparar alternativas son objetivos para evaluar en un piloto.
 | **Cliente (familia)** | Tras ingresar ve sus próximas reservas, favoritos, saldo de **Sparks** y actividades. Puede activar un plan de prueba, reservar, descargar un comprobante demo, cancelar y dejar una opinión tras asistir. En Solicitudes puede revisar su historial. |
 | **Proveedor que quiere incorporarse** | Desde **Incorporar mi centro** abre su registro y envía una ficha. Al volver a ingresar, llega a **Mis fichas**, donde puede consultar la decisión y corregir datos si recibe observaciones. |
 | **Operador de un centro habilitado** | Entrar al **Seller Center**, el panel de trabajo del centro. Según sus permisos, puede administrar publicaciones, horarios y cupos, cancelar un horario con al menos 48 horas de aviso, registrar asistencia y responder opiniones. |
-| **Equipo de Kiddo Spark** | El administrador entra a **Estadísticas**. En el menú lateral, **Gestión de datos** reúne las fichas de proveedores y las tablas del catálogo. Desde **Operación → Reservas** puede consultar, filtrar y exportar las reservas de la plataforma. El superadministrador se encarga de validar proveedores, asignar operadores y administrar permisos. |
+| **Equipo de Kiddo Spark** | El administrador entra a **Estadísticas**. En **Operación → Solicitudes de proveedores** revisa fichas y habilita a su titular al aprobar. **Gestión de datos** reúne las tablas del catálogo. **Operación → Reservas** permite consultar, filtrar y exportar las reservas. Superadministración mantiene usuarios, operadores adicionales y permisos generales. |
 | **Empresa, colegio o centro que busca apoyo** | Desde la portada pública se puede iniciar una solicitud de convenio. Los perfiles habilitados pueden pedir una demostración corporativa. En **Alivios B2B**, un proveedor puede pedir orientación, asesoría o una cotización. |
 
 Para mostrar cómo se conectan los roles, hagan una reserva como cliente y
@@ -85,7 +85,8 @@ Si ya tenían una cuenta con ese nombre, sigan usando sus datos actuales.
 | Cliente que busca y reserva para su familia | `usuario` |
 | Centro que gestiona horarios y asistencia | `proveedor` |
 | Equipo que administra catálogo y solicitudes | `admin` |
-| Revisión de proveedores y gestión de permisos | `superadmin` |
+| Revisión de proveedores | `admin` o `superadmin` |
+| Gestión de usuarios y permisos generales | `superadmin` |
 
 Son cuentas ficticias del computador local. Los correos y permisos están
 en el [README](README.md#roles-y-permisos).
@@ -128,8 +129,15 @@ cliente o proveedor, **Mi panel** abre **Configuración de perfil**, donde
 se pueden editar los datos y cambiar la contraseña desde **Seguridad de
 la cuenta**.
 
-Si van a mostrar una aprobación, practiquen antes con una ficha ficticia. La
-aprobación y la asignación del operador son pasos separados.
+Si van a mostrar una aprobación, practiquen antes con una ficha ficticia.
+Aprobar habilita al titular para su centro. Publicar una actividad y crear sus
+sesiones son pasos posteriores del proveedor.
+
+Para grabar cápsulas con datos conectados, carga **Cargar datos demo.cmd** y
+sigue la [guía B2B → B2C](docs/DEMO-ACADEMICA.md). Las cuentas `kidsdemo` y
+`robotica_demo` tienen actividades y reservas; `deporte_demo` y `arte_demo`
+permiten mostrar revisión y correcciones. Los paneles distinguen registros
+simulados de las metas y proyecciones financieras.
 
 Si quieren mostrar **Alivios B2B**, usen el minuto de convenios para abrir
 **Alivios B2B** desde el menú principal. Marquen un tema en el diagnóstico, elijan un

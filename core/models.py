@@ -117,6 +117,15 @@ class ProviderReviewEvent(models.Model):
 
 
 class Activity(models.Model):
+    class Publication(models.TextChoices):
+        DRAFT = 'draft', 'Borrador'
+        PUBLISHED = 'published', 'Publicada'
+        PAUSED = 'paused', 'Pausada'
+
+    class Modality(models.TextChoices):
+        IN_PERSON = 'in_person', 'Presencial'
+        ONLINE = 'online', 'En línea'
+
     origin_key = models.CharField(max_length=180, null=True, blank=True, unique=True, editable=False)
     name = models.CharField('nombre', max_length=160)
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name='activities', verbose_name='centro')
@@ -128,6 +137,11 @@ class Activity(models.Model):
     price = models.PositiveIntegerField('valor referencial CLP (demo)', default=0)
     icon = models.CharField('símbolo', max_length=12, default='✨')
     active = models.BooleanField('publicada', default=True)
+    publication_status = models.CharField('estado de publicación', max_length=12, choices=Publication.choices, default=Publication.PUBLISHED)
+    modality = models.CharField('modalidad', max_length=12, choices=Modality.choices, default=Modality.IN_PERSON)
+    venue = models.CharField('lugar o instrucciones de acceso', max_length=240, blank=True)
+    image = models.FileField('imagen opcional', upload_to='activities/', blank=True)
+    demo_data = models.BooleanField('datos de demostración', default=False, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -278,6 +292,7 @@ class Review(models.Model):
     comment = models.TextField('opinión', max_length=1600)
     response = models.TextField('respuesta del centro', blank=True, max_length=1600)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_demo = models.BooleanField('opinión de demostración', default=False, editable=False)
 
     class Meta:
         constraints = [models.CheckConstraint(condition=Q(rating__gte=1, rating__lte=5), name='review_rating_range')]
@@ -327,3 +342,8 @@ class Favorite(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['user', 'activity'], name='unique_favorite')]
+
+
+class DemoScenario(models.Model):
+    key = models.CharField(max_length=60, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)

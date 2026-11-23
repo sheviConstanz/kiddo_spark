@@ -9,7 +9,7 @@
     <a class="btn btn-outline" href="{% url 'export_bookings' %}{% querystring %}">Exportar CSV</a>
   </div>
   <form class="filter-panel compact" aria-label="Filtrar reservas">
-    <label>Buscar<input name="q" value="{{ request.GET.q }}" placeholder="Actividad o usuario"></label>
+    <label>Buscar<input name="q" value="{{ request.GET.q }}" placeholder="{% if user.is_staff %}Actividad o usuario{% else %}Actividad{% endif %}"></label>
     <label>Estado
       <select name="status">
         <option value="">Todos</option>
@@ -34,7 +34,7 @@
   </form>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Reserva</th><th>Actividad / horario</th><th>Titular</th><th>Sparks</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Reserva</th><th>Actividad / horario</th><th>Titular adulto</th><th>Cupos</th><th>Sparks simulados</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody>
         {% for booking in bookings %}
           {% with activity=booking.schedule.activity starts=booking.schedule.starts_at status=booking.status %}
@@ -42,6 +42,7 @@
               <td>KS-{{ booking.pk }}</td>
               <td><b>{{ activity.name }}</b><small>{{ starts|date:'d/m/Y H:i' }} · {{ activity.organization }}</small></td>
               <td>{{ booking.user.username }}</td>
+              <td>1</td>
               <td>{{ booking.sparks }}</td>
               <td>
                 <span class="status-pill ks-booking-status is-{{ status }}">{{ booking.get_status_display }}</span>
@@ -67,7 +68,7 @@
             </tr>
           {% endwith %}
         {% empty %}
-          <tr><td colspan="6">No hay reservas para mostrar con estos filtros.</td></tr>
+          <tr><td colspan="7">No hay reservas para mostrar con estos filtros.</td></tr>
         {% endfor %}
       </tbody>
     </table>

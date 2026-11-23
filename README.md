@@ -9,6 +9,10 @@ de la propuesta original.
 simulados. Cuentas, reservas, solicitudes y cambios sí se guardan en una base
 local. Usa datos ficticios, nunca información real de menores ni cuentas bancarias.
 
+Para demostrar el recorrido completo con datos conectados, usa **Cargar datos
+demo.cmd** y sigue la [guía B2B → B2C](docs/DEMO-ACADEMICA.md). Incluye cuentas
+ficticias de proveedores/familias, solicitudes, actividades, reservas y opiniones.
+
 ## Antes de empezar en Windows
 
 Necesitas **Windows**, **Python 3.14 o 3.15**, un navegador e Internet para
@@ -210,7 +214,7 @@ cuentas que falten. El instalador no pide crearlas.
 | Perfil | Usuario | Contraseña | Correo | Qué puede hacer |
 | --- | --- | --- | --- | --- |
 | Superadministrador | `superadmin` | `superadmin` | `correo@superadmin.cl` | Entra a **Superadministración**. Puede gestionar usuarios y permisos, revisar proveedores y asignar operadores. Usa **Ver sitio** para volver al panel operativo. |
-| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Entra a **Estadísticas**. Desde **Gestión de datos** en el lateral edita fichas de proveedores y gestiona publicaciones, actividades, horarios, categorías, comunas y planes. Puede tramitar solicitudes y consultar, filtrar y exportar todas las reservas. Usuarios, permisos, validación y habilitación de proveedores siguen a cargo de superadministración. |
+| Administrador de plataforma | `admin` | `admin` | `admin@demo.example.invalid` | Entra a **Estadísticas**. En **Operación → Solicitudes de proveedores** revisa, observa, rechaza o aprueba altas. Aprobar habilita al titular para su centro. Gestiona el catálogo y consulta, filtra y exporta reservas. Usuarios, permisos generales, operadores adicionales y finanzas sensibles siguen a cargo de superadministración. |
 | Cliente | `usuario` | `usuario` | `usuario@demo.example.invalid` | Entra a su inicio con próximas reservas, favoritos, Sparks y catálogo. En **Solicitudes** puede consultar su historial. |
 | Proveedor | `proveedor` | `proveedor` | `proveedor@demo.example.invalid` | Entra al **Seller Center** del **Centro Kiddo Spark Demo**. Gestiona publicaciones, horarios y reservas del centro asignado. |
 
@@ -241,21 +245,26 @@ convenios sin aliado destinatario.
 
 **Crear cuenta** abre el registro de cliente. **Registrar un centro** abre el
 registro de proveedor en incorporación. La cuenta puede presentar una ficha y
-ver su revisión. Los permisos de gestión del centro se asignan por separado.
+ver su revisión. Al aprobarla, su titular recibe acceso al Seller Center de ese centro.
 
 ## Incorporar un centro
 
 1. Desde la portada pública, abre **Incorporar mi centro → Registrar un
    centro**. Crea una cuenta de proveedor y envía una ficha con datos ficticios
    de una de las cuatro comunas piloto. Al volver a ingresar, verás **Mis fichas**.
-2. Ingresa como superadministrador y abre **Ver sitio → Validación de proveedores**.
+2. Ingresa como administrador y abre **Operación → Solicitudes de proveedores**,
+   o como superadministrador desde **Ver sitio → Validación de proveedores**.
    Selecciona la ficha, registra el inicio de revisión y luego apruébala,
    obsérvala o recházala. Cada decisión guarda el motivo, la fecha y el responsable.
 3. Si la ficha requiere corrección, vuelve a ella con la cuenta que la creó.
    Corrige los datos y reenvíala. El historial conserva la observación.
-4. Tras aprobar, usa **Usuarios y permisos** para asignar un administrador al
-   centro. Las actividades activas del centro pueden aparecer en el catálogo
-   y el administrador asignado puede gestionar su oferta.
+4. Tras aprobar, vuelve a ingresar como el titular. En **Mis actividades** crea
+   una actividad con modalidad, lugar y edades 5–14. Guarda como Borrador,
+   agrega sesiones futuras desde **Sesiones y cupos** y cambia a Publicada.
+   Solo aparece en el catálogo con una sesión vigente y cupos disponibles.
+   Pausar conserva reservas e historial. Las imágenes PNG/JPEG son opcionales.
+5. Para fichas aprobadas anteriormente sin operador, administración puede usar
+   **Habilitar acceso del titular** desde su revisión. No cambia las contraseñas.
 
 La lista de documentos y las condiciones de contratación están por definir.
 La membresía de $35.000 CLP netos al mes es un supuesto del modelo para
@@ -431,11 +440,11 @@ Consulta las definiciones y las fuentes pendientes en la
 node --check static/portal.js
 ```
 
-Las pruebas usan una base temporal, separada de la demo. La actualización visual
-se revisó en Chrome a 1440 y 390 píxeles. Se comprobaron la portada, el menú
-móvil, el filtro del catálogo, proveedores y el acceso a validación desde
-superadministración. La revisión en otros navegadores y el reenvío de VS Code
-quedan pendientes.
+Las pruebas usan una base temporal, separada de la demo. La entrega del
+23 de noviembre pasó 100 pruebas Django y el recorrido B2B → B2C en Chrome por
+HTTP local, con pantallas nuevas verificadas a 1366, 390 y 320 píxeles.
+La evidencia y los límites están en el [registro de correcciones](docs/CORRECCIONES-2026-11-23.md).
+Otros navegadores, dispositivos físicos y túnel quedan pendientes.
 
 `check --deploy` advierte de cuatro ajustes de HTTPS no activados para HTTP local:
 HSTS, redirección HTTPS y cookies exclusivas de HTTPS para sesiones y CSRF.

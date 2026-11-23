@@ -1,10 +1,21 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.db.models import Avg, Count, Exists, OuterRef, Q, Sum
 from django.db.models.functions import ExtractHour, ExtractIsoWeekDay, TruncDate
 from django.utils import timezone
 
 from .models import Booking, Notification, Review
+
+
+def financial_reference(bookings):
+    amounts = bookings.aggregate(
+        gmv=Sum('amount', filter=Q(status=Booking.Status.RESERVED), default=0),
+        attended=Sum('amount', filter=Q(attendance_recorded=True), default=0),
+        demo_records=Count('pk', filter=Q(schedule__activity__demo_data=True)),
+    )
+    amounts['estimated_commission'] = Decimal(amounts['attended']) * Decimal('0.10')
+    return amounts
 
 
 def period_controls():

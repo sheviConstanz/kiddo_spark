@@ -5,8 +5,10 @@
   <div class="eyebrow">{% if perms.core.operate_platform %}OPERACIÓN KIDDO SPARK{% else %}SELLER CENTER{% endif %}</div>
   <div class="section-heading">
     <h1>{{ title }}</h1>
-    {% if can_add %}<a class="btn btn-primary" href="{% url 'create_record' kind %}">Crear registro</a>{% endif %}
+    {% if can_add %}<a class="btn btn-primary" href="{% url 'create_record' kind %}{% if selected_activity %}?activity={{ selected_activity.pk }}{% endif %}">{% if kind == 'activities' %}Nueva actividad{% elif kind == 'schedules' %}Nueva sesión{% else %}Crear registro{% endif %}</a>{% endif %}
   </div>
+  {% if selected_activity %}<p>Sesiones de <strong>{{ selected_activity.name }}</strong> · <a href="{% url 'management' 'schedules' %}">Todos los horarios</a> · <a href="{% url 'management' 'activities' %}">Mis actividades</a></p>{% endif %}
+  {% if kind == 'activities' %}<p class="notice">Crea tu actividad, agrega una o más sesiones y selecciona Publicada cuando esté lista. Solo aparece a las familias si tiene una sesión futura con cupos. Los Sparks son créditos simulados.</p>{% endif %}
   {% if kind == 'campaigns' %}<div class="notice">Campañas de demostración. El presupuesto y estado se guardan; no se contrata publicidad ni se inventan impresiones, clics o ROAS.</div>{% endif %}
   <div class="table-wrap">
     <table>
@@ -19,13 +21,14 @@
               {% if kind == 'activities' %}{{ row.organization }} · {{ row.sparks }} Sparks
               {% elif kind == 'schedules' %}
                 {% if row.cancelled_at %}{{ row.cancellation_reason }}{% else %}{{ row.available }} / {{ row.capacity }} cupos disponibles{% endif %}
-              {% elif kind == 'organizations' %}{{ row.get_kind_display }}{% if row.approved %} · Aprobada{% elif row.kind != 'provider' %} · Pendiente de aprobación{% endif %}
+              {% elif kind == 'organizations' %}{{ row.get_kind_display }}{% if row.kind == 'provider' %} · Revisión: {{ row.review_stage_label }}{% elif row.approved %} · Aprobada{% else %} · Pendiente de aprobación{% endif %}
               {% elif kind == 'campaigns' %}{{ row.activity }} · ${{ row.daily_budget }}/día demo
               {% elif kind == 'plans' %}{{ row.sparks }} Sparks{% endif %}
             </td>
-            <td>{% if kind == 'schedules' and row.cancelled_at %}<span class="status-pill ks-booking-status is-cancelled">Cancelado</span>{% elif row.active %}Activo{% else %}Inactivo{% endif %}</td>
+            <td>{% if kind == 'schedules' and row.cancelled_at %}<span class="status-pill ks-booking-status is-cancelled">Cancelado</span>{% elif kind == 'organizations' %}Registro {% if row.active %}vigente{% else %}desactivado{% endif %}{% if row.kind == 'provider' and not row.approved %}<small>Sin aprobación para publicar</small>{% endif %}{% elif kind == 'activities' %}{{ row.get_publication_status_display }}{% if row.active and row.publication_status == 'published' %}<small>{% if not row.has_future_slots %}Sin sesiones futuras{% elif not row.has_available_slots %}Agotada{% else %}Con cupos{% endif %}</small>{% endif %}{% elif row.active %}Activo{% else %}Inactivo{% endif %}</td>
             <td><div class="table-actions">
               {% if can_edit and not row.cancelled_at %}<a href="{% url 'edit_record' kind row.pk %}">Editar</a>{% endif %}
+              {% if kind == 'activities' %}<a href="{% url 'management' 'schedules' %}?activity={{ row.pk }}">Sesiones y cupos</a>{% endif %}
               {% if kind == 'schedules' %}
                 {% if row.active and row.can_cancel %}
                   {% if row.starts_at >= cancellation_cutoff %}<a href="{% url 'cancel_schedule' row.pk %}">Cancelar horario</a>
@@ -33,10 +36,10 @@
                 {% endif %}
               {% elif can_deactivate and row.active %}
                 <form method="post" action="{% url 'deactivate' kind row.pk %}" data-confirm-title="Desactivar registro" data-confirm-label="Desactivar" data-confirm-tone="danger" data-confirm="El registro quedará inactivo y su historial se conservará.">
-                  {% csrf_token %}<button type="submit">Desactivar</button>
+                  {% csrf_token %}<button type="submit">{% if kind == 'activities' %}Pausar{% else %}Desactivar{% endif %}</button>
                 </form>
               {% endif %}
-              {% if kind == 'organizations' and user.is_superuser %}
+              {% if kind == 'organizations' and perms.core.operate_platform %}
                 {% if row.kind == 'provider' %}<a href="{% url 'provider_review' row.pk %}">Consultar revisión</a>
                 {% elif not row.approved %}<form method="post" action="{% url 'approve_organization' row.pk %}">{% csrf_token %}<button type="submit">Aprobar</button></form>
                 {% endif %}

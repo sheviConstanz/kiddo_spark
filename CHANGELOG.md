@@ -1,5 +1,19 @@
 # Historial de cambios
 
+## 2026-11-23 — Correcciones del recorrido B2B y demostración conectada
+
+- Administración revisa solicitudes de proveedores con historial y habilita al
+  titular exclusivamente para su centro al aprobar, también con recuperación
+  explícita de fichas aprobadas por versiones anteriores.
+- Actividades con Borrador/Publicada/Pausada, modalidad, lugar, edades 5–14 e
+  imagen opcional. Accesos a sesiones y cupos; catálogo solo con oferta disponible.
+- Reservas del proveedor limitadas a sus centros y comprobante con proveedor,
+  sesión, fechas, titular adulto y aclaración de créditos simulados.
+- Carga local optativa e idempotente de fichas, familias, actividades, reservas,
+  movimientos y opiniones ficticias con **Cargar datos demo.cmd**.
+- Indicadores derivados de registros, GMV y comisión estimada diferenciados de
+  metas y proyecciones. Guía B2B → B2C y pruebas de integración actualizadas.
+
 ## Carga de estilos en la demo local
 
 - La demo solicita los recursos visuales desde una dirección nueva y evita

@@ -13,6 +13,7 @@
     {% endif %}
   </header>
   <p class="ks-exec-note">{% include 'portal/icon.html' with name='chart' %} Indicadores calculados a partir de las reservas, solicitudes y horarios guardados en la demo.</p>
+  {% include 'portal/financial_reference.html' %}
 
   <section class="ks-stats-period" aria-labelledby="statistics-period">
     <h2 id="statistics-period">Reservas y solicitudes</h2>
@@ -63,7 +64,7 @@
           <li>
             <span class="ks-exec-task-icon">{% include 'portal/icon.html' with name='store' %}</span>
             <div><strong>{{ providers_in_review }} fichas en seguimiento</strong><small>Recibidas o en revisión</small></div>
-            {% if perms.core.view_organization %}<a href="{% url 'management' 'organizations' %}">Ver proveedores</a>{% endif %}
+            {% if perms.core.operate_platform %}<a href="{% url 'provider_review_queue' %}?estado=todos">Revisar solicitudes</a>{% endif %}
           </li>
           <li>
             <span class="ks-exec-task-icon">{% include 'portal/icon.html' with name='calendar' %}</span>

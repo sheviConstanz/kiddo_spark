@@ -47,8 +47,19 @@ def seeded(model, key, lookup, defaults):
 class Command(BaseCommand):
     help = 'Carga catálogo y planes de referencia, sin usuarios con contraseña ni sobrescribir registros existentes.'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--scenario', action='store_true', help='Añade una sola vez cuentas y operaciones ficticias conectadas, solo en la demo local.')
+
     @transaction.atomic
     def handle(self, **options):
+        if options.get('scenario'):
+            from core.demo_scenario import load_scenario
+            created = load_scenario()
+            self.stdout.write(self.style.SUCCESS(
+                'Escenario académico cargado: 4 fichas, 4 familias y 12 reservas ficticias. Accesos y recorrido en docs/DEMO-ACADEMICA.md.'
+                if created else 'El escenario ya estaba cargado. Se conservaron las cuentas, fechas, ediciones y operaciones existentes.'
+            ))
+            return
         source = (settings.BASE_DIR / 'Kiddo Spark B2B2C.html').read_text(encoding='utf-8')
         owner, created = User.objects.get_or_create(username='_catalogo_demo', defaults={'email': 'catalogo@example.invalid', 'is_active': False})
         if created:

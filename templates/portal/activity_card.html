@@ -1,6 +1,6 @@
 <article class="activity-card"{% if catalog %} id="actividad-{{ activity.pk }}" tabindex="-1"{% endif %}>
   <div class="activity-art art-{{ forloop.counter0|divisibleby:2|yesno:'mint,lavender' }}">
-    <span aria-hidden="true">{{ activity.icon }}</span>
+    {% if activity.image %}<img class="ks-activity-image" src="{% url 'activity_image' activity.pk %}" alt="Imagen ilustrativa de {{ activity.name }}" loading="lazy">{% else %}<span aria-hidden="true">{{ activity.icon }}</span>{% endif %}
     <small>{% include 'portal/icon.html' with name='pin' %} {{ activity.organization.city }}</small>
   </div>
   <div class="activity-content">

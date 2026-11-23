@@ -11,6 +11,7 @@ urlpatterns = [
     path('referencia/', v.reference, name='reference'),
     path('actividades/', v.explore, name='explore'),
     path('actividades/<int:pk>/', v.activity_detail, name='activity'),
+    path('actividades/<int:pk>/imagen/', v.activity_image, name='activity_image'),
     path('actividades/<int:pk>/favorito/', v.favorite, name='favorite'),
     path('registro/', v.register, name='register'),
     path('registro/proveedor/', v.register, {'for_provider': True}, name='register_provider'),

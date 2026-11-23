@@ -22,9 +22,10 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
 
 ## Reglas y límites de demostración
 - Un cliente solo consulta sus propias reservas, solicitudes y movimientos.
-- El administrador de plataforma tiene acceso global al catálogo, las reservas
-  y las solicitudes. Quedan reservados usuarios, permisos, asignación de
-  operadores, validación de proveedores y finanzas sensibles.
+- El administrador de plataforma tiene acceso global al catálogo, reservas,
+  solicitudes y revisión de proveedores. Aprobar asigna exclusivamente al titular
+  a su centro y le concede permisos de operador. Usuarios, permisos generales,
+  operadores adicionales y finanzas sensibles quedan en superadministración.
 - Los operadores gestionan las organizaciones asignadas y los módulos autorizados.
 - Superadministradores gestionan todos los registros y permisos.
 - Una migración de datos prepara los cuatro perfiles ficticios locales. Respeta
@@ -48,6 +49,18 @@ transferencias bancarias, publicidad externa ni datos reales de menores.
   [Flujos Bizagi](FLOWS-BIZAGI.md).
 - Se protege el historial mediante desactivación y relaciones protegidas.
 - Los planes son activaciones académicas sin pasarela de pago.
+- La migración 0012 agrega estados explícitos de publicación, modalidad, lugar,
+  imagen y marcadores de demostración; convierte actividades inactivas a Pausada
+  y conserva saldos e historial. Los nuevos formularios limitan edades a 5–14.
+- El catálogo exige publicación y disponibilidad futura. Las imágenes se sirven
+  por ID de actividad, respetando publicación o gestión del centro. No se publica
+  el directorio de archivos subidos. Se aceptan PNG/JPEG de hasta 3 MB.
+- La semilla de escenario es optativa, transaccional e idempotente. Su marcador
+  evita duplicar o reemplazar operaciones humanas; las colisiones de cuenta
+  abortan la carga. La configuración de túnel impide esta carga con contraseñas.
+- El GMV referencial y una comisión estimada se agregan desde reservas con los
+  mismos filtros. Los supuestos financieros y metas se presentan por separado;
+  no se introducen cobros, membresías B2B facturadas ni conversión Spark/CLP.
 - Impresiones/clics/ROAS no se inventan como resultados reales.
 - SQLite es para una demostración local de baja concurrencia; no se declara
   aptitud productiva ni aislamiento de un servicio comercial multiempresa.

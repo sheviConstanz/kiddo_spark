@@ -11,12 +11,13 @@
     {% if viewing_as_admin %}
       <a class="btn btn-outline" href="{% url 'platform_statistics' %}">Ver toda la plataforma</a>
     {% elif perms.core.add_activity %}
-      <a class="btn btn-primary" href="{% url 'create_record' 'activities' %}">{% include 'portal/icon.html' with name='store' %} Nueva publicación</a>
+      <a class="btn btn-primary" href="{% url 'create_record' 'activities' %}">{% include 'portal/icon.html' with name='store' %} Nueva actividad</a>
     {% elif perms.core.view_booking %}
       <a class="btn btn-outline" href="{% url 'bookings' %}">Abrir reservas</a>
     {% endif %}
   </header>
   <p class="ks-exec-note">{% include 'portal/icon.html' with name='chart' %} Los montos se calculan a partir de las reservas de la demo y son referenciales.</p>
+  {% include 'portal/financial_reference.html' %}
 
   <section class="ks-stats-period" aria-labelledby="provider-period">
     <h2 id="provider-period">Rendimiento del período</h2>

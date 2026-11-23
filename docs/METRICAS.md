@@ -30,6 +30,25 @@ capacidad futura disponible al consultar.
 En la vista general de administración se suman reservas por comuna y
 categoría, solicitudes por estado y el estado actual de las fichas de proveedor.
 
+## Demostración y supuestos financieros
+
+El bloque **Datos de demostración** de ambos paneles comparte el alcance y
+las fechas de las reservas. GMV referencial es la suma de importes de reservas
+vigentes y realizadas, sin canceladas. La comisión estimada es 10% de los
+importes de reservas con asistencia registrada; no es una comisión liquidada,
+no altera saldos y no equivale al GMV ni a ingresos cobrados. El contador de
+actividades demo incluye todos los estados de reserva del alcance seleccionado.
+
+El desplegable de metas muestra aparte los supuestos aportados: membresía B2B
+$35.000 CLP netos/mes por pagador, ticket $25.000, meta M12 de 8 proveedores y
+150 familias y 499 reservas proyectadas en año 1 (191 primeras, 308 recompras).
+No se cuenta a un centro aprobado como pagador ni una recarga de Sparks como
+ingreso. La conversión Spark/CLP no está definida.
+
+La [carga optativa](DEMO-ACADEMICA.md) genera registros ficticios relacionados;
+no rellena los KPI con las metas del modelo. Las cifras cambian al operar,
+cancelar, registrar asistencia y aplicar filtros.
+
 ## Fuentes pendientes para las demás métricas
 
 | Indicadores | Datos que faltan |

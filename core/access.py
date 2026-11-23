@@ -17,6 +17,10 @@ def operates_platform(user):
     return user.is_superuser or (user.is_staff and user.has_perm('core.operate_platform'))
 
 
+def may_review_providers(user):
+    return user.is_active and operates_platform(user)
+
+
 def require_manager(user, model, action='change'):
     model_name = model._meta.model_name
     if not user.is_staff or not user.has_perm(f'core.{action}_{model_name}'):
@@ -28,7 +32,7 @@ def require_manager(user, model, action='change'):
 
 def organizations(user):
     qs = Organization.objects.all()
-    return qs if operates_platform(user) else qs.filter(administrators=user) if user.is_staff else qs.none()
+    return qs if operates_platform(user) else qs.filter(administrators=user, approved=True, active=True) if user.is_staff else qs.none()
 
 
 def activities(user):
@@ -55,7 +59,7 @@ def bookings(user):
     if user.is_staff and user.has_perm('core.view_booking'):
         if operates_platform(user):
             return qs
-        return qs.filter(Q(user=user) | Q(schedule__activity__organization__in=organizations(user))).distinct()
+        return qs.filter(schedule__activity__organization__administrators=user).distinct()
     return qs.filter(user=user)
 
 

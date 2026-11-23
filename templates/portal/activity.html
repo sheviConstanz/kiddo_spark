@@ -4,11 +4,13 @@
   <a class="inline-link" href="{% url 'explore' %}">← Volver al catálogo</a>
   <div class="detail-grid">
     <div>
-      <div class="activity-art detail-art"><span>{{ activity.icon }}</span></div>
+      <div class="activity-art detail-art">{% if activity.image %}<img class="ks-activity-image" src="{% url 'activity_image' activity.pk %}" alt="Imagen ilustrativa de {{ activity.name }}">{% else %}<span>{{ activity.icon }}</span>{% endif %}</div>
       <div class="eyebrow">{{ activity.category }} · {{ activity.organization.city }}</div>
       <h1>{{ activity.name }}</h1>
       <p>{{ activity.description }}</p>
       <p>{{ activity.age_min }} a {{ activity.age_max }} años · {{ activity.organization.name }}</p>
+      <p>{{ activity.get_modality_display }}{% if activity.venue %} · {{ activity.venue }}{% endif %}</p>
+      {% if activity.demo_data %}<p class="notice">Datos de demostración · Actividad y opiniones ficticias para presentación académica.</p>{% endif %}
       {% if favorite_access %}
         <form method="post" action="{% url 'favorite' activity.pk %}">
           {% csrf_token %}
@@ -18,6 +20,7 @@
     </div>
     <aside class="portal-card">
       <span class="spark-badge">{{ activity.sparks }} Sparks por reserva</span>
+      <p class="muted">Créditos simulados. No se realiza un cobro ni se establece una conversión Spark/CLP.</p>
       <h2>Elige tu horario</h2>
       {% for slot in slots %}
         <div class="slot">
@@ -40,6 +43,7 @@
   {% for item in reviews %}
     <article class="portal-card review-card">
       <b>{{ item.rating }}/5 · Familia {{ item.booking.user.first_name|default:'Demo'|slice:':1' }}.</b>
+      {% if item.is_demo %}<span class="status-pill">Demostración</span>{% endif %}
       <p>{{ item.comment }}</p>
       {% if item.response %}<blockquote><b>Respuesta del centro</b><p>{{ item.response }}</p></blockquote>{% endif %}
       {% if user.is_staff and user.role != 'admin' %}<a class="inline-link" href="{% url 'reply_review' item.pk %}">Responder</a>{% endif %}

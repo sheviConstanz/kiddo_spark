@@ -17,6 +17,7 @@ DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DI
 AUTH_USER_MODEL = 'core.User'
 # Fixed credentials are for the local, fictional presentation database.
 KIDDO_SEED_DEMO_ACCOUNTS = True
+KIDDO_ALLOW_DEMO_DATA = True
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -30,6 +31,7 @@ USE_TZ = True
 STATIC_URL = '/recursos/'
 STATICFILES_DIRS = [BASE_DIR / 'static', BASE_DIR / 'assets']
 STATIC_ROOT = BASE_DIR / 'var' / 'static'
+MEDIA_ROOT = BASE_DIR / 'var' / 'uploads'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'

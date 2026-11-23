@@ -1,0 +1,15 @@
+<section class="portal-card section-space" aria-labelledby="demo-financial-heading">
+  <h2 id="demo-financial-heading">Datos de demostración</h2>
+  <p>Los siguientes importes se calculan desde las reservas del período seleccionado. No representan pagos ni ingresos reales.</p>
+  <dl class="ks-stats-kpis ks-report-kpis">
+    <div><dt>GMV referencial reservado</dt><dd>$ {{ financial.gmv|floatformat:'0g' }}</dd><small>CLP · vigentes y con asistencia, sin canceladas</small></div>
+    <div><dt>Comisión estimada del modelo</dt><dd>$ {{ financial.estimated_commission|floatformat:'0g' }}</dd><small>10% del valor referencial de asistencias · no liquidada</small></div>
+    <div><dt>Reservas de actividades demo</dt><dd>{{ financial.demo_records }}</dd><small>Registros simulados del período, incluidas canceladas</small></div>
+  </dl>
+  <details>
+    <summary>Metas y proyección del modelo académico</summary>
+    <p>Supuestos aportados por el equipo: membresía B2B $35.000 CLP netos/mes por pagador; comisión por reserva del 10%; ticket promedio modelado $25.000 CLP. No existe conversión Spark/CLP aprobada.</p>
+    <p>Meta M12: 8 proveedores activos y 150 familias activas. Proyección año 1: 499 reservas (191 primeras compras y 308 recompras). Estas metas no son registros cargados, pagadores actuales ni resultados obtenidos.</p>
+    <p>La membresía B2B y los pagos no se cobran en este prototipo. Las recargas de Sparks no se computan como ingresos.</p>
+  </details>
+</section>

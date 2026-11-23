@@ -1,10 +1,11 @@
 from datetime import timedelta
 
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.contrib.auth.models import Group, Permission
 from django.db import transaction
 from django.db.models import F, Sum
 from django.utils import timezone
-from .access import may_reserve, schedule_cancellation_centers
+from .access import may_reserve, may_review_providers, operates_platform, schedule_cancellation_centers
 from .models import User, Schedule, Booking, Membership, Movement, Notification, Organization, Settlement, Withdrawal, RequestEvent, AuditLog, ProviderReviewEvent
 
 
@@ -35,6 +36,48 @@ def provider_status(organization, latest):
     return ProviderStatus(latest.status) if latest else ProviderStatus.PENDING
 
 
+def enable_provider(organization):
+    """Grant only organization-scoped operator capabilities to the applicant."""
+    owner = User.objects.get(pk=organization.created_by_id)
+    if not owner.is_active or operates_platform(owner):
+        return
+    permissions = {
+        'organization': ('view', 'change'),
+        'activity': ('view', 'add', 'change', 'delete'),
+        'schedule': ('view', 'add', 'change'),
+        'booking': ('view', 'change'),
+        'servicerequest': ('view', 'change'),
+        'review': ('view', 'change'),
+        'campaign': ('view', 'add', 'change', 'delete'),
+        'settlement': ('view',), 'withdrawal': ('view', 'add'),
+        'bankaccount': ('view', 'add', 'change'),
+    }
+    group, _ = Group.objects.get_or_create(name='Operadores de proveedor')
+    codenames = [f'{action}_{model}' for model, actions in permissions.items() for action in actions]
+    group.permissions.set(Permission.objects.filter(content_type__app_label='core', codename__in=codenames))
+    owner.is_staff = True
+    owner.provider_applicant = False
+    owner.save(update_fields=['is_staff', 'provider_applicant'])
+    owner.groups.add(group)
+    organization.administrators.add(owner)
+
+
+@transaction.atomic
+def enable_approved_provider(actor, organization):
+    if not may_review_providers(actor):
+        raise PermissionDenied
+    current = Organization.objects.filter(pk=organization.pk, kind='provider', approved=True, active=True)
+    if not current.update(approved=F('approved')):
+        raise ValidationError('La ficha debe estar aprobada y vigente.')
+    center = current.get()
+    if not center.created_by.is_active:
+        raise ValidationError('La cuenta titular está desactivada. Superadministración debe revisar su acceso.')
+    if center.administrators.filter(pk=center.created_by_id, is_staff=True).exists() and center.created_by.has_perm('core.add_activity'):
+        return
+    enable_provider(center)
+    audit(actor, 'provider_enabled', center)
+
+
 def lock_provider_revision(organization, revision, **scope):
     # Acquire a SQLite write lock before reading the current event or state.
     candidates = Organization.objects.filter(pk=organization.pk, kind='provider', approved=False, **scope)
@@ -49,15 +92,17 @@ def lock_provider_revision(organization, revision, **scope):
 
 @transaction.atomic
 def review_provider(actor, organization, revision, status, note):
-    if not actor.is_superuser:
-        raise ValidationError('Solo superadministración puede resolver la revisión.')
+    if not may_review_providers(actor):
+        raise PermissionDenied('Esta cuenta no puede resolver solicitudes de proveedores.')
     current, latest = lock_provider_revision(organization, revision, active=True)
     if status not in PROVIDER_DECISIONS.get(provider_status(current, latest), ()) or not note.strip():
         raise ValidationError('Selecciona una decisión válida y escribe el motivo.')
     if status == ProviderStatus.APPROVED:
         current.approved = True
         current.save(update_fields=['approved'])
+        enable_provider(current)
     ProviderReviewEvent.objects.create(organization=current, actor=actor, status=status, note=note)
+    audit(actor, 'provider_' + status, current)
 
 
 @transaction.atomic
@@ -88,6 +133,7 @@ def activate_plan(user, plan):
 def bookable_schedules():
     return Schedule.objects.filter(
         active=True, starts_at__gt=timezone.now(), activity__active=True,
+        activity__publication_status='published',
         activity__organization__active=True, activity__organization__approved=True,
         activity__organization__kind='provider',
     )
@@ -117,7 +163,7 @@ def reserve(user, schedule_id):
     if not bookable_schedules().filter(pk=schedule_id, available__gt=0).update(available=F('available') - 1):
         raise ValidationError('El horario no está disponible o no tiene cupos.')
     slot = Schedule.objects.select_related('activity').get(pk=schedule_id)
-    if Booking.objects.filter(user=user, schedule=slot, status=Booking.Status.RESERVED, attendance_recorded=False).exists():
+    if Booking.objects.filter(user=user, schedule=slot, status=Booking.Status.RESERVED).exists():
         raise ValidationError('Ya tienes una reserva para este horario.')
     if not User.objects.filter(pk=user.pk, credits__gte=slot.activity.sparks).update(credits=F('credits') - slot.activity.sparks):
         raise ValidationError('No tienes suficientes Sparks. Activa un plan de demostración.')

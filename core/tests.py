@@ -108,7 +108,7 @@ class DemoAccountTests(TestCase):
         )
         admin.user_permissions.add(*finance_permissions)
         for url in (reverse('finance'), reverse('bank', args=[self.center.pk]),
-                    reverse('withdrawal', args=[self.center.pk]), reverse('provider_review_queue')):
+                    reverse('withdrawal', args=[self.center.pk])):
             self.assertEqual(self.client.get(url).status_code, 403)
         bank = reverse('bank', args=[self.center.pk])
         self.assertEqual(self.client.post(bank, {'bank': 'Prueba', 'account_type': 'Demo', 'last_four': '1234'}).status_code, 403)
@@ -1350,7 +1350,7 @@ class PortalTests(TestCase):
 
     def test_catalogue_crud_and_campaign(self):
         self.auth(self.manager)
-        data = {'name': 'Actividad nueva', 'organization': self.org.pk, 'category': self.cat.pk, 'description': 'Desde el mantenedor', 'age_min': 6, 'age_max': 9, 'sparks': 5, 'price': 22000, 'icon': 'A', 'active': 'on'}
+        data = {'name': 'Actividad nueva', 'organization': self.org.pk, 'category': self.cat.pk, 'description': 'Desde el mantenedor', 'age_min': 6, 'age_max': 9, 'sparks': 5, 'price': 22000, 'icon': 'A', 'publication_status': 'published', 'modality': 'in_person', 'venue': 'Sala de prueba'}
         self.assertEqual(self.client.post('/gestion/activities/crear/', data).status_code, 302)
         activity = m.Activity.objects.get(name='Actividad nueva')
         data['name'] = 'Actividad editada'
@@ -1484,7 +1484,7 @@ class PortalTests(TestCase):
         self.review_provider(org, status.APPROVED, 'Ficha de demostración validada.')
         org.refresh_from_db()
         self.assertTrue(org.approved)
-        self.assertFalse(org.administrators.exists())
+        self.assertTrue(org.administrators.filter(pk=self.user.pk).exists())
         decision = org.review_events.first()
         self.assertEqual(decision.actor, self.root)
         self.assertEqual(decision.note, 'Ficha de demostración validada.')
@@ -1538,7 +1538,7 @@ class PortalTests(TestCase):
         slot = m.Schedule.objects.create(activity=self.foreign_activity, starts_at=timezone.now() + timedelta(days=1), capacity=1, available=1)
         booking = m.Booking.objects.create(user=self.manager, schedule=slot, sparks=4, amount=0)
         self.auth(self.manager)
-        self.assertEqual(self.client.post(f'/reservas/{booking.pk}/complete/').status_code, 403)
+        self.assertEqual(self.client.post(f'/reservas/{booking.pk}/complete/').status_code, 404)
 
     def test_database_enforces_email_case_insensitive_uniqueness(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
