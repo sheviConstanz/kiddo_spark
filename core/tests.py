@@ -1,3 +1,4 @@
+from contextlib import closing
 from datetime import datetime, timedelta
 from importlib import import_module
 from io import StringIO
@@ -9,6 +10,7 @@ from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.management import call_command
 from django.db import IntegrityError, connection, transaction
+from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
@@ -730,7 +732,36 @@ class PortalTests(TestCase):
                      'portal.js', 'landing.css', 'landing.js', 'taller-robotica.jpg', 'admin/css/base.css']:
             with self.subTest(path=path):
                 self.assertIsNotNone(finders.find(path))
-                self.assertEqual(self.client.get('/static/' + path).status_code, 200)
+                with closing(self.client.get(static(path))) as response:
+                    self.assertEqual(response.status_code, 200)
+
+    def test_demo_styles_and_scripts_ignore_stale_cache_and_system_mime_types(self):
+        browser_cache = {'If-Modified-Since': 'Wed, 01 Jan 2031 00:00:00 GMT'}
+        cases = (
+            ('portal-theme.css', 'text/css', b'.ks-exec-layout'),
+            ('portal.js', 'text/javascript', b'data-workspace-layout'),
+            ('portal-icons.svg', 'image/svg+xml', b'id="bell"'),
+        )
+        with patch('django.views.static.mimetypes.guess_type', return_value=('application/octet-stream', None)):
+            for filename, content_type, marker in cases:
+                with self.subTest(filename=filename):
+                    with closing(self.client.get(static(filename), headers=browser_cache)) as response:
+                        self.assertEqual(response.status_code, 200)
+                        self.assertEqual(response['Content-Type'], content_type)
+                        self.assertIn('no-store', response['Cache-Control'])
+                        self.assertNotIn('Last-Modified', response)
+                        self.assertIn(marker, b''.join(response.streaming_content))
+        self.assertEqual(static('portal-theme.css'), '/recursos/portal-theme.css')
+        with closing(self.client.get('/static/portal-theme.css', headers=browser_cache)) as old_url:
+            self.assertEqual(old_url.status_code, 200)
+            self.assertIn('no-store', old_url['Cache-Control'])
+
+    def test_public_pages_reference_the_current_resource_urls(self):
+        home = self.client.get(reverse('home'))
+        for filename in ('css/styles.css', 'portal.css', 'portal-theme.css', 'portal.js'):
+            self.assertContains(home, f'"{static(filename)}"')
+        reference = self.client.get(reverse('reference'))
+        self.assertContains(reference, f'href="{static("css/styles.css")}"')
 
     def test_home_presents_pilot_evidence_and_labels_convention_demo(self):
         response = self.client.get(reverse('home'))
@@ -752,8 +783,8 @@ class PortalTests(TestCase):
         client_home = self.client.get(reverse('home'))
         self.assertTemplateUsed(client_home, 'portal/client_home.html')
         for resource in ('landing.css', 'landing.js', 'taller-robotica.jpg'):
-            self.assertContains(public_home, f'/static/{resource}')
-            self.assertNotContains(client_home, f'/static/{resource}')
+            self.assertContains(public_home, static(resource))
+            self.assertNotContains(client_home, static(resource))
 
     def test_catalog_period_availability_and_map_use_the_same_filtered_set(self):
         vina = m.City.objects.create(name='Viña del Mar')

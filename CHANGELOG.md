@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## Carga de estilos en la demo local
+
+- La demo solicita los recursos visuales desde una dirección nueva y evita
+  reutilizar copias anteriores del navegador. Los estilos, scripts e iconos
+  se sirven con su tipo de archivo explícito.
+
 ## Apagado de la demo local
 
 - **Apagar Kiddo Spark.cmd** permite cerrar la demo desde el Explorador de

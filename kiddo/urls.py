@@ -1,8 +1,9 @@
+from django.conf import settings
 from django.urls import path
 from django.contrib.auth import views as auth
-from django.contrib.staticfiles.views import serve
 from core import views as v
 from core.admin import site
+from .static_assets import serve_demo_asset
 
 urlpatterns = [
     path('', v.home, name='home'),
@@ -60,5 +61,6 @@ urlpatterns = [
     path('retiros/<int:pk>/<str:status>/', v.withdrawal_status, name='withdrawal_status'),
     path('superadmin/', site.urls),
     # Local demonstration only. Static files are served without exposing source/runtime files.
-    path('static/<path:path>', serve, {'insecure': True}),
+    path(settings.STATIC_URL.lstrip('/') + '<path:path>', serve_demo_asset),
+    path('static/<path:path>', serve_demo_asset),
 ]

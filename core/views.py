@@ -11,6 +11,7 @@ from django.db.models import Case, Count, Exists, OuterRef, Subquery, Sum, Avg, 
 from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.templatetags.static import static
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -47,7 +48,7 @@ def public_landing(request):
 def reference(request):
     access.require_service_profile(request.user)
     html = (settings.BASE_DIR / 'Kiddo Spark B2B2C.html').read_text(encoding='utf-8')
-    html = html.replace('href="assets/css/styles.css"', 'href="/static/css/styles.css"')
+    html = html.replace('href="assets/css/styles.css"', f'href="{static("css/styles.css")}"')
     html = html.replace('<body>', '<body><a href="/" style="position:fixed;bottom:12px;left:12px;z-index:99999;background:#0F2C59;color:white;padding:12px;border-radius:12px">Referencia original: datos simulados · Volver a plataforma</a>', 1)
     return HttpResponse(html)
 

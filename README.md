@@ -64,6 +64,10 @@ vuelve a la ventana donde la encendiste y pulsa **Ctrl+C**.
 Si te pasan una versión nueva, apaga la demo antes de abrirla. Conserva la
 carpeta donde la instalaste para mantener tus cuentas y reservas.
 
+Si la pantalla aparece sin sus tarjetas o con el menú desordenado, confirma
+que abriste la demo desde la carpeta actualizada. Apágala, vuelve a abrirla
+y pulsa **Ctrl + F5** en el navegador. Tus datos se conservan.
+
 ## Si Windows bloquea un archivo
 
 El archivo **Abrir Kiddo Spark** no usa PowerShell. Si Windows también lo
