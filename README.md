@@ -9,15 +9,17 @@ de la propuesta original.
 simulados. Cuentas, reservas, solicitudes y cambios sí se guardan en una base
 local. Usa datos ficticios, nunca información real de menores ni cuentas bancarias.
 
-Para la defensa con datos abundantes, abre **Abrir demo defensa.cmd** y sigue
-la [guía de la base de defensa](docs/DEFENSA-DATOS.md): ocho proveedores aprobados,
-20 actividades, 30 familias, 60 reservas y 15 opiniones, con horarios para los
-próximos 35 días. Usa una base separada y el puerto 8002; no reemplaza tu demo
-habitual. **Preparar demo defensa.cmd** renueva sus horarios y **Restablecer demo
-defensa.cmd** crea otra base conservando la anterior.
+Para la presentación, haz doble clic en **Abrir demo defensa.cmd**, el único
+acceso en la carpeta principal. Prepara la base, completa la agenda de los
+próximos 35 días y abre el navegador. Para cerrar la demo, vuelve a su ventana
+y pulsa **Ctrl+C**. La [guía de defensa](docs/DEFENSA-DATOS.md) tiene las cuentas
+para grabar los videos con los 20 talleres y 60 reservas de demostración.
 
-**Cargar datos demo.cmd** conserva el escenario pequeño de la base habitual;
-su [guía B2B → B2C](docs/DEMO-ACADEMICA.md) corresponde a esa demostración anterior.
+La [demo habitual y las herramientas de mantenimiento](scripts/mantenimiento/README.md)
+se abren desde `scripts/mantenimiento/`.
+
+El [manual de usuario para Ingeniería Comercial](MANUAL-USUARIO.md)
+explica cómo operar la plataforma, seguir una reserva y leer los indicadores.
 
 ## Antes de empezar en Windows
 
@@ -52,24 +54,23 @@ la comprobación.
    y luego en **Download ZIP**.
 2. En **Descargas**, haz clic derecho en el ZIP y elige **Extraer todo**.
    Abre la carpeta que se acaba de crear.
-3. Haz **doble clic** en **Abrir Kiddo Spark**. Puede verse como
-   **Abrir Kiddo Spark.cmd** si Windows muestra el nombre completo.
+3. Haz **doble clic** en **Abrir demo defensa**. Puede verse como
+   **Abrir demo defensa.cmd** si Windows muestra el nombre completo.
 4. Si pregunta si puede descargar lo que falta, responde **S** y pulsa
    **Enter**. Espera a que se abra el navegador. Si no se abre, entra a
-   [Kiddo Spark local](http://127.0.0.1:8000/).
+   [demo de defensa](http://127.0.0.1:8002/).
 
-Puedes explorar de inmediato. Para probar reservas, el panel del centro o
-la administración, usa las [cuentas de prueba](#roles-y-permisos).
-La instalación las prepara automáticamente.
+Puedes explorar de inmediato. Usa las [cuentas de defensa](docs/DEFENSA-DATOS.md#accesos-públicos-ficticios)
+para probar reservas, el panel del centro o la administración.
 
 ## Encender y apagar
 
-Para encender, haz doble clic en **Abrir Kiddo Spark**. Si la demo ya está
-encendida, el archivo abre la página otra vez. Para apagar, haz doble clic
-en **Apagar Kiddo Spark** o **Apagar Kiddo Spark.cmd**. Espera el mensaje
-**Kiddo Spark apagado**. Se libera el puerto local y se conservan tus datos.
-Si abriste la demo con una versión anterior y el archivo no la reconoce,
-vuelve a la ventana donde la encendiste y pulsa **Ctrl+C**.
+Abre **Abrir demo defensa.cmd** y deja su ventana abierta durante la presentación.
+Si la demo ya está encendida, el acceso vuelve a abrir la página. Para apagarla,
+pulsa **Ctrl+C** en la ventana que la inició. Tus datos se guardan al operar.
+
+Para la base habitual del puerto 8000, usa **Abrir Kiddo Spark.cmd** y
+**Apagar Kiddo Spark.cmd** en [scripts/mantenimiento](scripts/mantenimiento/README.md).
 
 Si te pasan una versión nueva, apaga la demo antes de abrirla. Conserva la
 carpeta donde la instalaste para mantener tus cuentas y reservas.
@@ -80,7 +81,7 @@ y pulsa **Ctrl + F5** en el navegador. Tus datos se conservan.
 
 ## Si Windows bloquea un archivo
 
-El archivo **Abrir Kiddo Spark** no usa PowerShell. Si Windows también lo
+El archivo **Abrir demo defensa** se ejecuta en el Símbolo del sistema. Si Windows lo
 bloquea, revisa el texto del aviso o usa los pasos del **Símbolo del sistema**
 que aparecen más abajo.
 
@@ -89,14 +90,12 @@ que aparecen más abajo.
 Si descargaste Kiddo Spark desde el enlace oficial de este README y confías
 en el archivo, revisa si Windows ofrece desbloquear ese archivo concreto:
 
-1. En el Explorador, haz clic derecho en el archivo que mostró el aviso
-   (por ejemplo, **instalar_local** o **instalar_local.ps1**) y elige
-   **Propiedades**.
+1. En el Explorador, haz clic derecho en el archivo que mostró el aviso y
+   elige **Propiedades**.
 2. En la pestaña **General**, baja hasta el final y busca **Desbloquear** en
    el apartado **Seguridad**. Si aparece, marca la casilla y pulsa **Aplicar**
    y **Aceptar**.
-3. Vuelve a hacer clic derecho sobre el archivo y elige
-   **Ejecutar con PowerShell**.
+3. Vuelve a abrir el archivo desde el Explorador.
 
 Esta opción quita la marca de descarga del archivo. Si no aparece o el aviso
 sigue, fíjate en el mensaje exacto y revisa el apartado siguiente.
@@ -117,10 +116,10 @@ Microsoft indica que esta protección no admite excepciones por archivo.
 
 Ese mensaje se refiere a la política de PowerShell. La casilla
 **Desbloquear** quita la marca de descarga, pero no cambia esa política.
-La opción más directa es hacer doble clic en **Abrir Kiddo Spark**.
+La opción más directa es hacer doble clic en **Abrir demo defensa.cmd**.
 
 <details>
-<summary>Opción para quien prepara la demo en un computador personal</summary>
+<summary>Opción para los scripts de mantenimiento en un computador personal</summary>
 
 En un **PC personal que tú administras**, si prefieres usar los scripts,
 abre la carpeta extraída, escribe `powershell` en la barra de direcciones
@@ -130,8 +129,8 @@ scripts locales de confianza solo para esta ventana:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
-.\instalar_local.ps1
-.\iniciar_local.ps1
+.\scripts\mantenimiento\instalar_local.ps1
+.\scripts\mantenimiento\iniciar_local.ps1
 ```
 
 Ejecuta una línea a la vez en esa misma ventana. Si ya instalaste el
@@ -147,7 +146,10 @@ aviso persiste, usa la alternativa de abajo o consulta a TI.
 <details>
 <summary>Ver pasos para abrir la demo desde Símbolo del sistema</summary>
 
-Si Python ya funciona en tu computador, puedes usar esta alternativa con las
+Desde la carpeta extraída, puedes abrir la demo de defensa con
+`python -E -B scripts\defense_demo.py`.
+
+Si necesitas abrir la base habitual manualmente, sigue los pasos de abajo con las
 protecciones de Windows activadas. En el Explorador, entra a la carpeta
 extraída donde está `manage.py`. Haz clic en la barra de direcciones, escribe
 `cmd` y pulsa **Enter**. Se abrirá el **Símbolo del sistema** en esa carpeta.
@@ -163,8 +165,8 @@ python -m venv .venv
 .\.venv\Scripts\python.exe manage.py seed_demo
 ```
 
-**Para abrir la demo**, ejecuta estas dos líneas. Si ya la instalaste con
-`instalar_local.ps1` y conservas la misma carpeta, empieza en este paso.
+**Para abrir la demo habitual**, ejecuta estas dos líneas. Si ya está instalada
+en la misma carpeta, empieza en este paso.
 
 ```bat
 .\.venv\Scripts\python.exe manage.py migrate --noinput
@@ -187,12 +189,12 @@ Este paso es opcional y queda separado de la instalación y el inicio local.
 La demo remota inicia una copia con catálogo ficticio y su propia base,
 `var/kiddo_tunnel.sqlite3`. No usa las cuentas ni los datos de la demo local.
 
-1. Ejecuta **instalar_local** o **instalar_local.ps1** si el proyecto aún no
-   está preparado.
+1. Ejecuta **instalar_local.ps1** en `scripts/mantenimiento/` si el proyecto
+   aún requiere preparación.
 2. Instala [Microsoft Dev Tunnels CLI](https://learn.microsoft.com/en-us/azure/developer/dev-tunnels/get-started)
    en Windows. Abre PowerShell y ejecuta `devtunnel user login`. Completa el acceso
    con la cuenta aprobada para la demostración.
-3. En el Explorador, haz clic derecho en **compartir_local** o
+3. En `scripts/mantenimiento/`, haz clic derecho en
    **compartir_local.ps1** y elige **Ejecutar con PowerShell**. Confirma
    con **S** y espera el enlace HTTPS privado. La copia usa el puerto local
    **8001**. Puedes dejar la demo normal en **8000**.
@@ -275,8 +277,9 @@ ver su revisión. Al aprobarla, su titular recibe acceso al Seller Center de ese
 La lista de documentos y las condiciones de contratación están por definir.
 La membresía de $35.000 CLP netos al mes es un supuesto del modelo para
 proveedores pagadores. El flujo académico no activa membresías ni cobros.
-Al actualizar, apaga la demo y abre **Abrir Kiddo Spark** desde la carpeta
-actualizada. La migración 0008 conserva las fichas y contraseñas existentes.
+Al actualizar la base habitual, apaga la demo y abre **Abrir Kiddo Spark.cmd**
+desde `scripts/mantenimiento/` en la carpeta actualizada. La migración 0008
+conserva las fichas y contraseñas existentes.
 La migración 0010 actualiza las reservas anteriores y conserva sus saldos e
 historial de asistencia.
 
@@ -427,8 +430,8 @@ Consulta las definiciones y las fuentes pendientes en la
 | Situación | Qué revisar |
 | --- | --- |
 | Puerto ocupado | Si ya hay un servidor abierto por otro medio, apágalo desde donde se inició. El script solo detiene el servidor que reconoce como propio. |
-| Faltan tablas | Cierra la demo y vuelve a ejecutar **iniciar_local.ps1**. |
-| Catálogo vacío | Comprueba que los centros estén aprobados. Si faltan los datos iniciales, apaga la demo, ejecuta **instalar_local.ps1** y vuelve a iniciarla. |
+| Faltan tablas | Cierra la demo y vuelve a abrirla para aplicar las migraciones. |
+| Catálogo vacío en la base habitual | Comprueba que los centros estén aprobados. Si faltan los datos iniciales, apaga la demo, ejecuta **instalar_local.ps1** en `scripts/mantenimiento/` y vuelve a iniciarla. |
 | No hay horarios | Crea un horario futuro y habilitado. |
 | No puedo reservar | Comprueba saldo, cupos y que no tengas ya una reserva para ese horario. |
 | No aparece «Cancelar horario» | Entra como proveedor del centro asignado. El horario debe estar activo y faltarle al menos 48 horas para comenzar. |
@@ -442,7 +445,7 @@ Consulta las definiciones y las fuentes pendientes en la
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 .\.venv\Scripts\python.exe -m pip check
-.\.venv\Scripts\python.exe -m unittest scripts.test_open_local
+.\.venv\Scripts\python.exe -m unittest scripts.test_windows_launchers scripts.test_open_local scripts.test_defense_demo
 node --check static/portal.js
 ```
 
@@ -460,8 +463,8 @@ de contraseña por email ni pruebas de carga. SQLite es para una demo de baja co
 ## Archivos y distribución
 
 - `core/`: datos, reglas, formularios, permisos, pruebas y migraciones.
-- `Abrir Kiddo Spark.cmd`: abre el programa desde el Explorador de Windows.
-- `Apagar Kiddo Spark.cmd`: detiene la demo local de esta carpeta.
+- `Abrir demo defensa.cmd`: prepara y abre la demo principal desde el Explorador.
+- `scripts/mantenimiento/`: accesos para la base habitual, preparación y soporte.
 - `kiddo/`: configuración y rutas.
 - `templates/`, `static/`, `assets/`: pantallas y recursos visuales.
 - `var/kiddo.sqlite3`: datos locales, excluidos de GitHub.

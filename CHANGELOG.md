@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## 2026-11-23 — Manual de usuario
+
+- El manual para Ingeniería Comercial documenta el uso de la demo por perfil,
+  el recorrido de una reserva y la lectura de los indicadores.
+
+## 2026-11-23 — Un solo acceso para la presentación
+
+- **Abrir demo defensa.cmd** prepara la base de defensa, completa la agenda
+  y abre el portal desde la carpeta principal.
+- La demo habitual y las herramientas de preparación, restablecimiento y soporte
+  se agrupan en `scripts/mantenimiento/`.
+
 ## 2026-11-23 — Base independiente para la defensa
 
 - Migración de datos 0013, optativa en configuración de defensa, con ocho

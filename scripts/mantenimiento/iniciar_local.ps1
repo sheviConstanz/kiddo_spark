@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'scripts\local-runtime.ps1')
+. (Join-Path (Split-Path -Parent $PSScriptRoot) 'local-runtime.ps1')
 
 $localUrl = 'http://127.0.0.1:8000/'
 $managePath = Join-Path $projectRoot 'manage.py'

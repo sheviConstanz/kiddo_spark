@@ -3,8 +3,9 @@
 ## Preparar los datos desde Windows
 
 1. Apaga Kiddo Spark antes de actualizar la carpeta.
-2. Haz doble clic en **Cargar datos demo.cmd** y espera el mensaje de resultado.
-3. Abre **Abrir Kiddo Spark.cmd**.
+2. En [scripts/mantenimiento](../scripts/mantenimiento/README.md), abre
+   **Cargar datos demo.cmd** y espera el mensaje de resultado.
+3. En esa misma carpeta, abre **Abrir Kiddo Spark.cmd**.
 
 La carga conserva datos anteriores. Al repetirla, no duplica el escenario ni
 restablece contraseñas, fechas o ediciones. Si un nombre de cuenta ya existe,

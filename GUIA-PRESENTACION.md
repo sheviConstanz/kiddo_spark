@@ -60,10 +60,15 @@ y eviten datos de menores, medios de pago o cuentas bancarias reales.
 
 ## Preparar el computador
 
+Para grabar los videos de defensa, basta abrir **Abrir demo defensa.cmd** en
+la carpeta principal y seguir la [guía de cuentas y recorridos](docs/DEFENSA-DATOS.md).
+Para practicar cada perfil, consulta el [manual de usuario](MANUAL-USUARIO.md).
+Los pasos siguientes usan la demo habitual para la presentación de siete minutos.
+
 - Si el computador aún no está preparado, sigan la
   [guía para Windows](README.md#antes-de-empezar-en-windows).
-- En el Explorador, hagan doble clic en **Abrir Kiddo Spark** o
-  **Abrir Kiddo Spark.cmd**. Mantengan abierta la ventana negra durante
+- En `scripts/mantenimiento/`, hagan doble clic en **Abrir Kiddo Spark.cmd**.
+  Mantengan abierta su ventana durante
   la demostración. Para apagarla, vuelvan a esa ventana y pulsen **Ctrl+C**.
 - En el mismo computador, abran [Kiddo Spark local](http://127.0.0.1:8000/).
   Compartan la pantalla o conéctenla al proyector. Esa dirección corresponde
@@ -133,8 +138,8 @@ Si van a mostrar una aprobación, practiquen antes con una ficha ficticia.
 Aprobar habilita al titular para su centro. Publicar una actividad y crear sus
 sesiones son pasos posteriores del proveedor.
 
-Para grabar cápsulas con datos conectados, carga **Cargar datos demo.cmd** y
-sigue la [guía B2B → B2C](docs/DEMO-ACADEMICA.md). Las cuentas `kidsdemo` y
+Para cargar el escenario pequeño de la demo habitual, usa **Cargar datos demo.cmd**
+en `scripts/mantenimiento/` y sigue la [guía B2B → B2C](docs/DEMO-ACADEMICA.md). Las cuentas `kidsdemo` y
 `robotica_demo` tienen actividades y reservas; `deporte_demo` y `arte_demo`
 permiten mostrar revisión y correcciones. Los paneles distinguen registros
 simulados de las metas y proyecciones financieras.

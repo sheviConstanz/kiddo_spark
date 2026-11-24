@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'scripts\local-runtime.ps1')
+. (Join-Path (Split-Path -Parent $PSScriptRoot) 'local-runtime.ps1')
 
 $previousPythonPath = $env:PYTHONPATH
 $previousOrigin = $env:KIDDO_TUNNEL_ORIGIN

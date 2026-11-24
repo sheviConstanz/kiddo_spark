@@ -1,7 +1,7 @@
 @echo off
 setlocal
 title Kiddo Spark
-pushd "%~dp0" || exit /b 1
+pushd "%~dp0..\.." || exit /b 1
 where python.exe >nul 2>&1
 if errorlevel 1 (
     echo No se encontro Python. Revisa la seccion "Antes de empezar en Windows" del README.

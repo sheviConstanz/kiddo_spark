@@ -1,1 +1,1 @@
-& (Join-Path (Split-Path -Parent $PSScriptRoot) 'iniciar_local.ps1')
+& (Join-Path $PSScriptRoot 'mantenimiento\iniciar_local.ps1')

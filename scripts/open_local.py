@@ -112,7 +112,7 @@ def serve(python, env, url):
             if is_kiddo_spark(url):
                 if process.poll() is not None:
                     break
-                print(f'Demo lista: {url}\nPara apagar, abre Apagar Kiddo Spark o pulsa Ctrl+C.', flush=True)
+                print(f'Demo lista: {url}\nPara apagar, pulsa Ctrl+C o abre Apagar Kiddo Spark en scripts/mantenimiento.', flush=True)
                 webbrowser.open(url)
                 if process.wait():
                     raise RuntimeError('La demo se cerró con un error.')

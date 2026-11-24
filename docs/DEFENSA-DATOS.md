@@ -39,11 +39,12 @@ No se agrega un módulo de incidencias ni nuevos KPI para aparentar esas funcion
    horarios que falten para cubrir los próximos 35 días. No se modifican fechas,
    cupos ni cancelaciones de sesiones existentes.
 
-**Preparar demo defensa.cmd** hace la carga y renueva la agenda sin encender
-el servidor. **Restablecer demo defensa.cmd** crea y selecciona otra base con el
-escenario inicial; el archivo anterior se conserva completo. Cierra primero el
-servidor de defensa con Ctrl+C para preparar o restablecer. La demo normal puede
-seguir funcionando: usa el puerto 8000 y otra base y cookies de sesión.
+En [scripts/mantenimiento](../scripts/mantenimiento/README.md), **Preparar demo
+defensa.cmd** renueva la agenda con el servidor apagado. **Restablecer demo
+defensa.cmd** crea y selecciona otra base con el escenario inicial y conserva
+la anterior. Cierra la ventana de defensa con **Ctrl+C** antes de ejecutar
+cualquiera de estas herramientas. La demo habitual puede seguir funcionando
+en el puerto 8000 con su propia base.
 
 Repetir la preparación no duplica proveedores, familias, reservas ni opiniones.
 Las altas y cambios que hagas durante la grabación sí cambian los totales. Usa
