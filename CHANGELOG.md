@@ -1,5 +1,18 @@
 # Historial de cambios
 
+## 2026-11-23 — Base independiente para la defensa
+
+- Migración de datos 0013, optativa en configuración de defensa, con ocho
+  proveedores aprobados, tres fichas en seguimiento, 20 actividades publicadas,
+  30 familias, 60 reservas relacionadas y 15 opiniones de demostración.
+- Agenda de 300 sesiones futuras durante 35 días, renovable sin duplicar
+  operaciones, mover reservas ni reabrir horarios cancelados.
+- Iniciadores para preparar, abrir y restablecer la defensa en otra base SQLite
+  y puerto 8002. Restablecer conserva las bases anteriores. La demo normal,
+  el esquema de datos, los permisos y las pantallas permanecen disponibles.
+- Guía de accesos y videos, coherencia de saldos/cupos y límites de datos que
+  las funciones existentes no representan. Sin dependencias ni cobros nuevos.
+
 ## 2026-11-23 — Correcciones del recorrido B2B y demostración conectada
 
 - Administración revisa solicitudes de proveedores con historial y habilita al

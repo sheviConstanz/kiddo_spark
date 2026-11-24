@@ -9,9 +9,15 @@ de la propuesta original.
 simulados. Cuentas, reservas, solicitudes y cambios sí se guardan en una base
 local. Usa datos ficticios, nunca información real de menores ni cuentas bancarias.
 
-Para demostrar el recorrido completo con datos conectados, usa **Cargar datos
-demo.cmd** y sigue la [guía B2B → B2C](docs/DEMO-ACADEMICA.md). Incluye cuentas
-ficticias de proveedores/familias, solicitudes, actividades, reservas y opiniones.
+Para la defensa con datos abundantes, abre **Abrir demo defensa.cmd** y sigue
+la [guía de la base de defensa](docs/DEFENSA-DATOS.md): ocho proveedores aprobados,
+20 actividades, 30 familias, 60 reservas y 15 opiniones, con horarios para los
+próximos 35 días. Usa una base separada y el puerto 8002; no reemplaza tu demo
+habitual. **Preparar demo defensa.cmd** renueva sus horarios y **Restablecer demo
+defensa.cmd** crea otra base conservando la anterior.
+
+**Cargar datos demo.cmd** conserva el escenario pequeño de la base habitual;
+su [guía B2B → B2C](docs/DEMO-ACADEMICA.md) corresponde a esa demostración anterior.
 
 ## Antes de empezar en Windows
 

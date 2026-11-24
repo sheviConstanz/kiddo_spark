@@ -7,7 +7,7 @@ from django.utils import timezone
 class PublicationMigrationTests(TransactionTestCase):
     def test_upgrade_preserves_existing_activity_booking_and_balance(self):
         old_target = [('core', '0011_provider_booking_notice')]
-        new_target = [('core', '0012_provider_publications_demo')]
+        new_target = [('core', '0013_defense_demo_data')]
         executor = MigrationExecutor(connection)
         executor.migrate(old_target)
         try:
